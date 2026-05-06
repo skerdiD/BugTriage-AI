@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Clock3,
   Crosshair,
-  Sparkles,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
@@ -23,163 +22,117 @@ import {
   YAxis,
 } from "recharts";
 
+import { AnalyticsMetricCard } from "@/components/dashboard/analytics-metric-card";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Badge } from "@/components/ui/badge";
+import { RepeatedPatterns } from "@/components/dashboard/repeated-patterns";
+import { TopAffectedPages } from "@/components/dashboard/top-affected-pages";
+import { WeeklyInsights } from "@/components/dashboard/weekly-insights";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  analyticsMetrics,
+  averageResolutionTimeData,
+  bugReportsOverTimeData,
+  bugsByCategoryData,
+  repeatedIssuePatterns,
+  topAffectedPages,
+  weeklyInsights,
+} from "@/lib/mock-data";
 
-const reportData = [
-  { date: "Apr 1", bugs: 18 },
-  { date: "Apr 8", bugs: 24 },
-  { date: "Apr 15", bugs: 29 },
-  { date: "Apr 22", bugs: 22 },
-  { date: "Apr 29", bugs: 35 },
-  { date: "May 6", bugs: 37 },
-];
+const metricIcons = {
+  clock: Clock3,
+  resolved: CheckCircle2,
+  critical: AlertTriangle,
+  accuracy: Crosshair,
+};
 
-const categoryData = [
-  { category: "Payment", bugs: 88 },
-  { category: "UI/UX", bugs: 136 },
-  { category: "Performance", bugs: 57 },
-  { category: "Backend", bugs: 93 },
-  { category: "API", bugs: 42 },
-  { category: "Search", bugs: 38 },
-];
+const metricTrendIcons = {
+  up: TrendingUp,
+  down: TrendingDown,
+};
 
-const resolutionData = [
-  { week: "W1", hours: 18.7 },
-  { week: "W2", hours: 16.2 },
-  { week: "W3", hours: 14.8 },
-  { week: "W4", hours: 15.3 },
-  { week: "W5", hours: 13.1 },
-  { week: "W6", hours: 12.4 },
-];
-
-const affectedPages = [
-  { page: "/checkout/payment", count: "23 bugs reported", severity: "Critical" },
-  { page: "/dashboard", count: "18 bugs reported", severity: "High" },
-  { page: "/profile/settings", count: "15 bugs reported", severity: "Medium" },
-  { page: "/search", count: "12 bugs reported", severity: "Medium" },
-  { page: "/api/v1/users", count: "9 bugs reported", severity: "High" },
-];
-
-const repeatedPatterns = [
-  { title: "Form validation on Safari", seen: "Last seen: 2h ago", count: "7x" },
-  { title: "API timeout in EU region", seen: "Last seen: 1d ago", count: "5x" },
-  { title: "Image upload failure", seen: "Last seen: 3d ago", count: "4x" },
-  { title: "Mobile menu navigation", seen: "Last seen: 5d ago", count: "3x" },
-];
-
-function severityClass(severity: string) {
-  if (severity === "Critical") return "bg-red-500/15 text-red-300 border-red-500/25";
-  if (severity === "High") return "bg-orange-500/15 text-orange-300 border-orange-500/25";
-  return "bg-yellow-500/15 text-yellow-300 border-yellow-500/25";
-}
+const chartTooltipStyle = {
+  background: "#111119",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: "16px",
+  color: "#ffffff",
+  boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+};
 
 export default function AnalyticsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
         title="Analytics & Insights"
-        description="Track bug trends, resolution metrics, AI accuracy, and team performance."
-        badge="Updated weekly"
+        description="Track bug trends, resolution metrics, and team performance"
+        badge="Product health"
       />
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
-                <Clock3 className="size-5 text-emerald-300" />
-              </div>
-              <span className="flex items-center gap-1 text-xs font-medium text-emerald-300">
-                <TrendingDown className="size-3" />
-                -15%
-              </span>
-            </div>
-            <p className="mt-6 text-3xl font-bold">12.4h</p>
-            <p className="mt-1 text-sm text-muted-foreground">Avg Resolution Time</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
-                <CheckCircle2 className="size-5 text-emerald-300" />
-              </div>
-              <span className="flex items-center gap-1 text-xs font-medium text-red-300">
-                <TrendingUp className="size-3" />
-                +12%
-              </span>
-            </div>
-            <p className="mt-6 text-3xl font-bold">89</p>
-            <p className="mt-1 text-sm text-muted-foreground">Bugs Resolved / Week</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
-                <AlertTriangle className="size-5 text-red-300" />
-              </div>
-              <span className="flex items-center gap-1 text-xs font-medium text-red-300">
-                <TrendingUp className="size-3" />
-                +2%
-              </span>
-            </div>
-            <p className="mt-6 text-3xl font-bold">7.4%</p>
-            <p className="mt-1 text-sm text-muted-foreground">Critical Bug Rate</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
-                <Crosshair className="size-5 text-violet-300" />
-              </div>
-              <span className="flex items-center gap-1 text-xs font-medium text-red-300">
-                <TrendingUp className="size-3" />
-                +3%
-              </span>
-            </div>
-            <p className="mt-6 text-3xl font-bold">92%</p>
-            <p className="mt-1 text-sm text-muted-foreground">AI Accuracy</p>
-          </CardContent>
-        </Card>
+        {analyticsMetrics.map((metric) => (
+          <AnalyticsMetricCard
+            key={metric.label}
+            icon={metricIcons[metric.icon]}
+            trendIcon={metricTrendIcons[metric.trendDirection]}
+            label={metric.label}
+            value={metric.value}
+            helper={metric.helper}
+            trend={metric.trend}
+            trendTone={metric.trendTone}
+            accent={metric.accent}
+          />
+        ))}
       </section>
 
       <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-        <CardHeader>
-          <CardTitle>Bug Reports Over Time</CardTitle>
+        <CardHeader className="pb-0">
+          <div>
+            <CardTitle className="text-lg">Bug Reports Over Time</CardTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Weekly report volume across submitted and AI-triaged bugs.
+            </p>
+          </div>
         </CardHeader>
-        <CardContent className="h-[330px]">
+
+        <CardContent className="h-[350px] p-6">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={reportData}>
+            <AreaChart data={bugReportsOverTimeData}>
               <defs>
-                <linearGradient id="bugGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.6} />
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.02} />
+                <linearGradient id="bugReportsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.58} />
+                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.03} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{
-                  background: "#111119",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "14px",
-                  color: "#fff",
-                }}
+
+              <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+
+              <XAxis
+                dataKey="date"
+                stroke="#9ca3af"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
               />
+
+              <YAxis
+                stroke="#9ca3af"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+
+              <Tooltip
+                cursor={{ stroke: "rgba(139,92,246,0.4)", strokeWidth: 1 }}
+                contentStyle={chartTooltipStyle}
+                itemStyle={{ color: "#ffffff" }}
+              />
+
               <Area
                 type="monotone"
-                dataKey="bugs"
+                dataKey="reports"
                 stroke="#8b5cf6"
-                strokeWidth={2}
-                fill="url(#bugGradient)"
+                strokeWidth={3}
+                fill="url(#bugReportsGradient)"
+                activeDot={{ r: 6, fill: "#8b5cf6" }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -188,14 +141,28 @@ export default function AnalyticsPage() {
 
       <section className="grid gap-6 xl:grid-cols-2">
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardHeader>
-            <CardTitle>Bugs by Category</CardTitle>
+          <CardHeader className="pb-0">
+            <div>
+              <CardTitle className="text-lg">Bugs by Category</CardTitle>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Where issues are concentrated across product areas.
+              </p>
+            </div>
           </CardHeader>
-          <CardContent className="h-[320px]">
+
+          <CardContent className="h-[340px] p-6">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={categoryData} layout="vertical">
+              <BarChart data={bugsByCategoryData} layout="vertical">
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" horizontal={false} />
-                <XAxis type="number" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+
+                <XAxis
+                  type="number"
+                  stroke="#9ca3af"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+
                 <YAxis
                   dataKey="category"
                   type="category"
@@ -203,46 +170,69 @@ export default function AnalyticsPage() {
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
-                  width={92}
+                  width={96}
                 />
+
                 <Tooltip
-                  contentStyle={{
-                    background: "#111119",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: "14px",
-                    color: "#fff",
-                  }}
+                  cursor={{ fill: "rgba(139,92,246,0.08)" }}
+                  contentStyle={chartTooltipStyle}
+                  itemStyle={{ color: "#ffffff" }}
                 />
-                <Bar dataKey="bugs" fill="#8b5cf6" radius={[0, 10, 10, 0]} />
+
+                <Bar
+                  dataKey="bugs"
+                  fill="#8b5cf6"
+                  radius={[0, 12, 12, 0]}
+                  maxBarSize={34}
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardHeader>
-            <CardTitle>Average Resolution Time</CardTitle>
+          <CardHeader className="pb-0">
+            <div>
+              <CardTitle className="text-lg">Average Resolution Time</CardTitle>
+              <p className="mt-2 text-sm text-muted-foreground">
+                How fast the team closes bugs week over week.
+              </p>
+            </div>
           </CardHeader>
-          <CardContent className="h-[320px]">
+
+          <CardContent className="h-[340px] p-6">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={resolutionData}>
+              <LineChart data={averageResolutionTimeData}>
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="week" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#111119",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: "14px",
-                    color: "#fff",
-                  }}
+
+                <XAxis
+                  dataKey="week"
+                  stroke="#9ca3af"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
                 />
+
+                <YAxis
+                  stroke="#9ca3af"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+
+                <Tooltip
+                  cursor={{ stroke: "rgba(16,185,129,0.35)", strokeWidth: 1 }}
+                  contentStyle={chartTooltipStyle}
+                  itemStyle={{ color: "#ffffff" }}
+                />
+
                 <Line
                   type="monotone"
                   dataKey="hours"
                   stroke="#10b981"
                   strokeWidth={3}
-                  dot={{ r: 4, fill: "#10b981" }}
+                  dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: "#10b981" }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -250,83 +240,12 @@ export default function AnalyticsPage() {
         </Card>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardHeader>
-            <CardTitle>Top Affected Pages</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {affectedPages.map((item, index) => (
-              <div key={item.page} className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex size-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-xs text-muted-foreground">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-mono text-sm font-semibold text-violet-300">{item.page}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{item.count}</p>
-                  </div>
-                </div>
-                <Badge className={severityClass(item.severity)}>{item.severity}</Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardHeader>
-            <CardTitle>Repeated Issue Patterns</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {repeatedPatterns.map((pattern) => (
-              <div
-                key={pattern.title}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4"
-              >
-                <div>
-                  <p className="font-semibold">{pattern.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{pattern.seen}</p>
-                </div>
-                <Badge className="border-orange-500/25 bg-orange-500/15 text-orange-300">
-                  {pattern.count}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <TopAffectedPages pages={topAffectedPages} />
+        <RepeatedPatterns patterns={repeatedIssuePatterns} />
       </section>
 
-      <Card className="rounded-3xl border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent shadow-xl shadow-black/20">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <Sparkles className="size-5 text-violet-300" />
-            <CardTitle>AI Insights for This Week</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-xs text-muted-foreground">Focus Area</p>
-            <p className="mt-2 font-semibold">Payment & Checkout Flow</p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              23% of critical bugs are in payment, highest impact to revenue.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-xs text-muted-foreground">Browser Priority</p>
-            <p className="mt-2 font-semibold">Safari iOS Compatibility</p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Similar Safari-specific issues suggest broader compatibility review.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-xs text-muted-foreground">Team Velocity</p>
-            <p className="mt-2 font-semibold text-emerald-300">+15% Improvement</p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Resolution time decreased this week, team performance improving.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <WeeklyInsights insights={weeklyInsights} />
     </div>
   );
 }

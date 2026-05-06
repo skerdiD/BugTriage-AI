@@ -98,6 +98,54 @@ export type Ticket = {
   activity: TicketActivity[];
 };
 
+export type AnalyticsMetric = {
+  icon: "clock" | "resolved" | "critical" | "accuracy";
+  label: string;
+  value: string;
+  helper: string;
+  trend: string;
+  trendDirection: "up" | "down";
+  trendTone: "positive" | "negative" | "warning";
+  accent: "violet" | "green" | "red" | "blue";
+};
+
+export type BugReportsOverTimeItem = {
+  date: string;
+  reports: number;
+};
+
+export type BugsByCategoryItem = {
+  category: string;
+  bugs: number;
+};
+
+export type AverageResolutionTimeItem = {
+  week: string;
+  hours: number;
+};
+
+export type TopAffectedPage = {
+  path: string;
+  bugCount: number;
+  severity: TicketSeverity;
+};
+
+export type RepeatedIssuePattern = {
+  name: string;
+  lastSeen: string;
+  count: number;
+  category: string;
+  severity: TicketSeverity;
+};
+
+export type WeeklyInsight = {
+  type: "focus" | "browser" | "velocity";
+  label: string;
+  title: string;
+  description: string;
+  recommendation: string;
+};
+
 export const dashboardStats: DashboardStat[] = [
   {
     icon: "bugs",
@@ -237,6 +285,219 @@ export const highPriorityQueue: PriorityQueueItem[] = [
     id: "BUG-2844",
     title: "Email delays",
     severity: "High",
+  },
+];
+
+export const analyticsMetrics: AnalyticsMetric[] = [
+  {
+    icon: "clock",
+    label: "Avg Resolution Time",
+    value: "12.4h",
+    helper: "Median time from triage to fixed.",
+    trend: "-15%",
+    trendDirection: "down",
+    trendTone: "positive",
+    accent: "green",
+  },
+  {
+    icon: "resolved",
+    label: "Bugs Resolved/Week",
+    value: "89",
+    helper: "Closed or fixed in the last 7 days.",
+    trend: "+15%",
+    trendDirection: "up",
+    trendTone: "positive",
+    accent: "violet",
+  },
+  {
+    icon: "critical",
+    label: "Critical Bug Rate",
+    value: "7.4%",
+    helper: "Critical bugs as share of total reports.",
+    trend: "+2%",
+    trendDirection: "up",
+    trendTone: "negative",
+    accent: "red",
+  },
+  {
+    icon: "accuracy",
+    label: "AI Accuracy",
+    value: "92%",
+    helper: "Team-approved AI triage accuracy.",
+    trend: "+3%",
+    trendDirection: "up",
+    trendTone: "positive",
+    accent: "blue",
+  },
+];
+
+export const bugReportsOverTimeData: BugReportsOverTimeItem[] = [
+  {
+    date: "Apr 1",
+    reports: 18,
+  },
+  {
+    date: "Apr 8",
+    reports: 24,
+  },
+  {
+    date: "Apr 15",
+    reports: 29,
+  },
+  {
+    date: "Apr 22",
+    reports: 22,
+  },
+  {
+    date: "Apr 29",
+    reports: 35,
+  },
+  {
+    date: "May 6",
+    reports: 37,
+  },
+];
+
+export const bugsByCategoryData: BugsByCategoryItem[] = [
+  {
+    category: "UI/UX",
+    bugs: 136,
+  },
+  {
+    category: "Backend",
+    bugs: 93,
+  },
+  {
+    category: "Payment",
+    bugs: 88,
+  },
+  {
+    category: "Performance",
+    bugs: 57,
+  },
+  {
+    category: "API",
+    bugs: 42,
+  },
+  {
+    category: "Search",
+    bugs: 38,
+  },
+];
+
+export const averageResolutionTimeData: AverageResolutionTimeItem[] = [
+  {
+    week: "W1",
+    hours: 18.7,
+  },
+  {
+    week: "W2",
+    hours: 16.2,
+  },
+  {
+    week: "W3",
+    hours: 14.8,
+  },
+  {
+    week: "W4",
+    hours: 15.3,
+  },
+  {
+    week: "W5",
+    hours: 13.1,
+  },
+  {
+    week: "W6",
+    hours: 12.4,
+  },
+];
+
+export const topAffectedPages: TopAffectedPage[] = [
+  {
+    path: "/checkout/payment",
+    bugCount: 23,
+    severity: "Critical",
+  },
+  {
+    path: "/dashboard",
+    bugCount: 18,
+    severity: "High",
+  },
+  {
+    path: "/profile/settings",
+    bugCount: 15,
+    severity: "Medium",
+  },
+  {
+    path: "/search",
+    bugCount: 12,
+    severity: "Medium",
+  },
+  {
+    path: "/api/v1/users",
+    bugCount: 9,
+    severity: "High",
+  },
+];
+
+export const repeatedIssuePatterns: RepeatedIssuePattern[] = [
+  {
+    name: "Safari payment validation lock",
+    lastSeen: "2 hours ago",
+    count: 7,
+    category: "Payment",
+    severity: "Critical",
+  },
+  {
+    name: "EU analytics API timeout",
+    lastSeen: "1 day ago",
+    count: 5,
+    category: "Performance",
+    severity: "High",
+  },
+  {
+    name: "Image upload validation mismatch",
+    lastSeen: "3 days ago",
+    count: 4,
+    category: "UI/UX",
+    severity: "Medium",
+  },
+  {
+    name: "Mobile drawer state persistence",
+    lastSeen: "5 days ago",
+    count: 3,
+    category: "Navigation",
+    severity: "Medium",
+  },
+];
+
+export const weeklyInsights: WeeklyInsight[] = [
+  {
+    type: "focus",
+    label: "Focus Area",
+    title: "Payment & Checkout Flow",
+    description:
+      "23% of critical issues are connected to checkout, payment validation, or revenue-impacting user flows.",
+    recommendation:
+      "Prioritize payment form regression tests and Safari-specific checkout validation this week.",
+  },
+  {
+    type: "browser",
+    label: "Browser Priority",
+    title: "Safari iOS Compatibility",
+    description:
+      "Several high-impact reports mention Safari iOS behavior differences around forms and navigation state.",
+    recommendation:
+      "Create a Safari iOS QA checklist for payment, upload, navigation, and form-heavy screens.",
+  },
+  {
+    type: "velocity",
+    label: "Team Velocity",
+    title: "+15% Resolution Improvement",
+    description:
+      "Resolution time is trending down while weekly fixes are increasing, which suggests triage quality is improving.",
+    recommendation:
+      "Keep AI-assisted prioritization active and review repeated patterns before starting new feature work.",
   },
 ];
 
