@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   LayoutDashboard,
+  LogOut,
   Settings,
   Ticket,
   UploadCloud,
@@ -12,6 +14,9 @@ import {
   Zap,
 } from "lucide-react";
 
+import type { DashboardUser } from "@/components/dashboard/dashboard-shell";
+import { Button } from "@/components/ui/button";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -48,12 +53,28 @@ const navItems = [
 ];
 
 type AppSidebarProps = {
+  user: DashboardUser;
   className?: string;
   isMobile?: boolean;
 };
 
-export function AppSidebar({ className, isMobile = false }: AppSidebarProps) {
+export function AppSidebar({ user, className, isMobile = false }: AppSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
 
   return (
     <aside
@@ -70,7 +91,9 @@ export function AppSidebar({ className, isMobile = false }: AppSidebarProps) {
           </div>
 
           <div>
-            <p className="text-2xl font-bold tracking-tight text-white">BugTriage AI</p>
+            <p className="text-2xl font-bold tracking-tight text-white">
+              BugTriage AI
+            </p>
             <p className="text-sm text-muted-foreground">Engineering Command</p>
           </div>
         </Link>
@@ -97,7 +120,9 @@ export function AppSidebar({ className, isMobile = false }: AppSidebarProps) {
               <item.icon
                 className={cn(
                   "size-5 transition",
-                  isActive ? "text-white" : "text-muted-foreground group-hover:text-white"
+                  isActive
+                    ? "text-white"
+                    : "text-muted-foreground group-hover:text-white"
                 )}
               />
               <span>{item.title}</span>
@@ -106,14 +131,27 @@ export function AppSidebar({ className, isMobile = false }: AppSidebarProps) {
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-5">
+      <div className="space-y-3 border-t border-white/10 p-5">
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-          <div className="size-11 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 shadow-lg shadow-sky-500/20" />
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-sm font-bold text-white shadow-lg shadow-sky-500/20">
+            {user.initials}
+          </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">Sarah Chen</p>
-            <p className="truncate text-xs text-muted-foreground">Engineering Lead</p>
+            <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
           </div>
         </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="h-11 w-full rounded-2xl border-white/10 bg-white/[0.035] text-muted-foreground hover:bg-red-500/10 hover:text-red-200"
+        >
+          <LogOut className="mr-2 size-4" />
+          {isLoggingOut ? "Logging out..." : "Logout"}
+        </Button>
       </div>
     </aside>
   );

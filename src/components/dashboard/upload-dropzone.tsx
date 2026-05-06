@@ -1,9 +1,10 @@
 "use client";
 
 import type { ComponentType } from "react";
-import type { Accept } from "react-dropzone";
+import { useState } from "react";
+import type { Accept, FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
-import { CheckCircle2, File, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, File, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,24 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function getRejectionMessage(rejection: FileRejection) {
+  const firstError = rejection.errors[0];
+
+  if (!firstError) {
+    return `${rejection.file.name} could not be added.`;
+  }
+
+  if (firstError.code === "file-too-large") {
+    return `${rejection.file.name} is too large. Max size is 10MB.`;
+  }
+
+  if (firstError.code === "file-invalid-type") {
+    return `${rejection.file.name} has an unsupported file type.`;
+  }
+
+  return firstError.message;
+}
+
 export function UploadDropzone({
   title,
   description,
@@ -33,12 +52,21 @@ export function UploadDropzone({
   files,
   onFilesChange,
 }: UploadDropzoneProps) {
+  const [rejectionMessage, setRejectionMessage] = useState("");
+
   const { getRootProps, getInputProps, isDragActive, isFocused } = useDropzone({
     accept,
     maxFiles: 3,
     maxSize: 10 * 1024 * 1024,
     onDrop: (acceptedFiles) => {
-      onFilesChange([...files, ...acceptedFiles].slice(0, 3));
+      setRejectionMessage("");
+
+      if (acceptedFiles.length > 0) {
+        onFilesChange([...files, ...acceptedFiles].slice(0, 3));
+      }
+    },
+    onDropRejected: (fileRejections) => {
+      setRejectionMessage(getRejectionMessage(fileRejections[0]));
     },
   });
 
@@ -70,6 +98,13 @@ export function UploadDropzone({
         </p>
         <p className="mt-1 text-xs text-muted-foreground">{helperText}</p>
       </div>
+
+      {rejectionMessage ? (
+        <div className="flex gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-200">
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+          <p>{rejectionMessage}</p>
+        </div>
+      ) : null}
 
       {files.length > 0 ? (
         <div className="space-y-2">

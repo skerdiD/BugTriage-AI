@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  AlertCircle,
   AlertTriangle,
   CheckCircle2,
   ChevronRight,
@@ -46,6 +47,12 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import {
+  type UploadedTicketFile,
+  uploadLogFile,
+  uploadScreenshotFile,
+} from "@/lib/supabase/storage";
 
 const bugFormSchema = z.object({
   title: z
@@ -182,9 +189,17 @@ function severityBadgeClass(severity: MockedAiAnalysis["severity"]) {
   return "border-sky-500/25 bg-sky-500/15 text-sky-300";
 }
 
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function SubmitBugPage() {
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [logFiles, setLogFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedTicketFile[]>([]);
+  const [submitError, setSubmitError] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<MockedAiAnalysis | null>(null);
 
@@ -200,14 +215,67 @@ export default function SubmitBugPage() {
     return 0;
   }, [analysis, isAnalyzing]);
 
-  function onSubmit(values: BugFormValues) {
+  async function onSubmit(values: BugFormValues) {
     setIsAnalyzing(true);
     setAnalysis(null);
+    setSubmitError("");
+    setUploadedFiles([]);
 
-    window.setTimeout(() => {
+    try {
+      const supabase = createBrowserSupabaseClient();
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("You must be signed in before uploading bug attachments.");
+      }
+
+      const ticketCode = `DRAFT-${Date.now()}`;
+      const workspaceId = "demo-workspace";
+
+      const screenshotUploads = await Promise.all(
+        screenshotFiles.map((file) =>
+          uploadScreenshotFile({
+            supabase,
+            file,
+            userId: user.id,
+            workspaceId,
+            ticketCode,
+          })
+        )
+      );
+
+      const logUploads = await Promise.all(
+        logFiles.map((file) =>
+          uploadLogFile({
+            supabase,
+            file,
+            userId: user.id,
+            workspaceId,
+            ticketCode,
+          })
+        )
+      );
+
+      const uploadResults = [...screenshotUploads, ...logUploads];
+
+      setUploadedFiles(uploadResults);
+
+      await new Promise((resolve) => window.setTimeout(resolve, 1200));
+
       setAnalysis(buildMockedAnalysis(values));
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while submitting this bug report."
+      );
+    } finally {
       setIsAnalyzing(false);
-    }, 1400);
+    }
   }
 
   return (
@@ -454,7 +522,7 @@ export default function SubmitBugPage() {
                   <UploadDropzone
                     title="Console Logs"
                     description="Drop log file here or click to upload"
-                    helperText="TXT, LOG files"
+                    helperText="TXT, LOG, JSON up to 10MB"
                     icon={FileText}
                     accept={{
                       "text/plain": [".txt", ".log"],
@@ -486,6 +554,40 @@ export default function SubmitBugPage() {
                   )}
                 />
 
+                {submitError ? (
+                  <div className="flex gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                    <p>{submitError}</p>
+                  </div>
+                ) : null}
+
+                {uploadedFiles.length > 0 ? (
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="size-4 text-emerald-300" />
+                      <p className="text-sm font-semibold text-emerald-200">
+                        Private upload complete
+                      </p>
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      {uploadedFiles.map((file) => (
+                        <div
+                          key={file.storagePath}
+                          className="rounded-xl border border-white/10 bg-black/20 px-3 py-2"
+                        >
+                          <p className="truncate text-xs font-medium text-white">
+                            {file.fileName}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {file.attachmentType} • {formatFileSize(file.fileSize)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <Button
                   type="submit"
                   disabled={isAnalyzing}
@@ -494,7 +596,7 @@ export default function SubmitBugPage() {
                   {isAnalyzing ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Analyzing bug report...
+                      Uploading and analyzing...
                     </>
                   ) : (
                     <>
@@ -554,10 +656,10 @@ export default function SubmitBugPage() {
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="size-4 text-orange-300" />
-                  <p className="text-sm font-semibold">No real AI connected yet</p>
+                  <p className="text-sm font-semibold">Private uploads enabled</p>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  This page currently simulates the AI analysis flow with mock output.
+                  Files upload to Supabase Storage on submit. AI and database saving are still mocked.
                 </p>
               </div>
             </CardContent>

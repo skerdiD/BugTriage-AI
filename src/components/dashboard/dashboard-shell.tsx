@@ -12,10 +12,22 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export type DashboardUser = {
+  id: string;
+  name: string;
+  email: string;
+  initials: string;
+};
+
+type DashboardShellProps = {
+  children: React.ReactNode;
+  user: DashboardUser;
+};
+
+export function DashboardShell({ children, user }: DashboardShellProps) {
   return (
     <div className="min-h-screen">
-      <AppSidebar className="hidden lg:flex" />
+      <AppSidebar user={user} className="hidden lg:flex" />
 
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#08080d]/90 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/dashboard" className="flex items-center gap-3">
@@ -24,7 +36,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
           <div>
             <p className="font-bold leading-none">BugTriage AI</p>
-            <p className="mt-1 text-xs text-muted-foreground">Engineering Command</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Engineering Command
+            </p>
           </div>
         </Link>
 
@@ -40,7 +54,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </SheetTrigger>
           <SheetContent side="left" className="w-80 border-white/10 bg-[#101017] p-0">
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <AppSidebar isMobile />
+            <AppSidebar user={user} isMobile />
           </SheetContent>
         </Sheet>
       </header>
