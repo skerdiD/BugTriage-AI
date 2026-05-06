@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
-  ChevronRight,
   FileText,
   ImageIcon,
   Loader2,
@@ -14,9 +13,10 @@ import {
   UploadCloud,
   WandSparkles,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 
+import { analyzeAndCreateTicketAction } from "@/app/(dashboard)/submit-bug/actions";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { UploadDropzone } from "@/components/dashboard/upload-dropzone";
 import { Badge } from "@/components/ui/badge";
@@ -47,235 +47,88 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import {
-  type UploadedTicketFile,
-  uploadLogFile,
-  uploadScreenshotFile,
-} from "@/lib/supabase/storage";
-
-const bugFormSchema = z.object({
-  title: z
-    .string()
-    .min(5, "Bug title must be at least 5 characters.")
-    .max(120, "Bug title must be less than 120 characters."),
-  description: z
-    .string()
-    .min(20, "Description must be at least 20 characters.")
-    .max(1200, "Description must be less than 1200 characters."),
-  stepsToReproduce: z
-    .string()
-    .min(10, "Add at least one clear reproduction step.")
-    .max(1000, "Steps must be less than 1000 characters."),
-  expectedBehavior: z
-    .string()
-    .min(8, "Expected behavior must be at least 8 characters.")
-    .max(600, "Expected behavior must be less than 600 characters."),
-  actualBehavior: z
-    .string()
-    .min(8, "Actual behavior must be at least 8 characters.")
-    .max(600, "Actual behavior must be less than 600 characters."),
-  browser: z.string().min(1, "Select a browser."),
-  device: z.string().min(1, "Select a device."),
-  environment: z.string().min(1, "Select an environment."),
-  affectedPage: z
-    .string()
-    .min(2, "Affected page or component is required.")
-    .max(160, "Affected page must be less than 160 characters."),
-  consoleLogs: z
-    .string()
-    .max(2500, "Console logs must be less than 2500 characters.")
-    .optional(),
-});
-
-type BugFormValues = z.infer<typeof bugFormSchema>;
-
-type MockedAiAnalysis = {
-  summary: string;
-  severity: "Critical" | "High" | "Medium" | "Low";
-  category: string;
-  reproductionSteps: string[];
-  possibleRootCause: string;
-  suggestedFix: string;
-  priorityScore: number;
-  confidenceScore: number;
-};
+  bugReportFormSchema,
+  defaultBugReportValues,
+  type BugReportFormValues,
+} from "@/lib/validation/bug-report";
 
 const aiPreviewItems = [
-  {
-    title: "AI Summary",
-    description: "Clear, concise description of the issue",
-  },
-  {
-    title: "Severity Level",
-    description: "Critical, High, Medium, or Low",
-  },
-  {
-    title: "Category",
-    description: "Component or feature area affected",
-  },
-  {
-    title: "Reproduction Steps",
-    description: "Cleaned and structured steps",
-  },
-  {
-    title: "Possible Root Cause",
-    description: "Technical analysis of what might be wrong",
-  },
-  {
-    title: "Suggested Fix",
-    description: "Recommended solution approach",
-  },
-  {
-    title: "Priority Score",
-    description: "0 to 100 based on impact and urgency",
-  },
-  {
-    title: "Confidence Score",
-    description: "AI confidence in the analysis",
-  },
+  "AI Summary",
+  "Severity Level",
+  "Category",
+  "Reproduction Steps",
+  "Possible Root Cause",
+  "Suggested Fix",
+  "Priority Score",
+  "Confidence Score",
 ];
 
-const defaultValues: BugFormValues = {
-  title: "Payment form fails on Safari mobile",
-  description:
-    "User reported that when trying to complete checkout on Safari iOS, the payment form becomes unresponsive after entering card details. Submit button appears disabled even with valid input.",
-  stepsToReproduce:
-    "1. Navigate to /checkout on Safari iOS\n2. Fill in shipping information\n3. Enter credit card details\n4. Try to submit payment",
-  expectedBehavior:
-    "Payment form should submit successfully and process the transaction.",
-  actualBehavior:
-    "Submit button remains disabled and the checkout page becomes unresponsive.",
-  browser: "safari",
-  device: "ios-mobile",
-  environment: "production",
-  affectedPage: "/checkout/payment",
-  consoleLogs:
-    "TypeError: Cannot read properties of undefined reading paymentIntent\nat PaymentForm.submitPayment",
-};
-
-function buildMockedAnalysis(values: BugFormValues): MockedAiAnalysis {
-  return {
-    summary:
-      "Users on Safari iOS cannot complete checkout because the payment form becomes unresponsive after valid card details are entered.",
-    severity: "Critical",
-    category: "Payment / Checkout",
-    reproductionSteps: values.stepsToReproduce
-      .split("\n")
-      .map((step) => step.trim())
-      .filter(Boolean),
-    possibleRootCause:
-      "The payment submit state may be blocked by Safari-specific validation behavior or an undefined payment intent response during form submission.",
-    suggestedFix:
-      "Audit the payment form state handling, add defensive checks around the payment intent response, test Safari iOS validation events, and ensure the submit button revalidates after card input changes.",
-    priorityScore: 96,
-    confidenceScore: 94,
-  };
-}
-
-function severityBadgeClass(severity: MockedAiAnalysis["severity"]) {
-  if (severity === "Critical") {
-    return "border-red-500/25 bg-red-500/15 text-red-300";
-  }
-
-  if (severity === "High") {
-    return "border-orange-500/25 bg-orange-500/15 text-orange-300";
-  }
-
-  if (severity === "Medium") {
-    return "border-yellow-500/25 bg-yellow-500/15 text-yellow-300";
-  }
-
-  return "border-sky-500/25 bg-sky-500/15 text-sky-300";
-}
-
-function formatFileSize(size: number) {
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 export default function SubmitBugPage() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [logFiles, setLogFiles] = useState<File[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedTicketFile[]>([]);
   const [submitError, setSubmitError] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<MockedAiAnalysis | null>(null);
+  const [submitWarning, setSubmitWarning] = useState("");
+  const [createdCode, setCreatedCode] = useState("");
 
-  const form = useForm<BugFormValues>({
-    resolver: zodResolver(bugFormSchema),
-    defaultValues,
+  const form = useForm<BugReportFormValues>({
+    resolver: zodResolver(bugReportFormSchema),
+    defaultValues: defaultBugReportValues,
     mode: "onSubmit",
   });
 
-  const analysisProgress = useMemo(() => {
-    if (isAnalyzing) return 68;
-    if (analysis) return 100;
+  const isSubmitting = isPending || form.formState.isSubmitting;
+
+  const progress = useMemo(() => {
+    if (isSubmitting) return 72;
+    if (createdCode) return 100;
     return 0;
-  }, [analysis, isAnalyzing]);
+  }, [createdCode, isSubmitting]);
 
-  async function onSubmit(values: BugFormValues) {
-    setIsAnalyzing(true);
-    setAnalysis(null);
+  function submit(values: BugReportFormValues) {
     setSubmitError("");
-    setUploadedFiles([]);
+    setSubmitWarning("");
+    setCreatedCode("");
 
-    try {
-      const supabase = createBrowserSupabaseClient();
+    const formData = new FormData();
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+    Object.entries(values).forEach(([key, value]) => {
+      formData.append(key, value ?? "");
+    });
 
-      if (userError || !user) {
-        throw new Error("You must be signed in before uploading bug attachments.");
+    screenshotFiles.forEach((file) => {
+      formData.append("screenshots", file);
+    });
+
+    logFiles.forEach((file) => {
+      formData.append("logs", file);
+    });
+
+    startTransition(async () => {
+      const result = await analyzeAndCreateTicketAction(formData);
+
+      if (!result.ok) {
+        setSubmitError(result.error);
+        return;
       }
 
-      const ticketCode = `DRAFT-${Date.now()}`;
-      const workspaceId = "demo-workspace";
+      setCreatedCode(result.ticketCode);
 
-      const screenshotUploads = await Promise.all(
-        screenshotFiles.map((file) =>
-          uploadScreenshotFile({
-            supabase,
-            file,
-            userId: user.id,
-            workspaceId,
-            ticketCode,
-          })
-        )
-      );
+      if (result.aiFailed && result.warning) {
+        setSubmitWarning(result.warning);
 
-      const logUploads = await Promise.all(
-        logFiles.map((file) =>
-          uploadLogFile({
-            supabase,
-            file,
-            userId: user.id,
-            workspaceId,
-            ticketCode,
-          })
-        )
-      );
+        window.setTimeout(() => {
+          router.push(`/tickets/${result.ticketCode}`);
+        }, 1200);
 
-      const uploadResults = [...screenshotUploads, ...logUploads];
+        return;
+      }
 
-      setUploadedFiles(uploadResults);
-
-      await new Promise((resolve) => window.setTimeout(resolve, 1200));
-
-      setAnalysis(buildMockedAnalysis(values));
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while submitting this bug report."
-      );
-    } finally {
-      setIsAnalyzing(false);
-    }
+      router.push(`/tickets/${result.ticketCode}`);
+    });
   }
 
   return (
@@ -283,7 +136,7 @@ export default function SubmitBugPage() {
       <PageHeader
         title="Submit Bug Report"
         description="Provide details about the issue and AI will analyze it for you"
-        badge="AI assisted"
+        badge="Real AI workflow"
       />
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.75fr]">
@@ -296,7 +149,7 @@ export default function SubmitBugPage() {
               <div>
                 <CardTitle>Bug Details</CardTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Add enough context so the AI can generate a useful engineering ticket.
+                  Submit raw bug context, upload private files, and generate a real AI-triaged ticket.
                 </p>
               </div>
             </div>
@@ -304,7 +157,7 @@ export default function SubmitBugPage() {
 
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(submit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="title"
@@ -351,10 +204,7 @@ export default function SubmitBugPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Browser *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">
                               <SelectValue placeholder="Select browser" />
@@ -378,10 +228,7 @@ export default function SubmitBugPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Device *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">
                               <SelectValue placeholder="Select device" />
@@ -390,9 +237,7 @@ export default function SubmitBugPage() {
                           <SelectContent>
                             <SelectItem value="desktop">Desktop</SelectItem>
                             <SelectItem value="ios-mobile">iOS Mobile</SelectItem>
-                            <SelectItem value="android-mobile">
-                              Android Mobile
-                            </SelectItem>
+                            <SelectItem value="android-mobile">Android Mobile</SelectItem>
                             <SelectItem value="tablet">Tablet</SelectItem>
                           </SelectContent>
                         </Select>
@@ -407,10 +252,7 @@ export default function SubmitBugPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Environment *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">
                               <SelectValue placeholder="Select environment" />
@@ -547,7 +389,7 @@ export default function SubmitBugPage() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Optional, but useful for better root cause analysis.
+                        Optional, but useful for better AI root cause analysis.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -561,42 +403,29 @@ export default function SubmitBugPage() {
                   </div>
                 ) : null}
 
-                {uploadedFiles.length > 0 ? (
-                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="size-4 text-emerald-300" />
-                      <p className="text-sm font-semibold text-emerald-200">
-                        Private upload complete
-                      </p>
-                    </div>
+                {submitWarning ? (
+                  <div className="flex gap-3 rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-4 text-sm text-yellow-100">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                    <p>{submitWarning}</p>
+                  </div>
+                ) : null}
 
-                    <div className="mt-4 space-y-2">
-                      {uploadedFiles.map((file) => (
-                        <div
-                          key={file.storagePath}
-                          className="rounded-xl border border-white/10 bg-black/20 px-3 py-2"
-                        >
-                          <p className="truncate text-xs font-medium text-white">
-                            {file.fileName}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {file.attachmentType} • {formatFileSize(file.fileSize)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                {createdCode ? (
+                  <div className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                    <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+                    <p>Ticket {createdCode} created. Redirecting to ticket detail...</p>
                   </div>
                 ) : null}
 
                 <Button
                   type="submit"
-                  disabled={isAnalyzing}
+                  disabled={isSubmitting}
                   className="h-12 w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 font-semibold shadow-lg shadow-violet-500/20 transition hover:from-violet-500 hover:to-fuchsia-500"
                 >
-                  {isAnalyzing ? (
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Uploading and analyzing...
+                      Uploading, analyzing, and saving...
                     </>
                   ) : (
                     <>
@@ -620,7 +449,7 @@ export default function SubmitBugPage() {
                 <div>
                   <CardTitle>AI Will Generate</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Structured output from messy bug context.
+                    Structured output saved directly to the ticket.
                   </p>
                 </div>
               </div>
@@ -629,12 +458,12 @@ export default function SubmitBugPage() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 {aiPreviewItems.map((item) => (
-                  <div key={item.title} className="flex gap-3">
+                  <div key={item} className="flex gap-3">
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-violet-300" />
                     <div>
-                      <p className="text-sm font-semibold text-white">{item.title}</p>
+                      <p className="text-sm font-semibold text-white">{item}</p>
                       <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                        {item.description}
+                        Validated with Zod before saving.
                       </p>
                     </div>
                   </div>
@@ -645,119 +474,27 @@ export default function SubmitBugPage() {
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium">Analysis progress</span>
+                  <span className="text-sm font-medium">Workflow progress</span>
                   <span className="text-sm font-semibold text-violet-300">
-                    {analysisProgress}%
+                    {progress}%
                   </span>
                 </div>
-                <Progress value={analysisProgress} className="h-2 bg-white/10" />
+                <Progress value={progress} className="h-2 bg-white/10" />
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="size-4 text-orange-300" />
-                  <p className="text-sm font-semibold">Private uploads enabled</p>
+                  <Badge className="border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
+                    Real flow
+                  </Badge>
+                  <p className="text-sm font-semibold">Gemini + Prisma + Supabase</p>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  Files upload to Supabase Storage on submit. AI and database saving are still mocked.
+                  Files are private, AI output is validated, and tickets are saved to Postgres.
                 </p>
               </div>
             </CardContent>
           </Card>
-
-          {analysis ? (
-            <Card className="rounded-3xl border-emerald-500/20 bg-emerald-500/[0.055] shadow-xl shadow-black/20">
-              <CardHeader>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <CardTitle>Mocked AI Analysis</CardTitle>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Preview generated after submission.
-                    </p>
-                  </div>
-                  <Badge className={severityBadgeClass(analysis.severity)}>
-                    {analysis.severity}
-                  </Badge>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-5">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    Summary
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-white">
-                    {analysis.summary}
-                  </p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-muted-foreground">Category</p>
-                    <p className="mt-2 font-semibold">{analysis.category}</p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-muted-foreground">Priority Score</p>
-                    <p className="mt-2 text-2xl font-bold text-red-300">
-                      {analysis.priorityScore}/100
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-muted-foreground">Confidence</p>
-                    <p className="mt-2 text-2xl font-bold text-violet-300">
-                      {analysis.confidenceScore}%
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs text-muted-foreground">Status</p>
-                    <p className="mt-2 font-semibold text-emerald-300">
-                      Ready for review
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    Reproduction Steps
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {analysis.reproductionSteps.map((step) => (
-                      <div
-                        key={step}
-                        className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3"
-                      >
-                        <ChevronRight className="mt-0.5 size-4 shrink-0 text-violet-300" />
-                        <p className="text-sm leading-5 text-muted-foreground">
-                          {step.replace(/^\d+\.\s*/, "")}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    Possible Root Cause
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {analysis.possibleRootCause}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    Suggested Fix
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {analysis.suggestedFix}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : null}
         </aside>
       </section>
     </div>

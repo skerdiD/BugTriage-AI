@@ -81,9 +81,6 @@ export type TicketDetail = Prisma.TicketGetPayload<{
           };
         };
       };
-      orderBy: {
-        createdAt: "desc";
-      };
     };
     activities: {
       include: {
@@ -95,9 +92,6 @@ export type TicketDetail = Prisma.TicketGetPayload<{
             avatarUrl: true;
           };
         };
-      };
-      orderBy: {
-        createdAt: "desc";
       };
     };
   };
@@ -118,7 +112,7 @@ export type CreateTicketInput = {
   projectId: string;
   reporterId?: string;
   assigneeId?: string;
-  code?: string;
+  code: string;
   title: string;
   description: string;
   expectedBehavior?: string;
@@ -131,8 +125,8 @@ export type CreateTicketInput = {
   severity?: TicketSeverity;
   status?: TicketStatus;
   category?: string;
-  priorityScore?: number;
-  aiConfidence?: number;
+  priorityScore?: number | null;
+  aiConfidence?: number | null;
   aiAnalysis?: {
     summary: string;
     likelyCause?: string;
@@ -147,7 +141,7 @@ export type CreateTicketInput = {
     fileType: string;
     fileSize: number;
     storagePath: string;
-    url?: string;
+    url?: string | null;
     attachmentType?: AttachmentType;
   }>;
 };
@@ -158,9 +152,19 @@ export type AddTicketCommentInput = {
   body: string;
 };
 
-function createTicketCode() {
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `BUG-${random}`;
+export async function generateUniqueTicketCode() {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const code = `BUG-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const existing = await prisma.ticket.findUnique({
+      where: { code },
+      select: { id: true },
+    });
+
+    if (!existing) return code;
+  }
+
+  return `BUG-${Date.now().toString().slice(-6)}`;
 }
 
 export async function getTickets(input: GetTicketsInput = {}) {
@@ -323,11 +327,9 @@ export async function getTicketByCode(code: string) {
 }
 
 export async function createTicket(input: CreateTicketInput) {
-  const ticketCode = input.code ?? createTicketCode();
-
   return prisma.ticket.create({
     data: {
-      code: ticketCode,
+      code: input.code,
       workspaceId: input.workspaceId,
       projectId: input.projectId,
       reporterId: input.reporterId,
@@ -376,9 +378,12 @@ export async function createTicket(input: CreateTicketInput) {
           actorId: input.reporterId,
           type: TicketActivityType.CREATED,
           title: "Bug submitted",
-          description: "Ticket created from a submitted bug report.",
+          description: input.aiAnalysis
+            ? "Ticket created after AI triage completed."
+            : "Ticket created from manual report because AI analysis was unavailable.",
           metadata: {
-            code: ticketCode,
+            code: input.code,
+            aiAnalyzed: Boolean(input.aiAnalysis),
           },
         },
       },

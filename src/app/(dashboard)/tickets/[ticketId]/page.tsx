@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 
 import { TicketDetailClient } from "@/components/dashboard/ticket-detail-client";
-import { tickets } from "@/lib/mock-data";
+import { getTicketByCode } from "@/lib/data/tickets";
+import { mapTicketDetailToUiTicket } from "@/lib/data/ticket-mappers";
+import { tickets as mockTickets } from "@/lib/mock-data";
 
 type TicketDetailPageProps = {
   params: Promise<{
@@ -11,11 +13,28 @@ type TicketDetailPageProps = {
 
 export default async function TicketDetailPage({ params }: TicketDetailPageProps) {
   const { ticketId } = await params;
-  const ticket = tickets.find((item) => item.id === ticketId);
 
-  if (!ticket) {
+  try {
+    const dbTicket = await getTicketByCode(ticketId);
+
+    if (dbTicket) {
+      return <TicketDetailClient ticket={mapTicketDetailToUiTicket(dbTicket)} />;
+    }
+  } catch {
+    const fallbackTicket = mockTickets.find((ticket) => ticket.id === ticketId);
+
+    if (fallbackTicket) {
+      return <TicketDetailClient ticket={fallbackTicket} />;
+    }
+
     notFound();
   }
 
-  return <TicketDetailClient ticket={ticket} />;
+  const fallbackTicket = mockTickets.find((ticket) => ticket.id === ticketId);
+
+  if (!fallbackTicket) {
+    notFound();
+  }
+
+  return <TicketDetailClient ticket={fallbackTicket} />;
 }

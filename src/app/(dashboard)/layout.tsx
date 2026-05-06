@@ -8,40 +8,44 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
+    if (!user) {
+      redirect("/login");
+    }
+
+    const displayName =
+      typeof user.user_metadata?.full_name === "string"
+        ? user.user_metadata.full_name
+        : typeof user.user_metadata?.name === "string"
+          ? user.user_metadata.name
+          : user.email?.split("@")[0] ?? "User";
+
+    const initials = displayName
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+    return (
+      <DashboardShell
+        user={{
+          id: user.id,
+          name: displayName,
+          email: user.email ?? "No email",
+          initials,
+        }}
+      >
+        {children}
+      </DashboardShell>
+    );
+  } catch {
     redirect("/login");
   }
-
-  const displayName =
-    typeof user.user_metadata?.full_name === "string"
-      ? user.user_metadata.full_name
-      : typeof user.user_metadata?.name === "string"
-        ? user.user_metadata.name
-        : user.email?.split("@")[0] ?? "User";
-
-  const initials = displayName
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-  return (
-    <DashboardShell
-      user={{
-        id: user.id,
-        name: displayName,
-        email: user.email ?? "No email",
-        initials,
-      }}
-    >
-      {children}
-    </DashboardShell>
-  );
 }
