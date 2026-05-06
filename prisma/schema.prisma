@@ -1,13 +1,220 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum TicketSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketStatus {
+  NEW
+  INVESTIGATING
+  IN_PROGRESS
+  FIXED
+  CLOSED
+}
+
+enum AttachmentType {
+  SCREENSHOT
+  LOG
+  OTHER
+}
+
+enum TicketActivityType {
+  CREATED
+  AI_ANALYZED
+  STATUS_CHANGED
+  ASSIGNED
+  COMMENTED
+  ATTACHMENT_ADDED
+  UPDATED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
+  memberships     WorkspaceMember[]
+  reportedTickets Ticket[]          @relation("ReportedTickets")
+  assignedTickets Ticket[]          @relation("AssignedTickets")
+  comments        TicketComment[]
+  activities      TicketActivity[]
+
+  @@index([email])
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members WorkspaceMember[]
+  projects Project[]
+  tickets  Ticket[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  slug        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tickets   Ticket[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+}
+
+model Ticket {
+  id               String         @id @default(cuid())
+  code             String         @unique
+  workspaceId      String
+  projectId        String
+  reporterId       String?
+  assigneeId       String?
+  title            String
+  description      String         @db.Text
+  expectedBehavior String?        @db.Text
+  actualBehavior   String?        @db.Text
+  stepsToReproduce String?        @db.Text
+  browser          String?
+  device           String?
+  environment      String?
+  affectedPage     String?
+  severity         TicketSeverity @default(MEDIUM)
+  status           TicketStatus   @default(NEW)
+  category         String?
+  priorityScore    Int?
+  aiConfidence     Int?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter    User?              @relation("ReportedTickets", fields: [reporterId], references: [id], onDelete: SetNull)
+  assignee    User?              @relation("AssignedTickets", fields: [assigneeId], references: [id], onDelete: SetNull)
+  aiAnalysis  TicketAiAnalysis?
+  attachments TicketAttachment[]
+  comments    TicketComment[]
+  activities  TicketActivity[]
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([reporterId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model TicketAiAnalysis {
+  id                String   @id @default(cuid())
+  ticketId          String   @unique
+  summary           String   @db.Text
+  likelyCause       String?  @db.Text
+  suggestedFix      String?  @db.Text
+  reproductionSteps Json?
+  tags              Json?
+  confidenceScore   Int?
+  rawAiResponse     Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model TicketAttachment {
+  id             String         @id @default(cuid())
+  ticketId       String
+  filename       String
+  fileType       String
+  fileSize       Int
+  storagePath    String
+  url            String?
+  attachmentType AttachmentType @default(OTHER)
+  createdAt      DateTime       @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([attachmentType])
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  authorId  String?
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User?  @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model TicketActivity {
+  id          String             @id @default(cuid())
+  ticketId    String
+  actorId     String?
+  type        TicketActivityType
+  title       String
+  description String?            @db.Text
+  metadata    Json?
+  createdAt   DateTime           @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actor  User?  @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([actorId])
+  @@index([type])
+  @@index([createdAt])
 }
