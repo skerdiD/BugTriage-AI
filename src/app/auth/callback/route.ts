@@ -5,6 +5,7 @@ import {
   getArcjetDeniedMessage,
   logArcjetError,
 } from "@/lib/security/arcjet";
+import { getSafeRedirectPath } from "@/lib/security/urls";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
 
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") ?? "/dashboard";
+  const next = getSafeRedirectPath(requestUrl.searchParams.get("next"));
 
   if (code) {
     const supabase = await createServerSupabaseClient();

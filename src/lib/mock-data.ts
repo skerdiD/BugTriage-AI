@@ -51,6 +51,7 @@ export type TicketAttachment = {
   format: string;
   uploadedAt: string;
   preview: string;
+  downloadUrl?: string | null;
 };
 
 export type TicketComment = {

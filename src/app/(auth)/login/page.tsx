@@ -23,13 +23,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getSafeRedirectPath } from "@/lib/security/urls";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const redirectedFrom = searchParams.get("redirectedFrom") ?? "/dashboard";
+  const redirectedFrom = getSafeRedirectPath(searchParams.get("redirectedFrom"));
 
   const [email, setEmail] = useState("sarah@bugtriage.ai");
   const [password, setPassword] = useState("");

@@ -8,93 +8,87 @@ import {
 
 import { prisma } from "@/lib/prisma";
 
+const minimalUserSelect = {
+  id: true,
+  name: true,
+} satisfies Prisma.UserSelect;
+
+const ticketListInclude = {
+  assignee: {
+    select: minimalUserSelect,
+  },
+  project: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    },
+  },
+  aiAnalysis: {
+    select: {
+      id: true,
+      summary: true,
+      confidenceScore: true,
+      tags: true,
+    },
+  },
+} satisfies Prisma.TicketInclude;
+
+const ticketDetailInclude = {
+  reporter: {
+    select: minimalUserSelect,
+  },
+  assignee: {
+    select: minimalUserSelect,
+  },
+  workspace: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    },
+  },
+  project: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    },
+  },
+  aiAnalysis: true,
+  attachments: {
+    orderBy: {
+      createdAt: "desc",
+    },
+  },
+  comments: {
+    include: {
+      author: {
+        select: minimalUserSelect,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  },
+  activities: {
+    include: {
+      actor: {
+        select: minimalUserSelect,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  },
+} satisfies Prisma.TicketInclude;
+
 export type TicketListItem = Prisma.TicketGetPayload<{
-  include: {
-    assignee: {
-      select: {
-        id: true;
-        name: true;
-        email: true;
-        avatarUrl: true;
-      };
-    };
-    project: {
-      select: {
-        id: true;
-        name: true;
-        slug: true;
-      };
-    };
-    aiAnalysis: {
-      select: {
-        id: true;
-        summary: true;
-        confidenceScore: true;
-        tags: true;
-      };
-    };
-  };
+  include: typeof ticketListInclude;
 }>;
 
 export type TicketDetail = Prisma.TicketGetPayload<{
-  include: {
-    reporter: {
-      select: {
-        id: true;
-        name: true;
-        email: true;
-        avatarUrl: true;
-      };
-    };
-    assignee: {
-      select: {
-        id: true;
-        name: true;
-        email: true;
-        avatarUrl: true;
-      };
-    };
-    workspace: {
-      select: {
-        id: true;
-        name: true;
-        slug: true;
-      };
-    };
-    project: {
-      select: {
-        id: true;
-        name: true;
-        slug: true;
-      };
-    };
-    aiAnalysis: true;
-    attachments: true;
-    comments: {
-      include: {
-        author: {
-          select: {
-            id: true;
-            name: true;
-            email: true;
-            avatarUrl: true;
-          };
-        };
-      };
-    };
-    activities: {
-      include: {
-        actor: {
-          select: {
-            id: true;
-            name: true;
-            email: true;
-            avatarUrl: true;
-          };
-        };
-      };
-    };
-  };
+  include: typeof ticketDetailInclude;
 }>;
 
 export type GetTicketsInput = {
@@ -147,10 +141,21 @@ export type CreateTicketInput = {
 };
 
 export type AddTicketCommentInput = {
+  workspaceId: string;
   ticketCode: string;
   authorId?: string;
   body: string;
 };
+
+function clampPageSize(take?: number) {
+  const normalized = take ?? 50;
+  return Math.min(Math.max(normalized, 1), 100);
+}
+
+function clampOffset(skip?: number) {
+  const normalized = skip ?? 0;
+  return Math.max(normalized, 0);
+}
 
 export async function generateUniqueTicketCode() {
   for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -217,112 +222,22 @@ export async function getTickets(input: GetTicketsInput = {}) {
 
   return prisma.ticket.findMany({
     where,
-    include: {
-      assignee: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          avatarUrl: true,
-        },
-      },
-      project: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-      },
-      aiAnalysis: {
-        select: {
-          id: true,
-          summary: true,
-          confidenceScore: true,
-          tags: true,
-        },
-      },
-    },
+    include: ticketListInclude,
     orderBy: {
       createdAt: "desc",
     },
-    take,
-    skip,
+    take: clampPageSize(take),
+    skip: clampOffset(skip),
   });
 }
 
-export async function getTicketByCode(code: string) {
-  return prisma.ticket.findUnique({
+export async function getTicketByCode(code: string, workspaceId: string) {
+  return prisma.ticket.findFirst({
     where: {
       code,
+      workspaceId,
     },
-    include: {
-      reporter: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          avatarUrl: true,
-        },
-      },
-      assignee: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          avatarUrl: true,
-        },
-      },
-      workspace: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-      },
-      project: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-      },
-      aiAnalysis: true,
-      attachments: {
-        orderBy: {
-          createdAt: "desc",
-        },
-      },
-      comments: {
-        include: {
-          author: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatarUrl: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      },
-      activities: {
-        include: {
-          actor: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatarUrl: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      },
-    },
+    include: ticketDetailInclude,
   });
 }
 
@@ -388,47 +303,24 @@ export async function createTicket(input: CreateTicketInput) {
         },
       },
     },
-    include: {
-      reporter: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          avatarUrl: true,
-        },
-      },
-      assignee: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          avatarUrl: true,
-        },
-      },
-      project: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-      },
-      aiAnalysis: true,
-      attachments: true,
-      comments: true,
-      activities: true,
+    select: {
+      id: true,
+      code: true,
     },
   });
 }
 
 export async function updateTicketStatus(
   code: string,
+  workspaceId: string,
   status: TicketStatus,
   actorId?: string
 ) {
   return prisma.$transaction(async (tx) => {
-    const existingTicket = await tx.ticket.findUnique({
+    const existingTicket = await tx.ticket.findFirst({
       where: {
         code,
+        workspaceId,
       },
       select: {
         id: true,
@@ -442,19 +334,14 @@ export async function updateTicketStatus(
 
     const updatedTicket = await tx.ticket.update({
       where: {
-        code,
+        id: existingTicket.id,
       },
       data: {
         status,
       },
       include: {
         assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatarUrl: true,
-          },
+          select: minimalUserSelect,
         },
         aiAnalysis: true,
       },
@@ -486,9 +373,10 @@ export async function addTicketComment(input: AddTicketCommentInput) {
   }
 
   return prisma.$transaction(async (tx) => {
-    const ticket = await tx.ticket.findUnique({
+    const ticket = await tx.ticket.findFirst({
       where: {
         code: input.ticketCode,
+        workspaceId: input.workspaceId,
       },
       select: {
         id: true,
@@ -507,12 +395,7 @@ export async function addTicketComment(input: AddTicketCommentInput) {
       },
       include: {
         author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatarUrl: true,
-          },
+          select: minimalUserSelect,
         },
       },
     });

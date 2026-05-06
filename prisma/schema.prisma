@@ -148,6 +148,9 @@ model Ticket {
   @@index([status])
   @@index([severity])
   @@index([createdAt])
+  @@index([workspaceId, status, createdAt])
+  @@index([workspaceId, severity, createdAt])
+  @@index([workspaceId, category])
 }
 
 model TicketAiAnalysis {
@@ -181,6 +184,7 @@ model TicketAttachment {
 
   @@index([ticketId])
   @@index([attachmentType])
+  @@index([ticketId, createdAt])
 }
 
 model TicketComment {
@@ -197,6 +201,7 @@ model TicketComment {
   @@index([ticketId])
   @@index([authorId])
   @@index([createdAt])
+  @@index([ticketId, createdAt])
 }
 
 model TicketActivity {
@@ -216,4 +221,5 @@ model TicketActivity {
   @@index([actorId])
   @@index([type])
   @@index([createdAt])
+  @@index([ticketId, createdAt])
 }

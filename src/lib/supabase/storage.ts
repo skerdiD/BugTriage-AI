@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseStorageBucket } from "@/lib/supabase/env";
 
 export type TicketAttachmentKind = "SCREENSHOT" | "LOG" | "OTHER";
+export const MAX_UPLOAD_FILES_PER_TYPE = 3;
+export const MAX_TICKET_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 export type UploadedTicketFile = {
   bucket: string;
@@ -30,25 +32,45 @@ type UploadTicketFileInput = {
   attachmentType: TicketAttachmentKind;
 };
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
 const screenshotMimeTypes = ["image/png", "image/jpeg", "image/webp"];
 const screenshotExtensions = [".png", ".jpg", ".jpeg", ".webp"];
 
-const logMimeTypes = ["text/plain", "application/json", "application/octet-stream"];
+const logMimeTypes = [
+  "",
+  "text/plain",
+  "application/json",
+  "application/octet-stream",
+];
 const logExtensions = [".txt", ".log", ".json"];
 
 export function getTicketStorageBucket() {
   return getSupabaseStorageBucket();
 }
 
-function sanitizeFileName(fileName: string) {
-  return fileName
+export function sanitizeFileName(fileName: string) {
+  const normalized = fileName
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9._-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
+
+  const safeName = normalized || "file";
+
+  if (safeName.length <= 96) {
+    return safeName;
+  }
+
+  const extensionIndex = safeName.lastIndexOf(".");
+
+  if (extensionIndex <= 0) {
+    return safeName.slice(0, 96);
+  }
+
+  const extension = safeName.slice(extensionIndex);
+  const basename = safeName.slice(0, extensionIndex).slice(0, 96 - extension.length);
+
+  return `${basename}${extension}`;
 }
 
 function hasAllowedExtension(fileName: string, extensions: string[]) {
@@ -60,7 +82,7 @@ export function validateTicketFile(
   file: File,
   attachmentType: TicketAttachmentKind
 ) {
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > MAX_TICKET_FILE_SIZE_BYTES) {
     return {
       valid: false,
       message: "File must be 10MB or smaller.",
@@ -71,7 +93,7 @@ export function validateTicketFile(
     const hasValidMimeType = screenshotMimeTypes.includes(file.type);
     const hasValidExtension = hasAllowedExtension(file.name, screenshotExtensions);
 
-    if (!hasValidMimeType && !hasValidExtension) {
+    if (!hasValidMimeType || !hasValidExtension) {
       return {
         valid: false,
         message: "Screenshot must be PNG, JPG, JPEG, or WEBP.",
@@ -83,7 +105,7 @@ export function validateTicketFile(
     const hasValidMimeType = logMimeTypes.includes(file.type);
     const hasValidExtension = hasAllowedExtension(file.name, logExtensions);
 
-    if (!hasValidMimeType && !hasValidExtension) {
+    if (!hasValidMimeType || !hasValidExtension) {
       return {
         valid: false,
         message: "Log file must be TXT, LOG, or JSON.",
@@ -151,7 +173,7 @@ export async function uploadTicketFile({
 
   return {
     bucket,
-    fileName: file.name,
+    fileName: sanitizeFileName(file.name),
     fileType: file.type || "application/octet-stream",
     fileSize: file.size,
     storagePath,

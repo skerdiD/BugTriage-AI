@@ -4,6 +4,10 @@ import { request as getArcjetRequest } from "@arcjet/next";
 import { AttachmentType, TicketSeverity, TicketStatus } from "@prisma/client";
 
 import {
+  AuthenticationError,
+  getCurrentWorkspaceContextOrThrow,
+} from "@/lib/auth/session";
+import {
   analyzeBugReportWithGemini,
   type BugTriageAiOutput,
 } from "@/lib/ai/bug-triage";
@@ -11,14 +15,15 @@ import {
   createTicket,
   generateUniqueTicketCode,
 } from "@/lib/data/tickets";
-import { ensureUserWorkspace } from "@/lib/data/workspaces";
 import {
   bugSubmissionProtection,
   getArcjetDeniedMessage,
   logArcjetError,
 } from "@/lib/security/arcjet";
+import { getSafeErrorMessage } from "@/lib/security/redaction";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
+  MAX_UPLOAD_FILES_PER_TYPE,
   type UploadedTicketFile,
   uploadLogFile,
   uploadScreenshotFile,
@@ -49,16 +54,6 @@ function getFiles(formData: FormData, key: string) {
     .filter((value): value is File => {
       return typeof value !== "string" && value.size > 0;
     });
-}
-
-function normalizeNameFromUserMetadata(metadata: Record<string, unknown>) {
-  const fullName = metadata.full_name;
-  const name = metadata.name;
-
-  if (typeof fullName === "string" && fullName.trim()) return fullName;
-  if (typeof name === "string" && name.trim()) return name;
-
-  return null;
 }
 
 function mapAiSeverityToDbSeverity(severity?: BugTriageAiOutput["severity"]) {
@@ -125,23 +120,12 @@ export async function analyzeAndCreateTicketAction(
   }
 
   try {
+    const workspaceContext = await getCurrentWorkspaceContextOrThrow();
     const supabase = await createServerSupabaseClient();
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return {
-        ok: false,
-        error: "You must be signed in before creating a bug ticket.",
-      };
-    }
 
     const arcjetRequest = await getArcjetRequest();
     const arcjetDecision = await bugSubmissionProtection.protect(arcjetRequest, {
-      userId: user.id,
+      userId: workspaceContext.user.id,
     });
 
     logArcjetError("submit-bug", arcjetDecision);
@@ -156,14 +140,22 @@ export async function analyzeAndCreateTicketAction(
       };
     }
 
-    const workspaceContext = await ensureUserWorkspace({
-      authUserId: user.id,
-      email: user.email,
-      name: normalizeNameFromUserMetadata(user.user_metadata),
-    });
-
     const screenshotFiles = getFiles(formData, "screenshots");
     const logFiles = getFiles(formData, "logs");
+
+    if (screenshotFiles.length > MAX_UPLOAD_FILES_PER_TYPE) {
+      return {
+        ok: false,
+        error: `You can upload up to ${MAX_UPLOAD_FILES_PER_TYPE} screenshots per ticket.`,
+      };
+    }
+
+    if (logFiles.length > MAX_UPLOAD_FILES_PER_TYPE) {
+      return {
+        ok: false,
+        error: `You can upload up to ${MAX_UPLOAD_FILES_PER_TYPE} log files per ticket.`,
+      };
+    }
 
     const ticketCode = await generateUniqueTicketCode();
 
@@ -172,7 +164,7 @@ export async function analyzeAndCreateTicketAction(
         uploadScreenshotFile({
           supabase,
           file,
-          userId: user.id,
+          userId: workspaceContext.user.id,
           workspaceId: workspaceContext.workspace.id,
           ticketCode,
         })
@@ -184,7 +176,7 @@ export async function analyzeAndCreateTicketAction(
         uploadLogFile({
           supabase,
           file,
-          userId: user.id,
+          userId: workspaceContext.user.id,
           workspaceId: workspaceContext.workspace.id,
           ticketCode,
         })
@@ -264,12 +256,18 @@ export async function analyzeAndCreateTicketAction(
       uploadedFiles,
     };
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return {
+        ok: false,
+        error: "You must be signed in before creating a bug ticket.",
+      };
+    }
+
+    console.error("[submit-bug] failed to create ticket", getSafeErrorMessage(error));
+
     return {
       ok: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while creating the ticket.",
+      error: "We couldn't create the ticket right now. Please try again.",
     };
   }
 }

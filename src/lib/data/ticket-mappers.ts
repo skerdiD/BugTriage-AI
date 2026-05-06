@@ -102,7 +102,10 @@ export function mapTicketListItemToUiTicket(ticket: TicketListItem): UiTicket {
   };
 }
 
-export function mapTicketDetailToUiTicket(ticket: TicketDetail): UiTicket {
+export function mapTicketDetailToUiTicket(
+  ticket: TicketDetail,
+  attachmentDownloadUrls: Record<string, string | null> = {}
+): UiTicket {
   const assigneeName = ticket.assignee?.name ?? "Unassigned";
   const analysisSteps = stringArrayFromJson(ticket.aiAnalysis?.reproductionSteps);
   const tags = stringArrayFromJson(ticket.aiAnalysis?.tags);
@@ -144,6 +147,7 @@ export function mapTicketDetailToUiTicket(ticket: TicketDetail): UiTicket {
         attachment.attachmentType === DbAttachmentType.SCREENSHOT
           ? "Private screenshot stored in Supabase Storage."
           : "Private log file stored in Supabase Storage.",
+      downloadUrl: attachmentDownloadUrls[attachment.id] ?? null,
     })),
     browser: ticket.browser ?? "Unknown",
     device: ticket.device ?? "Unknown",

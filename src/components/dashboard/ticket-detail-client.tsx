@@ -322,9 +322,24 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                         type="button"
                         variant="outline"
                         size="icon"
+                        asChild={Boolean(attachment.downloadUrl)}
+                        disabled={!attachment.downloadUrl}
                         className="rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
                       >
-                        <Download className="size-4" />
+                        {attachment.downloadUrl ? (
+                          <a
+                            href={attachment.downloadUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Download ${attachment.name}`}
+                          >
+                            <Download className="size-4" />
+                          </a>
+                        ) : (
+                          <span aria-hidden="true">
+                            <Download className="size-4" />
+                          </span>
+                        )}
                       </Button>
                     </div>
 

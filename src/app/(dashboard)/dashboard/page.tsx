@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { TicketSeverity, TicketStatus } from "@prisma/client";
 
+import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PriorityQueue } from "@/components/dashboard/priority-queue";
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
@@ -18,20 +19,13 @@ import {
   mapTicketListItemToPriorityQueueItem,
   mapTicketListItemToRecentTicket,
 } from "@/lib/data/ticket-mappers";
-import { ensureUserWorkspace } from "@/lib/data/workspaces";
 import {
-  dashboardStats as mockDashboardStats,
-  highPriorityQueue as mockHighPriorityQueue,
-  recentTickets as mockRecentTickets,
-  severityDistribution as mockSeverityDistribution,
-  trendData as mockTrendData,
   type DashboardStat,
   type PriorityQueueItem,
   type RecentTicket,
   type SeverityDistributionItem,
   type TrendDataItem,
 } from "@/lib/mock-data";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const statIcons = {
   bugs: Bug,
@@ -142,61 +136,31 @@ function buildTrendData(tickets: TicketListItem[]): TrendDataItem[] {
 }
 
 async function loadDashboardData() {
-  try {
-    const supabase = await createServerSupabaseClient();
+  const context = await getCurrentWorkspaceContextOrRedirect();
+  const dbTickets = await getTickets({
+    workspaceId: context.workspace.id,
+    take: 250,
+  });
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const priorityItems: PriorityQueueItem[] = dbTickets
+    .filter(
+      (ticket) =>
+        (ticket.severity === TicketSeverity.CRITICAL ||
+          ticket.severity === TicketSeverity.HIGH) &&
+        ticket.status !== TicketStatus.FIXED &&
+        ticket.status !== TicketStatus.CLOSED
+    )
+    .sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0))
+    .slice(0, 3)
+    .map(mapTicketListItemToPriorityQueueItem);
 
-    if (!user) throw new Error("Not authenticated.");
-
-    const context = await ensureUserWorkspace({
-      authUserId: user.id,
-      email: user.email,
-      name:
-        typeof user.user_metadata?.full_name === "string"
-          ? user.user_metadata.full_name
-          : undefined,
-    });
-
-    const dbTickets = await getTickets({
-      workspaceId: context.workspace.id,
-      take: 500,
-    });
-
-    if (dbTickets.length === 0) {
-      throw new Error("No database tickets yet.");
-    }
-
-    const priorityItems: PriorityQueueItem[] = dbTickets
-      .filter(
-        (ticket) =>
-          (ticket.severity === TicketSeverity.CRITICAL ||
-            ticket.severity === TicketSeverity.HIGH) &&
-          ticket.status !== TicketStatus.FIXED &&
-          ticket.status !== TicketStatus.CLOSED
-      )
-      .sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0))
-      .slice(0, 3)
-      .map(mapTicketListItemToPriorityQueueItem);
-
-    return {
-      stats: buildDashboardStats(dbTickets),
-      severity: buildSeverityData(dbTickets),
-      trend: buildTrendData(dbTickets),
-      recent: dbTickets.slice(0, 4).map(mapTicketListItemToRecentTicket),
-      priority: priorityItems.length > 0 ? priorityItems : mockHighPriorityQueue,
-    };
-  } catch {
-    return {
-      stats: mockDashboardStats,
-      severity: mockSeverityDistribution,
-      trend: mockTrendData,
-      recent: mockRecentTickets as RecentTicket[],
-      priority: mockHighPriorityQueue,
-    };
-  }
+  return {
+    stats: buildDashboardStats(dbTickets),
+    severity: buildSeverityData(dbTickets),
+    trend: buildTrendData(dbTickets),
+    recent: dbTickets.slice(0, 4).map(mapTicketListItemToRecentTicket) as RecentTicket[],
+    priority: priorityItems,
+  };
 }
 
 export default async function DashboardPage() {
