@@ -13,21 +13,14 @@ type TicketDetailPageProps = {
 
 export default async function TicketDetailPage({ params }: TicketDetailPageProps) {
   const { ticketId } = await params;
+  let dbTicket = null;
 
   try {
-    const dbTicket = await getTicketByCode(ticketId);
+    dbTicket = await getTicketByCode(ticketId);
+  } catch {}
 
-    if (dbTicket) {
-      return <TicketDetailClient ticket={mapTicketDetailToUiTicket(dbTicket)} />;
-    }
-  } catch {
-    const fallbackTicket = mockTickets.find((ticket) => ticket.id === ticketId);
-
-    if (fallbackTicket) {
-      return <TicketDetailClient ticket={fallbackTicket} />;
-    }
-
-    notFound();
+  if (dbTicket) {
+    return <TicketDetailClient ticket={mapTicketDetailToUiTicket(dbTicket)} />;
   }
 
   const fallbackTicket = mockTickets.find((ticket) => ticket.id === ticketId);

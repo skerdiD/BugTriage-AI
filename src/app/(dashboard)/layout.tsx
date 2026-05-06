@@ -8,6 +8,13 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  let dashboardUser: {
+    id: string;
+    name: string;
+    email: string;
+    initials: string;
+  };
+
   try {
     const supabase = await createServerSupabaseClient();
 
@@ -33,19 +40,15 @@ export default async function DashboardLayout({
       .slice(0, 2)
       .toUpperCase();
 
-    return (
-      <DashboardShell
-        user={{
-          id: user.id,
-          name: displayName,
-          email: user.email ?? "No email",
-          initials,
-        }}
-      >
-        {children}
-      </DashboardShell>
-    );
+    dashboardUser = {
+      id: user.id,
+      name: displayName,
+      email: user.email ?? "No email",
+      initials,
+    };
   } catch {
     redirect("/login");
   }
+
+  return <DashboardShell user={dashboardUser}>{children}</DashboardShell>;
 }

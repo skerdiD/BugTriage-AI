@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bugTriageAiOutputSchema } from "@/lib/ai/bug-triage";
+import { bugTriageAiOutputSchema } from "@/lib/ai/bug-triage-schema";
 
 describe("bugTriageAiOutputSchema", () => {
   it("accepts a valid AI bug triage response", () => {

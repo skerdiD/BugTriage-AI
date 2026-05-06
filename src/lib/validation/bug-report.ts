@@ -28,11 +28,7 @@ export const bugReportFormSchema = z.object({
     .string()
     .min(2, "Affected page or component is required.")
     .max(180, "Affected page must be less than 180 characters."),
-  consoleLogs: z
-    .string()
-    .max(8000, "Console logs must be less than 8000 characters.")
-    .optional()
-    .default(""),
+  consoleLogs: z.string().max(8000, "Console logs must be less than 8000 characters."),
 });
 
 export type BugReportFormValues = z.infer<typeof bugReportFormSchema>;
