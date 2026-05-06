@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getSupabaseStorageBucket } from "@/lib/supabase/env";
+
 export type TicketAttachmentKind = "SCREENSHOT" | "LOG" | "OTHER";
 
 export type UploadedTicketFile = {
@@ -37,7 +39,7 @@ const logMimeTypes = ["text/plain", "application/json", "application/octet-strea
 const logExtensions = [".txt", ".log", ".json"];
 
 export function getTicketStorageBucket() {
-  return process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? "bugtriage-private";
+  return getSupabaseStorageBucket();
 }
 
 function sanitizeFileName(fileName: string) {

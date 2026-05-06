@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+import {
+  getSupabasePublishableKey,
+  getSupabaseUrl,
+} from "@/lib/supabase/env";
+
 const protectedRoutes = [
   "/dashboard",
   "/submit-bug",
@@ -27,10 +32,13 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  let supabaseUrl: string;
+  let supabaseAnonKey: string;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  try {
+    supabaseUrl = getSupabaseUrl();
+    supabaseAnonKey = getSupabasePublishableKey();
+  } catch {
     return supabaseResponse;
   }
 

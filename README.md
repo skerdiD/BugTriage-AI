@@ -25,6 +25,7 @@ DATABASE_URL="your_supabase_postgres_database_url"
 
 NEXT_PUBLIC_SUPABASE_URL="your_supabase_project_url"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key"
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="optional_if_you_prefer_publishable_key_naming"
 SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
 NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET="bugtriage-private"
 
