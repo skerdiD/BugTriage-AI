@@ -34,6 +34,23 @@ export type PriorityQueueItem = {
   severity: "Critical" | "High";
 };
 
+export type TicketSeverity = "Critical" | "High" | "Medium" | "Low";
+
+export type TicketStatus = "New" | "Investigating" | "In Progress" | "Fixed";
+
+export type Ticket = {
+  id: string;
+  title: string;
+  severity: TicketSeverity;
+  status: TicketStatus;
+  category: string;
+  assignee: string;
+  assigneeInitials: string;
+  assigneeRole: string;
+  createdAt: string;
+  confidence: number;
+};
+
 export const dashboardStats: DashboardStat[] = [
   {
     icon: "bugs",
@@ -173,5 +190,128 @@ export const highPriorityQueue: PriorityQueueItem[] = [
     id: "BUG-2844",
     title: "Email delays",
     severity: "High",
+  },
+];
+
+export const tickets: Ticket[] = [
+  {
+    id: "BUG-2847",
+    title: "Payment form fails on Safari mobile",
+    severity: "Critical",
+    status: "Investigating",
+    category: "Payment",
+    assignee: "Alex Rivera",
+    assigneeInitials: "AR",
+    assigneeRole: "Frontend Engineer",
+    createdAt: "12 min ago",
+    confidence: 94,
+  },
+  {
+    id: "BUG-2846",
+    title: "Dashboard widgets not loading for users in EU region",
+    severity: "High",
+    status: "In Progress",
+    category: "Performance",
+    assignee: "Jordan Lee",
+    assigneeInitials: "JL",
+    assigneeRole: "Backend Engineer",
+    createdAt: "1 hour ago",
+    confidence: 89,
+  },
+  {
+    id: "BUG-2845",
+    title: "Profile image upload shows incorrect file size error",
+    severity: "Medium",
+    status: "New",
+    category: "UI/UX",
+    assignee: "Taylor Morgan",
+    assigneeInitials: "TM",
+    assigneeRole: "Product Engineer",
+    createdAt: "3 hours ago",
+    confidence: 92,
+  },
+  {
+    id: "BUG-2844",
+    title: "Email notifications delayed by 15+ minutes",
+    severity: "High",
+    status: "In Progress",
+    category: "Backend",
+    assignee: "Sam Chen",
+    assigneeInitials: "SC",
+    assigneeRole: "Platform Engineer",
+    createdAt: "5 hours ago",
+    confidence: 87,
+  },
+  {
+    id: "BUG-2843",
+    title: "Search autocomplete returns outdated results",
+    severity: "Medium",
+    status: "New",
+    category: "Search",
+    assignee: "Casey Kim",
+    assigneeInitials: "CK",
+    assigneeRole: "Full-Stack Engineer",
+    createdAt: "1 day ago",
+    confidence: 85,
+  },
+  {
+    id: "BUG-2842",
+    title: "CSV export includes hidden internal columns",
+    severity: "Low",
+    status: "Fixed",
+    category: "Export",
+    assignee: "Riley Park",
+    assigneeInitials: "RP",
+    assigneeRole: "Data Engineer",
+    createdAt: "2 days ago",
+    confidence: 91,
+  },
+  {
+    id: "BUG-2841",
+    title: "Mobile navigation menu does not close after route change",
+    severity: "Medium",
+    status: "Investigating",
+    category: "Navigation",
+    assignee: "Morgan Ellis",
+    assigneeInitials: "ME",
+    assigneeRole: "Frontend Engineer",
+    createdAt: "2 days ago",
+    confidence: 88,
+  },
+  {
+    id: "BUG-2840",
+    title: "API rate limit headers missing from failed requests",
+    severity: "Low",
+    status: "Fixed",
+    category: "API",
+    assignee: "Jamie Foster",
+    assigneeInitials: "JF",
+    assigneeRole: "Backend Engineer",
+    createdAt: "3 days ago",
+    confidence: 93,
+  },
+  {
+    id: "BUG-2839",
+    title: "Team invite link expires before recipient opens email",
+    severity: "Medium",
+    status: "New",
+    category: "Team",
+    assignee: "Priya Shah",
+    assigneeInitials: "PS",
+    assigneeRole: "Product Engineer",
+    createdAt: "4 days ago",
+    confidence: 86,
+  },
+  {
+    id: "BUG-2838",
+    title: "Analytics chart tooltip overlaps with sidebar on small screens",
+    severity: "Low",
+    status: "Fixed",
+    category: "Analytics",
+    assignee: "Nina Brooks",
+    assigneeInitials: "NB",
+    assigneeRole: "UI Engineer",
+    createdAt: "5 days ago",
+    confidence: 90,
   },
 ];
