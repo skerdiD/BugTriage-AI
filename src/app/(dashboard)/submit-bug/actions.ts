@@ -1,5 +1,6 @@
 "use server";
 
+import { request as getArcjetRequest } from "@arcjet/next";
 import { AttachmentType, TicketSeverity, TicketStatus } from "@prisma/client";
 
 import {
@@ -11,6 +12,11 @@ import {
   generateUniqueTicketCode,
 } from "@/lib/data/tickets";
 import { ensureUserWorkspace } from "@/lib/data/workspaces";
+import {
+  bugSubmissionProtection,
+  getArcjetDeniedMessage,
+  logArcjetError,
+} from "@/lib/security/arcjet";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   type UploadedTicketFile,
@@ -130,6 +136,23 @@ export async function analyzeAndCreateTicketAction(
       return {
         ok: false,
         error: "You must be signed in before creating a bug ticket.",
+      };
+    }
+
+    const arcjetRequest = await getArcjetRequest();
+    const arcjetDecision = await bugSubmissionProtection.protect(arcjetRequest, {
+      userId: user.id,
+    });
+
+    logArcjetError("submit-bug", arcjetDecision);
+
+    if (arcjetDecision.isDenied()) {
+      return {
+        ok: false,
+        error: getArcjetDeniedMessage(
+          arcjetDecision,
+          "Bug submission blocked by application security."
+        ),
       };
     }
 

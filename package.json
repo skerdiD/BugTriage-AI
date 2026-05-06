@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "latest",
+    "@arcjet/next": "^1.4.0",
     "@hookform/resolvers": "latest",
     "@prisma/client": "latest",
     "@radix-ui/react-avatar": "latest",
