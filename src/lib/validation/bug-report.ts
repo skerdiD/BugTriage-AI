@@ -1,34 +1,110 @@
 import { z } from "zod";
 
+const CONTROL_CHARACTERS_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
+
+export const supportedBugReportBrowsers = [
+  "chrome",
+  "safari",
+  "firefox",
+  "edge",
+] as const;
+
+export const supportedBugReportDevices = [
+  "desktop",
+  "ios-mobile",
+  "android-mobile",
+  "tablet",
+] as const;
+
+export const supportedBugReportEnvironments = [
+  "production",
+  "staging",
+  "development",
+] as const;
+
+function stripUnsafeControlCharacters(value: string) {
+  return value.replace(CONTROL_CHARACTERS_REGEX, "");
+}
+
+function normalizeSingleLineText(value: string) {
+  return stripUnsafeControlCharacters(value).replace(/\s+/g, " ").trim();
+}
+
+function normalizeMultilineText(value: string) {
+  return stripUnsafeControlCharacters(value)
+    .replace(/\r\n?/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function singleLineField(min: number, max: number, minMessage: string, maxMessage: string) {
+  return z
+    .string()
+    .transform(normalizeSingleLineText)
+    .pipe(z.string().min(min, minMessage).max(max, maxMessage));
+}
+
+function multilineField(min: number, max: number, minMessage: string, maxMessage: string) {
+  return z
+    .string()
+    .transform(normalizeMultilineText)
+    .pipe(z.string().min(min, minMessage).max(max, maxMessage));
+}
+
 export const bugReportFormSchema = z.object({
-  title: z
+  title: singleLineField(
+    5,
+    120,
+    "Bug title must be at least 5 characters.",
+    "Bug title must be less than 120 characters."
+  ),
+  description: multilineField(
+    20,
+    2000,
+    "Description must be at least 20 characters.",
+    "Description must be less than 2000 characters."
+  ),
+  stepsToReproduce: multilineField(
+    10,
+    1500,
+    "Add at least one clear reproduction step.",
+    "Steps must be less than 1500 characters."
+  ),
+  expectedBehavior: multilineField(
+    8,
+    800,
+    "Expected behavior must be at least 8 characters.",
+    "Expected behavior must be less than 800 characters."
+  ),
+  actualBehavior: multilineField(
+    8,
+    800,
+    "Actual behavior must be at least 8 characters.",
+    "Actual behavior must be less than 800 characters."
+  ),
+  browser: z.enum(supportedBugReportBrowsers, {
+    error: () => ({ message: "Select a browser." }),
+  }),
+  device: z.enum(supportedBugReportDevices, {
+    error: () => ({ message: "Select a device." }),
+  }),
+  environment: z.enum(supportedBugReportEnvironments, {
+    error: () => ({ message: "Select an environment." }),
+  }),
+  affectedPage: singleLineField(
+    2,
+    180,
+    "Affected page or component is required.",
+    "Affected page must be less than 180 characters."
+  ),
+  consoleLogs: z
     .string()
-    .min(5, "Bug title must be at least 5 characters.")
-    .max(120, "Bug title must be less than 120 characters."),
-  description: z
-    .string()
-    .min(20, "Description must be at least 20 characters.")
-    .max(2000, "Description must be less than 2000 characters."),
-  stepsToReproduce: z
-    .string()
-    .min(10, "Add at least one clear reproduction step.")
-    .max(1500, "Steps must be less than 1500 characters."),
-  expectedBehavior: z
-    .string()
-    .min(8, "Expected behavior must be at least 8 characters.")
-    .max(800, "Expected behavior must be less than 800 characters."),
-  actualBehavior: z
-    .string()
-    .min(8, "Actual behavior must be at least 8 characters.")
-    .max(800, "Actual behavior must be less than 800 characters."),
-  browser: z.string().min(1, "Select a browser."),
-  device: z.string().min(1, "Select a device."),
-  environment: z.string().min(1, "Select an environment."),
-  affectedPage: z
-    .string()
-    .min(2, "Affected page or component is required.")
-    .max(180, "Affected page must be less than 180 characters."),
-  consoleLogs: z.string().max(8000, "Console logs must be less than 8000 characters."),
+    .transform(normalizeMultilineText)
+    .pipe(
+      z.string().max(8000, "Console logs must be less than 8000 characters.")
+    ),
 });
 
 export type BugReportFormValues = z.infer<typeof bugReportFormSchema>;

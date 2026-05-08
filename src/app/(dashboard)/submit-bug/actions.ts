@@ -9,7 +9,9 @@ import {
 } from "@/lib/auth/session";
 import {
   analyzeBugReportWithGemini,
+  AI_TRIAGE_MAX_LOG_BYTES_PER_FILE,
   type BugTriageAiOutput,
+  getPublicAiTriageFailureMessage,
 } from "@/lib/ai/bug-triage";
 import {
   createTicket,
@@ -82,7 +84,7 @@ function mapAttachmentType(type: UploadedTicketFile["attachmentType"]) {
 async function readLogFiles(files: File[]) {
   const chunks = await Promise.all(
     files.map(async (file) => {
-      const text = await file.text();
+      const text = await file.slice(0, AI_TRIAGE_MAX_LOG_BYTES_PER_FILE).text();
 
       return `
 File: ${file.name}
@@ -197,10 +199,8 @@ export async function analyzeAndCreateTicketAction(
         attachmentNames: uploadedFiles.map((file) => file.fileName),
       });
     } catch (error) {
-      aiErrorMessage =
-        error instanceof Error
-          ? error.message
-          : "AI analysis failed, so the ticket was created manually.";
+      aiErrorMessage = getPublicAiTriageFailureMessage(error);
+      console.warn("[submit-bug] AI triage fallback", getSafeErrorMessage(error));
     }
 
     await createTicket({
@@ -252,7 +252,7 @@ export async function analyzeAndCreateTicketAction(
       aiFailed: !aiOutput,
       warning: aiOutput
         ? undefined
-        : `Ticket was created, but AI analysis failed: ${aiErrorMessage}`,
+        : `Ticket was created, but ${aiErrorMessage}`,
       uploadedFiles,
     };
   } catch (error) {

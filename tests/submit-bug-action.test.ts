@@ -13,6 +13,7 @@ const {
   generateUniqueTicketCodeMock,
   getArcjetDeniedMessageMock,
   getArcjetRequestMock,
+  getPublicAiTriageFailureMessageMock,
   getCurrentWorkspaceContextOrThrowMock,
   logArcjetErrorMock,
   protectMock,
@@ -29,6 +30,7 @@ const {
     generateUniqueTicketCodeMock: vi.fn(),
     getArcjetDeniedMessageMock: vi.fn(),
     getArcjetRequestMock: vi.fn(),
+    getPublicAiTriageFailureMessageMock: vi.fn(),
     getCurrentWorkspaceContextOrThrowMock: vi.fn(),
     logArcjetErrorMock: vi.fn(),
     protectMock: vi.fn(),
@@ -49,7 +51,9 @@ vi.mock("@/lib/auth/session", () => ({
 }));
 
 vi.mock("@/lib/ai/bug-triage", () => ({
+  AI_TRIAGE_MAX_LOG_BYTES_PER_FILE: 8_000,
   analyzeBugReportWithGemini: analyzeBugReportWithGeminiMock,
+  getPublicAiTriageFailureMessage: getPublicAiTriageFailureMessageMock,
 }));
 
 vi.mock("@/lib/data/tickets", () => ({
@@ -140,6 +144,20 @@ describe("analyzeAndCreateTicketAction", () => {
     });
     protectMock.mockResolvedValue(createAllowedDecision());
     generateUniqueTicketCodeMock.mockResolvedValue("BUG-4242");
+    getPublicAiTriageFailureMessageMock.mockImplementation((error: unknown) => {
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : "unknown error";
+
+      if (message.includes("google_generative_ai_api_key")) {
+        return "AI analysis is temporarily unavailable, so the ticket was saved for manual review.";
+      }
+
+      if (message.includes("timeout") || message.includes("timed out")) {
+        return "AI analysis timed out, so the ticket was saved for manual review.";
+      }
+
+      return "AI analysis is temporarily unavailable, so the ticket was saved for manual review.";
+    });
     uploadScreenshotFileMock.mockResolvedValue({
       bucket: "bugtriage-private",
       fileName: "checkout.png",
@@ -253,7 +271,7 @@ describe("analyzeAndCreateTicketAction", () => {
 
   it("falls back to a manual ticket when AI analysis fails", async () => {
     analyzeBugReportWithGeminiMock.mockRejectedValue(
-      new Error("Gemini unavailable")
+      new Error("GOOGLE_GENERATIVE_AI_API_KEY is missing")
     );
 
     const result = await analyzeAndCreateTicketAction(buildValidFormData());
@@ -266,7 +284,9 @@ describe("analyzeAndCreateTicketAction", () => {
     if (!result.ok) {
       throw new Error("Expected the action to succeed with a manual fallback.");
     }
-    expect(result.warning).toContain("Gemini unavailable");
+    expect(result.warning).toBe(
+      "Ticket was created, but AI analysis is temporarily unavailable, so the ticket was saved for manual review."
+    );
     expect(createTicketMock).toHaveBeenCalledWith(
       expect.objectContaining({
         title: defaultBugReportValues.title,
@@ -274,6 +294,26 @@ describe("analyzeAndCreateTicketAction", () => {
         category: "Manual Review",
         aiAnalysis: undefined,
       })
+    );
+  });
+
+  it("uses a timeout-specific fallback message for slow AI calls", async () => {
+    analyzeBugReportWithGeminiMock.mockRejectedValue(
+      new Error("Request timed out after 12000ms")
+    );
+
+    const result = await analyzeAndCreateTicketAction(buildValidFormData());
+
+    expect(result).toMatchObject({
+      ok: true,
+      ticketCode: "BUG-4242",
+      aiFailed: true,
+    });
+    if (!result.ok) {
+      throw new Error("Expected the action to succeed with a manual fallback.");
+    }
+    expect(result.warning).toBe(
+      "Ticket was created, but AI analysis timed out, so the ticket was saved for manual review."
     );
   });
 });
