@@ -1,20 +1,26 @@
 import {
+  Clock3,
   Crown,
   Mail,
-  ShieldCheck,
+  MailPlus,
   Sparkles,
   TicketCheck,
-  UserPlus,
   Users,
 } from "lucide-react";
+import { WorkspaceRole } from "@prisma/client";
 
+import { CopyInviteLinkButton } from "@/components/dashboard/copy-invite-link-button";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { InviteMemberForm } from "@/components/dashboard/invite-member-form";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { RevokeInviteButton } from "@/components/dashboard/revoke-invite-button";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getInvitableWorkspaceRoles } from "@/lib/auth/authorization";
 import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
+import { listPendingWorkspaceInvites } from "@/lib/data/workspace-invites";
 import { getWorkspaceMembers } from "@/lib/data/workspaces";
+import { getAppBaseUrl } from "@/lib/security/app-url";
 
 function roleBadgeClass(role: string) {
   if (role === "OWNER") {
@@ -31,6 +37,12 @@ function roleBadgeClass(role: string) {
 export default async function TeamPage() {
   const context = await getCurrentWorkspaceContextOrRedirect();
   const members = await getWorkspaceMembers(context.workspace.id, context.user.id);
+  const invitableRoles = getInvitableWorkspaceRoles(context.role);
+  const canManageInvites = invitableRoles.length > 0;
+  const pendingInvites = canManageInvites
+    ? await listPendingWorkspaceInvites(context.workspace.id, context.user.id)
+    : [];
+  const appBaseUrl = canManageInvites ? await getAppBaseUrl() : null;
   const totalOpenAssignments = members.reduce(
     (sum, member) => sum + member.openAssignedTicketCount,
     0
@@ -46,15 +58,7 @@ export default async function TeamPage() {
         title="Team"
         description="See who belongs to this workspace, which role they hold, and who is carrying bug ownership across the current team space."
         badge={`${members.length} members`}
-      >
-        <Button
-          disabled
-          className="rounded-xl bg-violet-600/80 text-white hover:bg-violet-600"
-        >
-          <UserPlus className="mr-2 size-4" />
-          Invites Soon
-        </Button>
-      </PageHeader>
+      />
 
       <section className="grid gap-5 md:grid-cols-3">
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
@@ -84,6 +88,137 @@ export default async function TeamPage() {
             </div>
             <p className="mt-6 text-3xl font-bold">{totalReportedTickets}</p>
             <p className="mt-1 text-sm text-muted-foreground">Reported Tickets</p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
+                  <MailPlus className="size-5 text-violet-300" />
+                </div>
+                <h2 className="mt-6 text-xl font-semibold">Invite Teammates</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Create a secure shareable invite link for this workspace. The
+                  invited person must sign in with the same email before the link
+                  can add them to your team.
+                </p>
+              </div>
+              <Badge className={roleBadgeClass(context.role)}>{context.role}</Badge>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
+              {context.role === WorkspaceRole.OWNER ? (
+                <p>
+                  Owners can invite <span className="font-semibold text-white">admins</span>{" "}
+                  and <span className="font-semibold text-white">members</span>.
+                </p>
+              ) : context.role === WorkspaceRole.ADMIN ? (
+                <p>
+                  Admins can invite <span className="font-semibold text-white">members</span>.
+                </p>
+              ) : (
+                <p>
+                  Members can review the team roster, but only owners and admins can
+                  create invite links.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-6">
+              {canManageInvites ? (
+                <InviteMemberForm
+                  workspaceId={context.workspace.id}
+                  roleOptions={invitableRoles}
+                />
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
+                  Invite controls stay with the workspace leadership team. Ask an owner
+                  or admin if someone else needs access.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
+                  <Clock3 className="size-5 text-sky-300" />
+                </div>
+                <h2 className="mt-6 text-xl font-semibold">Pending Invites</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Pending access stays open for 7 days unless it is accepted or
+                  revoked first.
+                </p>
+              </div>
+              <Badge className="border-white/10 bg-white/[0.04] text-white/80">
+                {canManageInvites ? pendingInvites.length : 0}
+              </Badge>
+            </div>
+
+            {canManageInvites ? (
+              pendingInvites.length > 0 ? (
+                <div className="mt-6 space-y-4">
+                  {pendingInvites.map((invite) => {
+                    const inviteLink = `${appBaseUrl}/invite/${invite.token}`;
+
+                    return (
+                      <div
+                        key={invite.id}
+                        className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                      >
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-medium">{invite.email}</p>
+                              <Badge className={roleBadgeClass(invite.role)}>
+                                {invite.role}
+                              </Badge>
+                            </div>
+                            <p className="text-sm leading-6 text-muted-foreground">
+                              Invited by {invite.invitedByName} · Expires{" "}
+                              {invite.expiresAt.toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </p>
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                              <p className="break-all font-mono text-xs text-white/90">
+                                {inviteLink}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 flex-col gap-3">
+                            <CopyInviteLinkButton inviteLink={inviteLink} />
+                            <RevokeInviteButton
+                              workspaceId={context.workspace.id}
+                              inviteId={invite.id}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
+                  No pending invites yet. Create one when you are ready to bring another
+                  teammate into this workspace.
+                </div>
+              )
+            ) : (
+              <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
+                Pending invite links are only visible to workspace owners and admins.
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>
@@ -150,20 +285,10 @@ export default async function TeamPage() {
                 </div>
 
                 <div className="mt-6 flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
-                  >
-                    <Mail className="mr-2 size-4" />
-                    Contact
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
-                  >
-                    <ShieldCheck className="mr-2 size-4" />
-                    Role: {member.role}
-                  </Button>
+                  <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
+                    <Mail className="size-4 text-sky-300" />
+                    <span>{member.isOwner ? "Workspace owner" : `Role: ${member.role}`}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -172,7 +297,7 @@ export default async function TeamPage() {
       ) : (
         <EmptyState
           title="No team members yet"
-          description="This workspace does not have any members yet. Once invite flows are added, this page will show roles, ticket ownership, and collaboration health."
+          description="This workspace does not have any members yet. Create an invite link when you are ready to add another teammate."
         />
       )}
     </div>

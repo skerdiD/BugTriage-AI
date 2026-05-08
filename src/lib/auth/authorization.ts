@@ -75,6 +75,27 @@ export function hasRequiredWorkspaceRole(
   return workspaceRoleRank(role) >= workspaceRoleRank(minimumRole);
 }
 
+export function getInvitableWorkspaceRoles(
+  role: WorkspaceRole
+): WorkspaceRole[] {
+  if (role === WorkspaceRole.OWNER) {
+    return [WorkspaceRole.ADMIN, WorkspaceRole.MEMBER];
+  }
+
+  if (role === WorkspaceRole.ADMIN) {
+    return [WorkspaceRole.MEMBER];
+  }
+
+  return [];
+}
+
+export function canInviteWorkspaceRole(
+  inviterRole: WorkspaceRole,
+  invitedRole: WorkspaceRole
+) {
+  return getInvitableWorkspaceRoles(inviterRole).includes(invitedRole);
+}
+
 async function resolveUserId(userId?: string) {
   if (userId) {
     return userId;
@@ -158,7 +179,22 @@ export async function assertCanManageWorkspace(workspaceId: string, userId?: str
 
   if (!hasRequiredWorkspaceRole(access.role, WorkspaceRole.ADMIN)) {
     throw new AuthorizationError(
-      "Only workspace owners and admins can manage workspace projects."
+      "Only workspace owners and admins can manage this workspace."
+    );
+  }
+
+  return access;
+}
+
+export async function assertCanManageWorkspaceInvites(
+  workspaceId: string,
+  userId?: string
+) {
+  const access = await assertCanManageWorkspace(workspaceId, userId);
+
+  if (getInvitableWorkspaceRoles(access.role).length === 0) {
+    throw new AuthorizationError(
+      "Only workspace owners and admins can invite teammates."
     );
   }
 

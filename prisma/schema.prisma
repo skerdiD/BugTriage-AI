@@ -12,6 +12,13 @@ enum WorkspaceRole {
   MEMBER
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
 enum TicketSeverity {
   LOW
   MEDIUM
@@ -53,6 +60,7 @@ model User {
 
   ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
   memberships     WorkspaceMember[]
+  sentInvites     WorkspaceInvite[] @relation("WorkspaceInvitedBy")
   reportedTickets Ticket[]          @relation("ReportedTickets")
   assignedTickets Ticket[]          @relation("AssignedTickets")
   comments        TicketComment[]
@@ -71,6 +79,7 @@ model Workspace {
 
   owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members WorkspaceMember[]
+  invites WorkspaceInvite[]
   projects Project[]
   tickets  Ticket[]
 
@@ -106,6 +115,27 @@ model Project {
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
+}
+
+model WorkspaceInvite {
+  id          String        @id @default(cuid())
+  email       String
+  role        WorkspaceRole @default(MEMBER)
+  status      InviteStatus  @default(PENDING)
+  token       String        @unique
+  workspaceId String
+  invitedById String
+  expiresAt   DateTime
+  createdAt   DateTime      @default(now())
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation("WorkspaceInvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([workspaceId])
+  @@index([status])
 }
 
 model Ticket {
