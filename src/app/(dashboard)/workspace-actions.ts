@@ -1,5 +1,6 @@
 "use server";
 
+import * as Sentry from "@sentry/nextjs";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
@@ -112,6 +113,15 @@ export async function createProjectAction(input: {
       };
     }
 
+    Sentry.captureException(error, {
+      tags: {
+        area: "workspace",
+        action: "create-project",
+      },
+      extra: {
+        workspaceId: input.workspaceId,
+      },
+    });
     console.error("[workspace-actions] create project failed", getSafeErrorMessage(error));
 
     return {

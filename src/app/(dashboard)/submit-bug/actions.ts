@@ -2,6 +2,7 @@
 
 import { request as getArcjetRequest } from "@arcjet/next";
 import { AttachmentType, TicketSeverity, TicketStatus } from "@prisma/client";
+import * as Sentry from "@sentry/nextjs";
 
 import {
   AuthenticationError,
@@ -207,6 +208,21 @@ export async function analyzeAndCreateTicketAction(
       });
     } catch (error) {
       aiErrorMessage = getPublicAiTriageFailureMessage(error);
+      Sentry.captureException(error, {
+        tags: {
+          area: "ai-triage",
+          action: "ticket-analysis-fallback",
+          handled: "true",
+        },
+        extra: {
+          ticketCode,
+          workspaceId: workspaceContext.workspace.id,
+          projectId: workspaceContext.project.id,
+          screenshotCount: screenshotFiles.length,
+          logFileCount: logFiles.length,
+          hasConsoleLogs: Boolean(parsed.data.consoleLogs),
+        },
+      });
       console.warn("[submit-bug] AI triage fallback", getSafeErrorMessage(error));
     }
 
@@ -270,6 +286,12 @@ export async function analyzeAndCreateTicketAction(
       };
     }
 
+    Sentry.captureException(error, {
+      tags: {
+        area: "tickets",
+        action: "create-ticket",
+      },
+    });
     console.error("[submit-bug] failed to create ticket", getSafeErrorMessage(error));
 
     return {

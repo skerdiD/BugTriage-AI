@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import {
@@ -33,7 +34,21 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createServerSupabaseClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
+    const error = exchangeResult?.error;
+
+    if (error) {
+      Sentry.captureException(error, {
+        tags: {
+          area: "auth",
+          action: "exchange-code-for-session",
+        },
+        extra: {
+          hasCode: true,
+          hasNextParam: requestUrl.searchParams.has("next"),
+        },
+      });
+    }
   }
 
   return NextResponse.redirect(new URL(next, requestUrl.origin));

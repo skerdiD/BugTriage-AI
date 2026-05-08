@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const isDevelopment = process.env.NODE_ENV === "development";
@@ -9,7 +10,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://generativelanguage.googleapis.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://generativelanguage.googleapis.com https://*.sentry.io",
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -62,4 +63,21 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const hasSentrySourceMapConfig = Boolean(
+  process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+);
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  telemetry: false,
+  widenClientFileUpload: true,
+  sourcemaps: {
+    disable: !hasSentrySourceMapConfig,
+    deleteSourcemapsAfterUpload: true,
+  },
+});
