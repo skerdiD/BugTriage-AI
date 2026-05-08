@@ -165,7 +165,6 @@ async function loadDashboardData() {
 }
 
 export default async function DashboardPage() {
-  const context = await getCurrentWorkspaceContextOrRedirect();
   const data = await loadDashboardData();
 
   return (
@@ -173,7 +172,6 @@ export default async function DashboardPage() {
       <PageHeader
         title="Engineering Dashboard"
         description="AI-powered bug triage and ticket management"
-        badge={context.project ? `${context.workspace.name} · ${context.project.name}` : context.workspace.name}
       />
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

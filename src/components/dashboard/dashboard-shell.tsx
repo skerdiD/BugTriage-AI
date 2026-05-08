@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Menu, Zap } from "lucide-react";
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
+import { WorkspaceContextSwitcher } from "@/components/dashboard/workspace-context-switcher";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -90,6 +91,15 @@ export function DashboardShell({
 
       <main className="min-h-screen lg:pl-72">
         <div className="mx-auto w-full max-w-[1800px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+          <div className="mb-6 flex justify-end lg:mb-8">
+            <WorkspaceContextSwitcher
+              roleLabel={workspace.role}
+              currentWorkspaceId={workspace.id}
+              currentProjectId={project?.id ?? null}
+              workspaces={workspaces}
+              projects={projects}
+            />
+          </div>
           {children}
         </div>
       </main>

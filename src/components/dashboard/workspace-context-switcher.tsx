@@ -21,6 +21,18 @@ type WorkspaceContextSwitcherProps = {
   projects: ProjectSummary[];
 };
 
+function roleBadgeClass(role: string) {
+  if (role === "OWNER") {
+    return "border-yellow-500/25 bg-yellow-500/15 text-yellow-300";
+  }
+
+  if (role === "ADMIN") {
+    return "border-sky-500/25 bg-sky-500/15 text-sky-300";
+  }
+
+  return "border-violet-500/25 bg-violet-500/15 text-violet-300";
+}
+
 export function WorkspaceContextSwitcher({
   roleLabel,
   currentWorkspaceId,
@@ -46,61 +58,65 @@ export function WorkspaceContextSwitcher({
   }
 
   return (
-    <div className="space-y-3 border-b border-white/10 px-4 py-4">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          <Orbit className="size-3.5" />
-          Active Context
-          {isPending ? <Loader2 className="ml-auto size-3.5 animate-spin" /> : null}
+    <div className="w-full md:w-auto">
+      <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
+        <div className="grid min-w-0 gap-1">
+          <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <Users className="size-3.5 text-violet-300" />
+            Workspace
+          </span>
+          <select
+            value={currentWorkspaceId}
+            onChange={(event) => handleWorkspaceChange(event.target.value)}
+            disabled={isPending}
+            className="h-10 min-w-[220px] rounded-xl border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none transition focus:border-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {workspaces.map((workspace) => (
+              <option key={workspace.id} value={workspace.id}>
+                {workspace.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="mt-3 space-y-3">
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-2 font-medium text-white">
-              <Users className="size-3.5 text-violet-300" />
-              Workspace
-            </span>
-            <select
-              value={currentWorkspaceId}
-              onChange={(event) => handleWorkspaceChange(event.target.value)}
-              disabled={isPending}
-              className="h-10 rounded-xl border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none transition focus:border-violet-400"
-            >
-              {workspaces.map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
-                  {workspace.name} · {workspace.role}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-2 font-medium text-white">
-              <FolderKanban className="size-3.5 text-sky-300" />
-              Project
-            </span>
-            <select
-              value={currentProjectId ?? ""}
-              onChange={(event) => handleProjectChange(event.target.value)}
-              disabled={isPending || projects.length === 0}
-              className="h-10 rounded-xl border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none transition focus:border-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {projects.length === 0 ? (
-                <option value="">No projects yet</option>
-              ) : null}
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="grid min-w-0 gap-1">
+          <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <FolderKanban className="size-3.5 text-sky-300" />
+            Project
+          </span>
+          <select
+            value={currentProjectId ?? ""}
+            onChange={(event) => handleProjectChange(event.target.value)}
+            disabled={isPending || projects.length === 0}
+            className="h-10 min-w-[220px] rounded-xl border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none transition focus:border-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {projects.length === 0 ? (
+              <option value="">No projects yet</option>
+            ) : null}
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <p className="mt-3 text-xs text-muted-foreground">
-          Signed in with <span className="font-medium text-white">{roleLabel}</span>{" "}
-          access in the selected workspace.
-        </p>
+        <div className="flex items-center gap-2 sm:mb-1 sm:pl-1">
+          <span
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] ${roleBadgeClass(
+              roleLabel
+            )}`}
+          >
+            {roleLabel}
+          </span>
+          <div className="flex size-7 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-muted-foreground">
+            {isPending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Orbit className="size-3.5" />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

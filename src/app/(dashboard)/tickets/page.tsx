@@ -13,20 +13,11 @@ async function loadTickets() {
 
   return {
     tickets: dbTickets.map(mapTicketListItemToUiTicket),
-    scopeLabel: context.project
-      ? `${context.workspace.name} · ${context.project.name}`
-      : context.workspace.name,
   };
 }
 
 export default async function TicketsPage() {
-  const { tickets, scopeLabel } = await loadTickets();
+  const { tickets } = await loadTickets();
 
-  return (
-    <TicketsClient
-      initialTickets={tickets}
-      source="database"
-      scopeLabel={scopeLabel}
-    />
-  );
+  return <TicketsClient initialTickets={tickets} />;
 }

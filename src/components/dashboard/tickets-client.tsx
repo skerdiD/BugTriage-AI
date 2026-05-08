@@ -13,15 +13,9 @@ import type { Ticket } from "@/lib/mock-data";
 
 type TicketsClientProps = {
   initialTickets: Ticket[];
-  source: "database" | "mock";
-  scopeLabel?: string;
 };
 
-export function TicketsClient({
-  initialTickets,
-  source,
-  scopeLabel,
-}: TicketsClientProps) {
+export function TicketsClient({ initialTickets }: TicketsClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStatus, setActiveStatus] = useState<TicketStatusFilter>("All");
 
@@ -61,11 +55,6 @@ export function TicketsClient({
       <PageHeader
         title="Tickets"
         description="Manage and track AI-triaged bug reports"
-        badge={
-          source === "database"
-            ? scopeLabel ?? "Database connected"
-            : "Mock fallback"
-        }
       />
 
       <TicketFilters

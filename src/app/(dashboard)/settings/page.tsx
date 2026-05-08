@@ -179,7 +179,7 @@ export default async function SettingsPage() {
             <h3 className="mt-5 font-semibold">AI Routing Context</h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               New AI-triaged tickets are created inside the active workspace and the
-              selected project from the sidebar.
+              selected project from the header switcher.
             </p>
           </CardContent>
         </Card>
