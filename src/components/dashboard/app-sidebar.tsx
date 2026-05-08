@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
+  Crown,
+  FolderKanban,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -15,7 +17,12 @@ import {
 } from "lucide-react";
 
 import type { DashboardUser } from "@/components/dashboard/dashboard-shell";
+import { WorkspaceContextSwitcher } from "@/components/dashboard/workspace-context-switcher";
 import { Button } from "@/components/ui/button";
+import type {
+  ProjectSummary,
+  WorkspaceSummary,
+} from "@/lib/data/workspaces";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -54,11 +61,35 @@ const navItems = [
 
 type AppSidebarProps = {
   user: DashboardUser;
+  workspace: WorkspaceSummary;
+  project: ProjectSummary | null;
+  workspaces: WorkspaceSummary[];
+  projects: ProjectSummary[];
   className?: string;
   isMobile?: boolean;
 };
 
-export function AppSidebar({ user, className, isMobile = false }: AppSidebarProps) {
+function roleBadgeClass(role: WorkspaceSummary["role"]) {
+  if (role === "OWNER") {
+    return "border-yellow-500/25 bg-yellow-500/15 text-yellow-300";
+  }
+
+  if (role === "ADMIN") {
+    return "border-sky-500/25 bg-sky-500/15 text-sky-300";
+  }
+
+  return "border-violet-500/25 bg-violet-500/15 text-violet-300";
+}
+
+export function AppSidebar({
+  user,
+  workspace,
+  project,
+  workspaces,
+  projects,
+  className,
+  isMobile = false,
+}: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -97,6 +128,63 @@ export function AppSidebar({ user, className, isMobile = false }: AppSidebarProp
             <p className="text-sm text-muted-foreground">Engineering Command</p>
           </div>
         </Link>
+      </div>
+      <WorkspaceContextSwitcher
+        roleLabel={workspace.role}
+        currentWorkspaceId={workspace.id}
+        currentProjectId={project?.id ?? null}
+        workspaces={workspaces}
+        projects={projects}
+      />
+
+      <div className="px-4 pb-4">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-white">{workspace.name}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Owned by {workspace.ownerName}
+              </p>
+            </div>
+            <span
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em]",
+                roleBadgeClass(workspace.role)
+              )}
+            >
+              {workspace.role}
+            </span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+            <div className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+              <p className="font-medium text-white">{workspace.memberCount}</p>
+              <p className="mt-1">Members</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+              <p className="font-medium text-white">{workspace.projectCount}</p>
+              <p className="mt-1">Projects</p>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <FolderKanban className="size-3.5 text-sky-300" />
+            {project ? (
+              <span>
+                Routing new bugs into <span className="font-medium text-white">{project.name}</span>.
+              </span>
+            ) : (
+              <span>No active project selected yet.</span>
+            )}
+          </div>
+
+          {workspace.role === "OWNER" ? (
+            <div className="mt-2 flex items-center gap-2 text-xs text-yellow-200/90">
+              <Crown className="size-3.5" />
+              Workspace owner controls this team space.
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <nav className="flex-1 space-y-2 px-4 py-6">

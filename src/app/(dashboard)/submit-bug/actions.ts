@@ -123,6 +123,13 @@ export async function analyzeAndCreateTicketAction(
 
   try {
     const workspaceContext = await getCurrentWorkspaceContextOrThrow();
+    if (!workspaceContext.project) {
+      return {
+        ok: false,
+        error:
+          "Create a project for this workspace in Settings before submitting bug tickets.",
+      };
+    }
     const supabase = await createServerSupabaseClient();
 
     const arcjetRequest = await getArcjetRequest();

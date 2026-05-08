@@ -58,6 +58,23 @@ export class AuthorizationError extends Error {
   }
 }
 
+function workspaceRoleRank(role: WorkspaceRole) {
+  const rank: Record<WorkspaceRole, number> = {
+    OWNER: 3,
+    ADMIN: 2,
+    MEMBER: 1,
+  };
+
+  return rank[role];
+}
+
+export function hasRequiredWorkspaceRole(
+  role: WorkspaceRole,
+  minimumRole: WorkspaceRole
+) {
+  return workspaceRoleRank(role) >= workspaceRoleRank(minimumRole);
+}
+
 async function resolveUserId(userId?: string) {
   if (userId) {
     return userId;
@@ -134,6 +151,18 @@ export async function assertWorkspaceMember(
         ? WorkspaceRole.OWNER
         : (workspace.members[0]?.role ?? WorkspaceRole.MEMBER),
   };
+}
+
+export async function assertCanManageWorkspace(workspaceId: string, userId?: string) {
+  const access = await assertWorkspaceMember(workspaceId, userId);
+
+  if (!hasRequiredWorkspaceRole(access.role, WorkspaceRole.ADMIN)) {
+    throw new AuthorizationError(
+      "Only workspace owners and admins can manage workspace projects."
+    );
+  }
+
+  return access;
 }
 
 export async function assertCanAccessProject(projectId: string, userId?: string) {

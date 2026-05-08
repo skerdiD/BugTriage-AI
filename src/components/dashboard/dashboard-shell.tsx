@@ -11,6 +11,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type {
+  ProjectSummary,
+  WorkspaceSummary,
+} from "@/lib/data/workspaces";
 
 export type DashboardUser = {
   id: string;
@@ -22,12 +26,30 @@ export type DashboardUser = {
 type DashboardShellProps = {
   children: React.ReactNode;
   user: DashboardUser;
+  workspace: WorkspaceSummary;
+  project: ProjectSummary | null;
+  workspaces: WorkspaceSummary[];
+  projects: ProjectSummary[];
 };
 
-export function DashboardShell({ children, user }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  user,
+  workspace,
+  project,
+  workspaces,
+  projects,
+}: DashboardShellProps) {
   return (
     <div className="min-h-screen">
-      <AppSidebar user={user} className="hidden lg:flex" />
+      <AppSidebar
+        user={user}
+        workspace={workspace}
+        project={project}
+        workspaces={workspaces}
+        projects={projects}
+        className="hidden lg:flex"
+      />
 
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#08080d]/90 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/dashboard" className="flex items-center gap-3">
@@ -54,7 +76,14 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
           </SheetTrigger>
           <SheetContent side="left" className="w-80 border-white/10 bg-[#101017] p-0">
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <AppSidebar user={user} isMobile />
+            <AppSidebar
+              user={user}
+              workspace={workspace}
+              project={project}
+              workspaces={workspaces}
+              projects={projects}
+              isMobile
+            />
           </SheetContent>
         </Sheet>
       </header>

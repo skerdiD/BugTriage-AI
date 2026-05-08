@@ -7,14 +7,26 @@ async function loadTickets() {
   const context = await getCurrentWorkspaceContextOrRedirect();
   const dbTickets = await getTickets({
     workspaceId: context.workspace.id,
+    projectId: context.project?.id,
     take: 100,
   });
 
-  return dbTickets.map(mapTicketListItemToUiTicket);
+  return {
+    tickets: dbTickets.map(mapTicketListItemToUiTicket),
+    scopeLabel: context.project
+      ? `${context.workspace.name} · ${context.project.name}`
+      : context.workspace.name,
+  };
 }
 
 export default async function TicketsPage() {
-  const tickets = await loadTickets();
+  const { tickets, scopeLabel } = await loadTickets();
 
-  return <TicketsClient initialTickets={tickets} source="database" />;
+  return (
+    <TicketsClient
+      initialTickets={tickets}
+      source="database"
+      scopeLabel={scopeLabel}
+    />
+  );
 }

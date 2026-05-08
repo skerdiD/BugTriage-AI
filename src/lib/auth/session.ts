@@ -1,10 +1,22 @@
 import "server-only";
 
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { WorkspaceRole } from "@prisma/client";
 import type { User } from "@supabase/supabase-js";
 
-import { ensureUserWorkspace } from "@/lib/data/workspaces";
+import {
+  ensureUserWorkspace,
+  listUserWorkspaces,
+  listWorkspaceProjects,
+  pickCurrentProject,
+  pickCurrentWorkspace,
+  PROJECT_COOKIE_NAME,
+  type ProjectSummary,
+  WORKSPACE_COOKIE_NAME,
+  type WorkspaceSummary,
+} from "@/lib/data/workspaces";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function normalizeNameFromUserMetadata(metadata: User["user_metadata"]) {
@@ -71,14 +83,47 @@ export const getCurrentDashboardUser = cache(async () => {
   };
 });
 
+export type CurrentWorkspaceContext = {
+  user: Awaited<ReturnType<typeof ensureUserWorkspace>>["user"];
+  workspace: WorkspaceSummary;
+  project: ProjectSummary | null;
+  role: WorkspaceRole;
+  availableWorkspaces: WorkspaceSummary[];
+  availableProjects: ProjectSummary[];
+};
+
 export const getCurrentWorkspaceContextOrThrow = cache(async () => {
   const user = await getCurrentUserOrThrow();
-
-  return ensureUserWorkspace({
+  const cookieStore = await cookies();
+  const ensuredContext = await ensureUserWorkspace({
     authUserId: user.id,
     email: user.email,
     name: normalizeNameFromUserMetadata(user.user_metadata),
   });
+  const availableWorkspaces = await listUserWorkspaces(user.id);
+  const selectedWorkspace = pickCurrentWorkspace(
+    availableWorkspaces,
+    cookieStore.get(WORKSPACE_COOKIE_NAME)?.value ?? ensuredContext.workspace.id
+  );
+
+  if (!selectedWorkspace) {
+    throw new Error("No workspace is available for the current user.");
+  }
+
+  const availableProjects = await listWorkspaceProjects(selectedWorkspace.id, user.id);
+  const selectedProject = pickCurrentProject(
+    availableProjects,
+    cookieStore.get(PROJECT_COOKIE_NAME)?.value
+  );
+
+  return {
+    user: ensuredContext.user,
+    workspace: selectedWorkspace,
+    project: selectedProject,
+    role: selectedWorkspace.role,
+    availableWorkspaces,
+    availableProjects,
+  } satisfies CurrentWorkspaceContext;
 });
 
 export const getCurrentWorkspaceContextOrRedirect = cache(async () => {
