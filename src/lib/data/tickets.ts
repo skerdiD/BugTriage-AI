@@ -1,3 +1,5 @@
+import "server-only";
+
 import {
   AttachmentType,
   Prisma,
@@ -6,6 +8,16 @@ import {
   TicketStatus,
 } from "@prisma/client";
 
+import {
+  AuthorizationError,
+  assertCanAccessProject,
+  assertCanAccessTicket,
+  assertCanCommentOnTicket,
+  assertCanCreateTicket,
+  assertCanModifyTicket,
+  assertWorkspaceMember,
+} from "@/lib/auth/authorization";
+import { getCurrentUserOrThrow } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 const minimalUserSelect = {
@@ -92,7 +104,7 @@ export type TicketDetail = Prisma.TicketGetPayload<{
 }>;
 
 export type GetTicketsInput = {
-  workspaceId?: string;
+  workspaceId: string;
   projectId?: string;
   status?: TicketStatus;
   severity?: TicketSeverity;
@@ -157,6 +169,43 @@ function clampOffset(skip?: number) {
   return Math.max(normalized, 0);
 }
 
+function hasValidTicketAttachmentPath(
+  storagePath: string,
+  workspaceId: string,
+  ticketCode: string
+) {
+  const normalizedPath = storagePath.replace(/\\/g, "/");
+
+  return (
+    normalizedPath.startsWith(`private/${workspaceId}/`) &&
+    normalizedPath.includes(`/tickets/${ticketCode}/`)
+  );
+}
+
+function assertTicketAttachmentPaths(
+  attachments: CreateTicketInput["attachments"],
+  workspaceId: string,
+  ticketCode: string
+) {
+  if (!attachments?.length) {
+    return;
+  }
+
+  for (const attachment of attachments) {
+    if (
+      !hasValidTicketAttachmentPath(
+        attachment.storagePath,
+        workspaceId,
+        ticketCode
+      )
+    ) {
+      throw new AuthorizationError(
+        "Attachment storage path does not belong to the selected workspace ticket."
+      );
+    }
+  }
+}
+
 export async function generateUniqueTicketCode() {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const code = `BUG-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -172,7 +221,7 @@ export async function generateUniqueTicketCode() {
   return `BUG-${Date.now().toString().slice(-6)}`;
 }
 
-export async function getTickets(input: GetTicketsInput = {}) {
+export async function getTickets(input: GetTicketsInput) {
   const {
     workspaceId,
     projectId,
@@ -183,8 +232,20 @@ export async function getTickets(input: GetTicketsInput = {}) {
     skip = 0,
   } = input;
 
+  await assertWorkspaceMember(workspaceId);
+
+  if (projectId) {
+    const projectAccess = await assertCanAccessProject(projectId);
+
+    if (projectAccess.project.workspaceId !== workspaceId) {
+      throw new AuthorizationError(
+        "Project does not belong to the selected workspace."
+      );
+    }
+  }
+
   const where: Prisma.TicketWhereInput = {
-    ...(workspaceId ? { workspaceId } : {}),
+    workspaceId,
     ...(projectId ? { projectId } : {}),
     ...(status ? { status } : {}),
     ...(severity ? { severity } : {}),
@@ -232,22 +293,47 @@ export async function getTickets(input: GetTicketsInput = {}) {
 }
 
 export async function getTicketByCode(code: string, workspaceId: string) {
+  const access = await assertCanAccessTicket({
+    ticketCode: code,
+    workspaceId,
+  });
+
   return prisma.ticket.findFirst({
     where: {
-      code,
-      workspaceId,
+      id: access.ticket.id,
     },
     include: ticketDetailInclude,
   });
 }
 
 export async function createTicket(input: CreateTicketInput) {
+  const currentUser = await getCurrentUserOrThrow();
+  const access = await assertCanCreateTicket(
+    input.workspaceId,
+    input.projectId,
+    currentUser.id
+  );
+
+  if (input.reporterId && input.reporterId !== currentUser.id) {
+    throw new AuthorizationError(
+      "Tickets can only be created for the current authenticated user."
+    );
+  }
+
+  if (input.assigneeId) {
+    await assertWorkspaceMember(input.workspaceId, input.assigneeId);
+  }
+
+  assertTicketAttachmentPaths(input.attachments, input.workspaceId, input.code);
+
+  const reporterId = input.reporterId ?? currentUser.id;
+
   return prisma.ticket.create({
     data: {
       code: input.code,
-      workspaceId: input.workspaceId,
-      projectId: input.projectId,
-      reporterId: input.reporterId,
+      workspaceId: access.workspaceAccess.workspace.id,
+      projectId: access.project.id,
+      reporterId,
       assigneeId: input.assigneeId,
       title: input.title,
       description: input.description,
@@ -290,7 +376,7 @@ export async function createTicket(input: CreateTicketInput) {
         : undefined,
       activities: {
         create: {
-          actorId: input.reporterId,
+          actorId: reporterId,
           type: TicketActivityType.CREATED,
           title: "Bug submitted",
           description: input.aiAnalysis
@@ -316,11 +402,25 @@ export async function updateTicketStatus(
   status: TicketStatus,
   actorId?: string
 ) {
+  const currentUser = await getCurrentUserOrThrow();
+  const access = await assertCanModifyTicket(
+    {
+      ticketCode: code,
+      workspaceId,
+    },
+    currentUser.id
+  );
+
+  if (actorId && actorId !== currentUser.id) {
+    throw new AuthorizationError(
+      "Ticket status changes must be attributed to the current authenticated user."
+    );
+  }
+
   return prisma.$transaction(async (tx) => {
-    const existingTicket = await tx.ticket.findFirst({
+    const existingTicket = await tx.ticket.findUnique({
       where: {
-        code,
-        workspaceId,
+        id: access.ticket.id,
       },
       select: {
         id: true,
@@ -350,7 +450,7 @@ export async function updateTicketStatus(
     await tx.ticketActivity.create({
       data: {
         ticketId: existingTicket.id,
-        actorId,
+        actorId: actorId ?? currentUser.id,
         type: TicketActivityType.STATUS_CHANGED,
         title: "Status changed",
         description: `Ticket moved from ${existingTicket.status} to ${status}.`,
@@ -372,25 +472,28 @@ export async function addTicketComment(input: AddTicketCommentInput) {
     throw new Error("Comment body cannot be empty.");
   }
 
+  const currentUser = await getCurrentUserOrThrow();
+  const access = await assertCanCommentOnTicket(
+    {
+      ticketCode: input.ticketCode,
+      workspaceId: input.workspaceId,
+    },
+    currentUser.id
+  );
+
+  if (input.authorId && input.authorId !== currentUser.id) {
+    throw new AuthorizationError(
+      "Comments must be authored by the current authenticated user."
+    );
+  }
+
+  const authorId = input.authorId ?? currentUser.id;
+
   return prisma.$transaction(async (tx) => {
-    const ticket = await tx.ticket.findFirst({
-      where: {
-        code: input.ticketCode,
-        workspaceId: input.workspaceId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!ticket) {
-      throw new Error(`Ticket ${input.ticketCode} not found.`);
-    }
-
     const comment = await tx.ticketComment.create({
       data: {
-        ticketId: ticket.id,
-        authorId: input.authorId,
+        ticketId: access.ticket.id,
+        authorId,
         body,
       },
       include: {
@@ -402,8 +505,8 @@ export async function addTicketComment(input: AddTicketCommentInput) {
 
     await tx.ticketActivity.create({
       data: {
-        ticketId: ticket.id,
-        actorId: input.authorId,
+        ticketId: access.ticket.id,
+        actorId: authorId,
         type: TicketActivityType.COMMENTED,
         title: "Comment added",
         description: "A new internal comment was added to the ticket.",

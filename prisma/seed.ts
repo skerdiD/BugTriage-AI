@@ -6,8 +6,17 @@ import {
   TicketStatus,
   WorkspaceRole,
 } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const databaseUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DIRECT_URL or DATABASE_URL is not set.");
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg(databaseUrl),
+});
 
 async function main() {
   await prisma.ticketActivity.deleteMany();

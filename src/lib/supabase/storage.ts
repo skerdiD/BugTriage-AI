@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSupabaseStorageBucket } from "@/lib/supabase/env";
@@ -137,6 +139,13 @@ export function buildTicketStoragePath({
   return `private/${workspaceId}/${userId}/tickets/${ticketCode}/${folder}/${Date.now()}-${safeFileName}`;
 }
 
+export function isTicketStoragePathInWorkspace(
+  storagePath: string,
+  workspaceId: string
+) {
+  return storagePath.replace(/\\/g, "/").startsWith(`private/${workspaceId}/`);
+}
+
 export async function uploadTicketFile({
   supabase,
   file,
@@ -200,8 +209,13 @@ export async function uploadLogFile(input: Omit<UploadTicketFileInput, "attachme
 export async function createSignedTicketFileUrl(
   supabase: SupabaseClient,
   storagePath: string,
+  workspaceId: string,
   expiresInSeconds = 60 * 5
 ) {
+  if (!isTicketStoragePathInWorkspace(storagePath, workspaceId)) {
+    throw new Error("Attachment storage path failed workspace validation.");
+  }
+
   const bucket = getTicketStorageBucket();
 
   const { data, error } = await supabase.storage
