@@ -50,7 +50,7 @@ jobs:
 
       - name: Run Playwright smoke test
         if: ${{ hashFiles('playwright.config.ts', 'tests/e2e/**/*.spec.ts') != '' }}
-        run: npm run test:e2e -- --grep "dashboard route is protected or accessible when authenticated"
+        run: npm run test:e2e -- --grep @smoke
 
       - name: Run production build
         run: npm run build

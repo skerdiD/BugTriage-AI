@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    exclude: ["tests/e2e/**"],
     include: ["tests/**/*.test.ts"],
+    setupFiles: ["./tests/setup/env.ts"],
   },
 });

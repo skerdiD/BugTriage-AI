@@ -54,7 +54,11 @@ const analyzeBugReportInputSchema = z.object({
 
 function truncate(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength)}\n\n[TRUNCATED]`;
+
+  const suffix = "\n\n[TRUNCATED]";
+  const sliceLength = Math.max(0, maxLength - suffix.length);
+
+  return `${value.slice(0, sliceLength)}${suffix}`;
 }
 
 function sanitizeDiagnosticText(value: string | undefined, maxLength: number) {
