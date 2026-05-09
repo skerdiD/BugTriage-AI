@@ -89,11 +89,32 @@ export function getInvitableWorkspaceRoles(
   return [];
 }
 
+export function getManageableWorkspaceRoles(
+  role: WorkspaceRole
+): WorkspaceRole[] {
+  if (role === WorkspaceRole.OWNER) {
+    return [WorkspaceRole.ADMIN, WorkspaceRole.MEMBER];
+  }
+
+  if (role === WorkspaceRole.ADMIN) {
+    return [WorkspaceRole.MEMBER];
+  }
+
+  return [];
+}
+
 export function canInviteWorkspaceRole(
   inviterRole: WorkspaceRole,
   invitedRole: WorkspaceRole
 ) {
   return getInvitableWorkspaceRoles(inviterRole).includes(invitedRole);
+}
+
+export function canManageWorkspaceMemberRole(
+  actorRole: WorkspaceRole,
+  targetRole: WorkspaceRole
+) {
+  return getManageableWorkspaceRoles(actorRole).includes(targetRole);
 }
 
 async function resolveUserId(userId?: string) {

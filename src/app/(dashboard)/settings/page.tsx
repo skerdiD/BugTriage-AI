@@ -10,6 +10,7 @@ import { WorkspaceRole } from "@prisma/client";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ProjectCreateForm } from "@/components/dashboard/project-create-form";
+import { WorkspaceCreateForm } from "@/components/dashboard/workspace-create-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasRequiredWorkspaceRole } from "@/lib/auth/authorization";
@@ -81,7 +82,9 @@ export default async function SettingsPage() {
               <Card className="rounded-2xl border-white/10 bg-white/[0.03] shadow-none">
                 <CardContent className="p-4">
                   <Users className="size-5 text-violet-300" />
-                  <p className="mt-4 text-2xl font-bold">{context.workspace.memberCount}</p>
+                  <p className="mt-4 text-2xl font-bold">
+                    {context.workspace.memberCount}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">Members</p>
                 </CardContent>
               </Card>
@@ -89,7 +92,9 @@ export default async function SettingsPage() {
               <Card className="rounded-2xl border-white/10 bg-white/[0.03] shadow-none">
                 <CardContent className="p-4">
                   <FolderKanban className="size-5 text-sky-300" />
-                  <p className="mt-4 text-2xl font-bold">{context.availableProjects.length}</p>
+                  <p className="mt-4 text-2xl font-bold">
+                    {context.availableProjects.length}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">Projects</p>
                 </CardContent>
               </Card>
@@ -170,6 +175,81 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
         </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+          <CardHeader>
+            <CardTitle>Your Workspaces</CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            {context.availableWorkspaces.length > 0 ? (
+              <div className="space-y-3">
+                {context.availableWorkspaces.map((workspace) => {
+                  const isActiveWorkspace = workspace.id === context.workspace.id;
+
+                  return (
+                    <div
+                      key={workspace.id}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-white">{workspace.name}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Owned by {workspace.ownerName}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge className="border-white/10 bg-white/[0.05] text-white/80">
+                            {workspace.role}
+                          </Badge>
+                          <Badge
+                            className={
+                              isActiveWorkspace
+                                ? "border-emerald-500/25 bg-emerald-500/15 text-emerald-200"
+                                : "border-white/10 bg-white/[0.05] text-muted-foreground"
+                            }
+                          >
+                            {isActiveWorkspace ? "Active" : "Available"}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                        <span>{workspace.memberCount} members</span>
+                        <span>{workspace.projectCount} projects</span>
+                        <span>{workspace.ticketCount} tickets</span>
+                        <span className="font-mono">{workspace.slug}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState
+                title="No workspaces yet"
+                description="Create your first workspace to separate teams, projects, and ticket routing."
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+          <CardHeader>
+            <CardTitle>Create New Workspace</CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Spin up another workspace when you need a separate team, client,
+              product line, or internal environment. The new workspace gets its own
+              default intake project immediately.
+            </p>
+            <WorkspaceCreateForm />
+          </CardContent>
+        </Card>
       </section>
 
       <section className="grid gap-5 md:grid-cols-3">

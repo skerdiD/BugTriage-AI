@@ -14,9 +14,13 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { InviteMemberForm } from "@/components/dashboard/invite-member-form";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { RevokeInviteButton } from "@/components/dashboard/revoke-invite-button";
+import { WorkspaceMemberControls } from "@/components/dashboard/workspace-member-controls";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { getInvitableWorkspaceRoles } from "@/lib/auth/authorization";
+import {
+  canManageWorkspaceMemberRole,
+  getInvitableWorkspaceRoles,
+} from "@/lib/auth/authorization";
 import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { listPendingWorkspaceInvites } from "@/lib/data/workspace-invites";
 import { getWorkspaceMembers } from "@/lib/data/workspaces";
@@ -34,6 +38,26 @@ function roleBadgeClass(role: string) {
   return "border-violet-500/25 bg-violet-500/15 text-violet-300";
 }
 
+function getAssignableRoleOptions(
+  actorRole: WorkspaceRole,
+  memberRole: WorkspaceRole,
+  isOwner: boolean
+) {
+  if (isOwner || !canManageWorkspaceMemberRole(actorRole, memberRole)) {
+    return [] as WorkspaceRole[];
+  }
+
+  if (actorRole === WorkspaceRole.OWNER) {
+    return [WorkspaceRole.ADMIN, WorkspaceRole.MEMBER];
+  }
+
+  if (actorRole === WorkspaceRole.ADMIN && memberRole === WorkspaceRole.MEMBER) {
+    return [WorkspaceRole.MEMBER];
+  }
+
+  return [] as WorkspaceRole[];
+}
+
 export default async function TeamPage() {
   const context = await getCurrentWorkspaceContextOrRedirect();
   const members = await getWorkspaceMembers(context.workspace.id, context.user.id);
@@ -42,7 +66,7 @@ export default async function TeamPage() {
   const pendingInvites = canManageInvites
     ? await listPendingWorkspaceInvites(context.workspace.id, context.user.id)
     : [];
-  const appBaseUrl = canManageInvites ? await getAppBaseUrl() : null;
+  const appBaseUrl = canManageInvites ? await getAppBaseUrl() : "";
   const totalOpenAssignments = members.reduce(
     (sum, member) => sum + member.openAssignedTicketCount,
     0
@@ -128,6 +152,11 @@ export default async function TeamPage() {
               )}
             </div>
 
+            <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-black/10 p-4 text-sm leading-6 text-muted-foreground">
+              Email delivery is not wired yet. Share the generated invite link in
+              Slack, email, or your team chat while you choose an email provider.
+            </div>
+
             <div className="mt-6">
               {canManageInvites ? (
                 <InviteMemberForm
@@ -182,7 +211,7 @@ export default async function TeamPage() {
                               </Badge>
                             </div>
                             <p className="text-sm leading-6 text-muted-foreground">
-                              Invited by {invite.invitedByName} · Expires{" "}
+                              Invited by {invite.invitedByName} - Expires{" "}
                               {invite.expiresAt.toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
@@ -225,74 +254,98 @@ export default async function TeamPage() {
 
       {members.length > 0 ? (
         <section className="grid gap-5 lg:grid-cols-2">
-          {members.map((member) => (
-            <Card
-              key={member.id}
-              className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-5">
-                  <div className="flex items-center gap-4">
-                    <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 font-bold text-white shadow-lg shadow-violet-500/20">
-                      {member.name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{member.name}</h3>
-                        {member.isOwner ? (
-                          <Crown className="size-4 text-yellow-300" />
-                        ) : null}
+          {members.map((member) => {
+            const availableRoles = getAssignableRoleOptions(
+              context.role,
+              member.role,
+              member.isOwner
+            );
+            const canRemoveMember =
+              !member.isOwner &&
+              canManageWorkspaceMemberRole(context.role, member.role);
+
+            return (
+              <Card
+                key={member.id}
+                className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-5">
+                    <div className="flex items-center gap-4">
+                      <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 font-bold text-white shadow-lg shadow-violet-500/20">
+                        {member.name
+                          .split(" ")
+                          .map((part) => part[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Joined{" "}
-                        {member.joinedAt.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{member.name}</h3>
+                          {member.isOwner ? (
+                            <Crown className="size-4 text-yellow-300" />
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Joined{" "}
+                          {member.joinedAt.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Badge className={roleBadgeClass(member.role)}>{member.role}</Badge>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="size-4 text-sky-300" />
+                      <span>{member.email}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-xs text-muted-foreground">Open Assigned</p>
+                      <p className="mt-2 text-2xl font-bold">
+                        {member.openAssignedTicketCount}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-xs text-muted-foreground">Reported</p>
+                      <p className="mt-2 text-2xl font-bold">
+                        {member.reportedTicketCount}
                       </p>
                     </div>
                   </div>
 
-                  <Badge className={roleBadgeClass(member.role)}>{member.role}</Badge>
-                </div>
+                  <div className="mt-6 flex gap-2">
+                    <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
+                      <Mail className="size-4 text-sky-300" />
+                      <span>{member.isOwner ? "Workspace owner" : `Role: ${member.role}`}</span>
+                    </div>
+                  </div>
 
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="size-4 text-sky-300" />
-                    <span>{member.email}</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <p className="text-xs text-muted-foreground">Open Assigned</p>
-                    <p className="mt-2 text-2xl font-bold">
-                      {member.openAssignedTicketCount}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <p className="text-xs text-muted-foreground">Reported</p>
-                    <p className="mt-2 text-2xl font-bold">
-                      {member.reportedTicketCount}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex gap-2">
-                  <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
-                    <Mail className="size-4 text-sky-300" />
-                    <span>{member.isOwner ? "Workspace owner" : `Role: ${member.role}`}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {availableRoles.length > 0 || canRemoveMember ? (
+                    <div className="mt-6">
+                      <WorkspaceMemberControls
+                        workspaceId={context.workspace.id}
+                        memberId={member.id}
+                        memberName={member.name}
+                        currentRole={member.role}
+                        availableRoles={availableRoles}
+                        canRemove={canRemoveMember}
+                      />
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            );
+          })}
         </section>
       ) : (
         <EmptyState

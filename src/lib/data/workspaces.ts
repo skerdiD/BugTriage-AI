@@ -5,6 +5,7 @@ import { Prisma, TicketStatus, WorkspaceRole } from "@prisma/client";
 import {
   assertCanManageWorkspace,
   assertWorkspaceMember,
+  canManageWorkspaceMemberRole,
 } from "@/lib/auth/authorization";
 import { prisma } from "@/lib/prisma";
 
@@ -55,6 +56,13 @@ export type WorkspaceMemberSummary = {
   openAssignedTicketCount: number;
   reportedTicketCount: number;
 };
+
+export class WorkspaceManagementError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WorkspaceManagementError";
+  }
+}
 
 const workspaceQuerySelect = {
   id: true,
@@ -253,6 +261,30 @@ async function ensureDefaultProjectForWorkspace(workspaceId: string) {
   return project;
 }
 
+async function buildUniqueWorkspaceSlug(name: string) {
+  const baseSlug = slugify(name) || "workspace";
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const suffix = attempt === 0 ? "" : `-${attempt + 1}`;
+    const slug = `${baseSlug}${suffix}`.slice(0, 60);
+
+    const existingWorkspace = await prisma.workspace.findUnique({
+      where: {
+        slug,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingWorkspace) {
+      return slug;
+    }
+  }
+
+  return `${baseSlug}-${Date.now().toString().slice(-4)}`.slice(0, 60);
+}
+
 export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
   const email = input.email ?? `${input.authUserId}@local.bugtriage.ai`;
   const name =
@@ -311,6 +343,62 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
     workspace,
     project,
   };
+}
+
+export async function createWorkspace(input: {
+  name: string;
+  actorUserId: string;
+}) {
+  const normalizedName = input.name.trim();
+
+  if (!normalizedName) {
+    throw new WorkspaceManagementError("Workspace name is required.");
+  }
+
+  const actor = await prisma.user.findUnique({
+    where: {
+      id: input.actorUserId,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  });
+
+  if (!actor) {
+    throw new WorkspaceManagementError(
+      "Your account is not ready to create a workspace yet."
+    );
+  }
+
+  const slug = await buildUniqueWorkspaceSlug(normalizedName);
+  const workspace = await prisma.workspace.create({
+    data: {
+      name: normalizedName,
+      slug,
+      ownerId: actor.id,
+    },
+    select: workspaceQuerySelect,
+  });
+
+  await ensureWorkspaceOwnerMembership(workspace.id, actor.id);
+  await ensureDefaultProjectForWorkspace(workspace.id);
+
+  const hydratedWorkspace = await prisma.workspace.findUnique({
+    where: {
+      id: workspace.id,
+    },
+    select: workspaceQuerySelect,
+  });
+
+  if (!hydratedWorkspace) {
+    throw new WorkspaceManagementError(
+      "The new workspace was created, but it could not be loaded afterward."
+    );
+  }
+
+  return buildWorkspaceSummary(hydratedWorkspace, actor.id);
 }
 
 export async function listUserWorkspaces(userId: string) {
@@ -586,4 +674,142 @@ export async function getWorkspaceMembers(workspaceId: string, userId?: string) 
 
       return a.name.localeCompare(b.name);
     });
+}
+
+export async function updateWorkspaceMemberRole(input: {
+  workspaceId: string;
+  memberId: string;
+  nextRole: WorkspaceRole;
+  actorUserId?: string;
+}) {
+  const access = await assertCanManageWorkspace(
+    input.workspaceId,
+    input.actorUserId
+  );
+  const membership = await prisma.workspaceMember.findFirst({
+    where: {
+      id: input.memberId,
+      workspaceId: input.workspaceId,
+    },
+    select: {
+      id: true,
+      role: true,
+      userId: true,
+      user: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!membership) {
+    throw new WorkspaceManagementError(
+      "That workspace member could not be found."
+    );
+  }
+
+  if (membership.userId === access.workspace.ownerId) {
+    throw new WorkspaceManagementError(
+      "The workspace owner role cannot be changed here."
+    );
+  }
+
+  if (!canManageWorkspaceMemberRole(access.role, membership.role)) {
+    throw new WorkspaceManagementError(
+      "You do not have permission to change that teammate's role."
+    );
+  }
+
+  if (!canManageWorkspaceMemberRole(access.role, input.nextRole)) {
+    throw new WorkspaceManagementError(
+      access.role === WorkspaceRole.ADMIN
+        ? "Workspace admins can only assign the member role."
+        : "That role change is not allowed."
+    );
+  }
+
+  if (membership.role === input.nextRole) {
+    return {
+      memberName: membership.user.name,
+      role: membership.role,
+    };
+  }
+
+  const updatedMembership = await prisma.workspaceMember.update({
+    where: {
+      id: membership.id,
+    },
+    data: {
+      role: input.nextRole,
+    },
+    select: {
+      role: true,
+      user: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  return {
+    memberName: updatedMembership.user.name,
+    role: updatedMembership.role,
+  };
+}
+
+export async function removeWorkspaceMember(input: {
+  workspaceId: string;
+  memberId: string;
+  actorUserId?: string;
+}) {
+  const access = await assertCanManageWorkspace(
+    input.workspaceId,
+    input.actorUserId
+  );
+  const membership = await prisma.workspaceMember.findFirst({
+    where: {
+      id: input.memberId,
+      workspaceId: input.workspaceId,
+    },
+    select: {
+      id: true,
+      role: true,
+      userId: true,
+      user: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!membership) {
+    throw new WorkspaceManagementError(
+      "That workspace member could not be found."
+    );
+  }
+
+  if (membership.userId === access.workspace.ownerId) {
+    throw new WorkspaceManagementError(
+      "The workspace owner cannot be removed."
+    );
+  }
+
+  if (!canManageWorkspaceMemberRole(access.role, membership.role)) {
+    throw new WorkspaceManagementError(
+      "You do not have permission to remove that teammate."
+    );
+  }
+
+  await prisma.workspaceMember.delete({
+    where: {
+      id: membership.id,
+    },
+  });
+
+  return {
+    memberName: membership.user.name,
+  };
 }

@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { hasRequiredWorkspaceRole } from "@/lib/auth/authorization";
+import {
+  canManageWorkspaceMemberRole,
+  hasRequiredWorkspaceRole,
+} from "@/lib/auth/authorization";
 import {
   pickCurrentProject,
   pickCurrentWorkspace,
@@ -95,5 +98,23 @@ describe("workspace role checks", () => {
     expect(hasRequiredWorkspaceRole(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN)).toBe(
       false
     );
+  });
+
+  it("lets owners manage admins and members while admins only manage members", () => {
+    expect(
+      canManageWorkspaceMemberRole(WorkspaceRole.OWNER, WorkspaceRole.ADMIN)
+    ).toBe(true);
+    expect(
+      canManageWorkspaceMemberRole(WorkspaceRole.OWNER, WorkspaceRole.MEMBER)
+    ).toBe(true);
+    expect(
+      canManageWorkspaceMemberRole(WorkspaceRole.ADMIN, WorkspaceRole.MEMBER)
+    ).toBe(true);
+    expect(
+      canManageWorkspaceMemberRole(WorkspaceRole.ADMIN, WorkspaceRole.ADMIN)
+    ).toBe(false);
+    expect(
+      canManageWorkspaceMemberRole(WorkspaceRole.MEMBER, WorkspaceRole.MEMBER)
+    ).toBe(false);
   });
 });

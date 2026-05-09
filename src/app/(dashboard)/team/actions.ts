@@ -10,6 +10,11 @@ import {
   revokeWorkspaceInvite,
   WorkspaceInviteError,
 } from "@/lib/data/workspace-invites";
+import {
+  removeWorkspaceMember,
+  updateWorkspaceMemberRole,
+  WorkspaceManagementError,
+} from "@/lib/data/workspaces";
 import { captureServerException } from "@/lib/observability/server-monitoring";
 import { buildAppUrl } from "@/lib/security/app-url";
 
@@ -25,6 +30,17 @@ const inviteInputSchema = z.object({
 const revokeInviteInputSchema = z.object({
   workspaceId: z.string().trim().min(1),
   inviteId: z.string().trim().min(1),
+});
+
+const updateMemberRoleInputSchema = z.object({
+  workspaceId: z.string().trim().min(1),
+  memberId: z.string().trim().min(1),
+  role: z.nativeEnum(WorkspaceRole),
+});
+
+const removeMemberInputSchema = z.object({
+  workspaceId: z.string().trim().min(1),
+  memberId: z.string().trim().min(1),
 });
 
 export async function createWorkspaceInviteAction(input: {
@@ -141,6 +157,123 @@ export async function revokeWorkspaceInviteAction(input: {
     return {
       ok: false as const,
       error: "We couldn't revoke that invite right now. Please try again.",
+    };
+  }
+}
+
+export async function updateWorkspaceMemberRoleAction(input: {
+  workspaceId: string;
+  memberId: string;
+  role: WorkspaceRole;
+}) {
+  try {
+    const user = await getCurrentUserOrThrow();
+    const parsed = updateMemberRoleInputSchema.safeParse(input);
+
+    if (!parsed.success) {
+      return {
+        ok: false as const,
+        error: "That role update request was invalid. Please refresh and try again.",
+      };
+    }
+
+    const updatedMember = await updateWorkspaceMemberRole({
+      workspaceId: parsed.data.workspaceId,
+      memberId: parsed.data.memberId,
+      nextRole: parsed.data.role,
+      actorUserId: user.id,
+    });
+
+    return {
+      ok: true as const,
+      message: `${updatedMember.memberName} is now ${updatedMember.role}.`,
+    };
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return {
+        ok: false as const,
+        error: error.message,
+      };
+    }
+
+    if (error instanceof WorkspaceManagementError) {
+      return {
+        ok: false as const,
+        error: error.message,
+      };
+    }
+
+    captureServerException(error, {
+      area: "workspace",
+      action: "update-member-role",
+      message: "[team-actions] update member role failed",
+      context: {
+        workspaceId: input.workspaceId,
+        memberId: input.memberId,
+        role: String(input.role),
+      },
+    });
+
+    return {
+      ok: false as const,
+      error: "We couldn't update that teammate right now. Please try again.",
+    };
+  }
+}
+
+export async function removeWorkspaceMemberAction(input: {
+  workspaceId: string;
+  memberId: string;
+}) {
+  try {
+    const user = await getCurrentUserOrThrow();
+    const parsed = removeMemberInputSchema.safeParse(input);
+
+    if (!parsed.success) {
+      return {
+        ok: false as const,
+        error: "That remove-member request was invalid. Please refresh and try again.",
+      };
+    }
+
+    const removedMember = await removeWorkspaceMember({
+      workspaceId: parsed.data.workspaceId,
+      memberId: parsed.data.memberId,
+      actorUserId: user.id,
+    });
+
+    return {
+      ok: true as const,
+      message: `${removedMember.memberName} was removed from the workspace.`,
+    };
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return {
+        ok: false as const,
+        error: error.message,
+      };
+    }
+
+    if (error instanceof WorkspaceManagementError) {
+      return {
+        ok: false as const,
+        error: error.message,
+      };
+    }
+
+    captureServerException(error, {
+      area: "workspace",
+      action: "remove-member",
+      message: "[team-actions] remove member failed",
+      context: {
+        workspaceId: input.workspaceId,
+        memberId: input.memberId,
+      },
+    });
+
+    return {
+      ok: false as const,
+      error: "We couldn't remove that teammate right now. Please try again.",
     };
   }
 }

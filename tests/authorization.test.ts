@@ -32,6 +32,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import {
   AuthorizationError,
+  assertCanAccessProject,
   assertCanAccessTicket,
   assertCanCreateTicket,
   assertWorkspaceMember,
@@ -108,5 +109,19 @@ describe("authorization helpers", () => {
     await expect(
       assertCanCreateTicket("ws-1", "project-2")
     ).rejects.toBeInstanceOf(AuthorizationError);
+  });
+
+  it("rejects project switching when the user does not belong to the project's workspace", async () => {
+    prismaMock.project.findUnique.mockResolvedValue({
+      id: "project-3",
+      workspaceId: "ws-9",
+      name: "Hidden Project",
+      slug: "hidden-project",
+    });
+    prismaMock.workspace.findFirst.mockResolvedValue(null);
+
+    await expect(assertCanAccessProject("project-3")).rejects.toBeInstanceOf(
+      AuthorizationError
+    );
   });
 });

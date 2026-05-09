@@ -10,11 +10,13 @@ import {
 } from "@/lib/auth/authorization";
 import { getCurrentUserOrThrow } from "@/lib/auth/session";
 import {
+  createWorkspace,
   createWorkspaceProject,
   listWorkspaceProjects,
   pickCurrentProject,
   PROJECT_COOKIE_NAME,
   WORKSPACE_COOKIE_NAME,
+  WorkspaceManagementError,
 } from "@/lib/data/workspaces";
 import { captureServerException } from "@/lib/observability/server-monitoring";
 
@@ -38,6 +40,14 @@ const createProjectInputSchema = z.object({
     .max(220, "Project description must be less than 220 characters.")
     .optional()
     .or(z.literal("")),
+});
+
+const createWorkspaceInputSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(3, "Workspace name must be at least 3 characters.")
+    .max(80, "Workspace name must be less than 80 characters."),
 });
 
 export async function setCurrentWorkspaceAction(workspaceId: string) {
@@ -67,6 +77,65 @@ export async function setCurrentProjectAction(projectId: string) {
   cookieStore.set(PROJECT_COOKIE_NAME, access.project.id, cookieOptions);
 
   return { ok: true as const };
+}
+
+export async function createWorkspaceAction(input: { name: string }) {
+  try {
+    const user = await getCurrentUserOrThrow();
+    const parsed = createWorkspaceInputSchema.safeParse(input);
+
+    if (!parsed.success) {
+      return {
+        ok: false as const,
+        error:
+          parsed.error.issues[0]?.message ??
+          "Please review the workspace name and try again.",
+      };
+    }
+
+    const workspace = await createWorkspace({
+      name: parsed.data.name,
+      actorUserId: user.id,
+    });
+    const projects = await listWorkspaceProjects(workspace.id, user.id);
+    const selectedProject = pickCurrentProject(projects);
+    const cookieStore = await cookies();
+
+    cookieStore.set(WORKSPACE_COOKIE_NAME, workspace.id, cookieOptions);
+
+    if (selectedProject) {
+      cookieStore.set(PROJECT_COOKIE_NAME, selectedProject.id, cookieOptions);
+    } else {
+      cookieStore.delete(PROJECT_COOKIE_NAME);
+    }
+
+    return {
+      ok: true as const,
+      workspaceId: workspace.id,
+      message: `${workspace.name} is ready for your team.`,
+    };
+  } catch (error) {
+    if (error instanceof WorkspaceManagementError) {
+      return {
+        ok: false as const,
+        error: error.message,
+      };
+    }
+
+    captureServerException(error, {
+      area: "workspace",
+      action: "create-workspace",
+      message: "[workspace-actions] create workspace failed",
+      context: {
+        workspaceName: input.name,
+      },
+    });
+
+    return {
+      ok: false as const,
+      error: "We couldn't create that workspace right now. Please try again.",
+    };
+  }
 }
 
 export async function createProjectAction(input: {
@@ -106,6 +175,13 @@ export async function createProjectAction(input: {
     };
   } catch (error) {
     if (error instanceof AuthorizationError) {
+      return {
+        ok: false as const,
+        error: error.message,
+      };
+    }
+
+    if (error instanceof WorkspaceManagementError) {
       return {
         ok: false as const,
         error: error.message,
