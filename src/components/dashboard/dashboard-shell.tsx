@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, Zap } from "lucide-react";
 
@@ -16,6 +17,7 @@ import type {
   ProjectSummary,
   WorkspaceSummary,
 } from "@/lib/data/workspaces";
+import { cn } from "@/lib/utils";
 
 export type DashboardUser = {
   id: string;
@@ -33,6 +35,8 @@ type DashboardShellProps = {
   projects: ProjectSummary[];
 };
 
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "bt.sidebar.collapsed";
+
 export function DashboardShell({
   children,
   user,
@@ -41,14 +45,47 @@ export function DashboardShell({
   workspaces,
   projects,
 }: DashboardShellProps) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [hasLoadedSidebarPreference, setHasLoadedSidebarPreference] =
+    useState(false);
+
+  useEffect(() => {
+    try {
+      const storedValue = window.localStorage.getItem(
+        SIDEBAR_COLLAPSED_STORAGE_KEY
+      );
+
+      if (storedValue === "true") {
+        setIsSidebarCollapsed(true);
+      }
+    } finally {
+      setHasLoadedSidebarPreference(true);
+    }
+  }, []);
+
+  function handleToggleSidebar() {
+    setIsSidebarCollapsed((currentValue) => {
+      const nextValue = !currentValue;
+
+      try {
+        window.localStorage.setItem(
+          SIDEBAR_COLLAPSED_STORAGE_KEY,
+          String(nextValue)
+        );
+      } catch {
+        // Ignore localStorage failures and still allow the UI toggle to work.
+      }
+
+      return nextValue;
+    });
+  }
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#08080d]">
       <AppSidebar
         user={user}
-        workspace={workspace}
-        project={project}
-        workspaces={workspaces}
-        projects={projects}
+        collapsed={isSidebarCollapsed}
+        onToggleCollapsed={handleToggleSidebar}
         className="hidden lg:flex"
       />
 
@@ -70,6 +107,7 @@ export function DashboardShell({
             <Button
               variant="outline"
               size="icon"
+              aria-label="Open navigation"
               className="rounded-xl border-white/10 bg-white/[0.035]"
             >
               <Menu className="size-5" />
@@ -77,20 +115,20 @@ export function DashboardShell({
           </SheetTrigger>
           <SheetContent side="left" className="w-80 border-white/10 bg-[#101017] p-0">
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <AppSidebar
-              user={user}
-              workspace={workspace}
-              project={project}
-              workspaces={workspaces}
-              projects={projects}
-              isMobile
-            />
+            <AppSidebar user={user} isMobile />
           </SheetContent>
         </Sheet>
       </header>
 
-      <main className="min-h-screen lg:pl-72">
-        <div className="mx-auto w-full max-w-[1800px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <main
+        className={cn(
+          "min-h-screen transition-[padding] duration-300 ease-out",
+          hasLoadedSidebarPreference && isSidebarCollapsed
+            ? "lg:pl-[84px]"
+            : "lg:pl-[280px]"
+        )}
+      >
+        <div className="mx-auto w-full max-w-[1880px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
           <div className="mb-6 flex justify-end lg:mb-8">
             <WorkspaceContextSwitcher
               roleLabel={workspace.role}
