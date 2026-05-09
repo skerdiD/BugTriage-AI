@@ -2,11 +2,13 @@ import { AlertTriangle, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import type { PriorityQueueItem } from "@/lib/mock-data";
+import type { PriorityQueueItem } from "@/lib/dashboard/types";
 import { cn } from "@/lib/utils";
 
 type PriorityQueueProps = {
   items: PriorityQueueItem[];
+  criticalCount: number;
+  highCount: number;
 };
 
 const priorityStyles = {
@@ -14,7 +16,11 @@ const priorityStyles = {
   High: "border-orange-500/25 bg-orange-500/15 text-orange-300",
 };
 
-export function PriorityQueue({ items }: PriorityQueueProps) {
+export function PriorityQueue({
+  items,
+  criticalCount,
+  highCount,
+}: PriorityQueueProps) {
   return (
     <Card className="overflow-hidden rounded-3xl border-violet-500/20 bg-gradient-to-br from-violet-500/12 via-purple-500/7 to-transparent shadow-xl shadow-black/20">
       <CardContent className="relative p-6">
@@ -34,36 +40,45 @@ export function PriorityQueue({ items }: PriorityQueueProps) {
           </div>
         </div>
 
-        <div className="relative mt-6 flex flex-wrap gap-2">
-          {items.map((item) => (
-            <Badge
-              key={item.id}
-              className={cn(
-                "rounded-full px-3 py-1.5",
-                priorityStyles[item.severity]
-              )}
-            >
-              {item.id}: {item.title}
-            </Badge>
-          ))}
-        </div>
+        {items.length > 0 ? (
+          <div className="relative mt-6 flex flex-wrap gap-2">
+            {items.map((item) => (
+              <Badge
+                key={item.id}
+                className={cn(
+                  "rounded-full px-3 py-1.5",
+                  priorityStyles[item.severity]
+                )}
+              >
+                {item.id}: {item.title}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <div className="relative mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
+            No critical or high-severity open tickets are waiting in this workspace
+            right now.
+          </div>
+        )}
 
         <div className="relative mt-6 grid gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <Sparkles className="size-4 text-violet-300" />
             <p className="mt-3 text-sm font-semibold">Recommended action</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Start with payment and performance bugs because they affect core product usage.
+              {items.length > 0
+                ? "Work from top priority downward so the most severe open tickets are reviewed first."
+                : "Keep triage moving and new urgent tickets will surface here automatically."}
             </p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-2xl font-bold text-red-300">1</p>
-            <p className="mt-1 text-sm text-muted-foreground">Critical issue</p>
+            <p className="text-2xl font-bold text-red-300">{criticalCount}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Critical issues</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-2xl font-bold text-orange-300">2</p>
+            <p className="text-2xl font-bold text-orange-300">{highCount}</p>
             <p className="mt-1 text-sm text-muted-foreground">High priority issues</p>
           </div>
         </div>

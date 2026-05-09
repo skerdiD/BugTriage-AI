@@ -28,15 +28,15 @@ import { RepeatedPatterns } from "@/components/dashboard/repeated-patterns";
 import { TopAffectedPages } from "@/components/dashboard/top-affected-pages";
 import { WeeklyInsights } from "@/components/dashboard/weekly-insights";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  analyticsMetrics,
-  averageResolutionTimeData,
-  bugReportsOverTimeData,
-  bugsByCategoryData,
-  repeatedIssuePatterns,
-  topAffectedPages,
-  weeklyInsights,
-} from "@/lib/mock-data";
+import type {
+  AnalyticsMetric,
+  AverageResolutionTimeItem,
+  BugReportsOverTimeItem,
+  BugsByCategoryItem,
+  RepeatedIssuePattern,
+  TopAffectedPage,
+  WeeklyInsight,
+} from "@/lib/dashboard/types";
 
 const metricIcons = {
   clock: Clock3,
@@ -58,17 +58,37 @@ const chartTooltipStyle = {
   boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
 };
 
-export function AnalyticsClient() {
+type AnalyticsClientProps = {
+  hasTickets: boolean;
+  metrics: AnalyticsMetric[];
+  bugReportsOverTime: BugReportsOverTimeItem[];
+  bugsByCategory: BugsByCategoryItem[];
+  averageResolutionTime: AverageResolutionTimeItem[];
+  topAffectedPages: TopAffectedPage[];
+  repeatedPatterns: RepeatedIssuePattern[];
+  weeklyInsights: WeeklyInsight[];
+};
+
+export function AnalyticsClient({
+  hasTickets,
+  metrics,
+  bugReportsOverTime,
+  bugsByCategory,
+  averageResolutionTime,
+  topAffectedPages,
+  repeatedPatterns,
+  weeklyInsights,
+}: AnalyticsClientProps) {
   return (
     <div className="space-y-8">
       <PageHeader
         title="Analytics & Insights"
-        description="Track bug trends, resolution metrics, and team performance"
+        description="Track real bug trends, resolution metrics, and workspace-level product health."
         badge="Product health"
       />
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {analyticsMetrics.map((metric) => (
+        {metrics.map((metric) => (
           <AnalyticsMetricCard
             key={metric.label}
             icon={metricIcons[metric.icon]}
@@ -88,14 +108,14 @@ export function AnalyticsClient() {
           <div>
             <CardTitle className="text-lg">Bug Reports Over Time</CardTitle>
             <p className="mt-2 text-sm text-muted-foreground">
-              Weekly report volume across submitted and AI-triaged bugs.
+              Weekly report volume across the currently selected workspace scope.
             </p>
           </div>
         </CardHeader>
 
         <CardContent className="h-[350px] p-6">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={bugReportsOverTimeData}>
+            <AreaChart data={bugReportsOverTime}>
               <defs>
                 <linearGradient id="bugReportsGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.58} />
@@ -152,7 +172,7 @@ export function AnalyticsClient() {
 
           <CardContent className="h-[340px] p-6">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={bugsByCategoryData} layout="vertical">
+              <BarChart data={bugsByCategory} layout="vertical">
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" horizontal={false} />
 
                 <XAxis
@@ -202,7 +222,7 @@ export function AnalyticsClient() {
 
           <CardContent className="h-[340px] p-6">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={averageResolutionTimeData}>
+              <LineChart data={averageResolutionTime}>
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" />
 
                 <XAxis
@@ -242,10 +262,19 @@ export function AnalyticsClient() {
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <TopAffectedPages pages={topAffectedPages} />
-        <RepeatedPatterns patterns={repeatedIssuePatterns} />
+        <RepeatedPatterns patterns={repeatedPatterns} />
       </section>
 
       <WeeklyInsights insights={weeklyInsights} />
+
+      {!hasTickets ? (
+        <Card className="rounded-3xl border-dashed border-white/10 bg-white/[0.02] shadow-xl shadow-black/20">
+          <CardContent className="p-6 text-sm leading-6 text-muted-foreground">
+            Analytics will populate automatically after this workspace has real
+            tickets, status updates, and closures to analyze.
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

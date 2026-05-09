@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import type { ComponentType } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   ArrowLeft,
@@ -15,6 +17,7 @@ import {
   Globe2,
   ImageIcon,
   Laptop,
+  Loader2,
   MessageSquare,
   MonitorSmartphone,
   PackageCheck,
@@ -24,7 +27,12 @@ import {
   Tags,
   UserRound,
 } from "lucide-react";
+import { TicketStatus as DbTicketStatus } from "@prisma/client";
 
+import {
+  addTicketCommentAction,
+  updateTicketStatusAction,
+} from "@/app/(dashboard)/tickets/[ticketId]/actions";
 import { SeverityBadge } from "@/components/dashboard/severity-badge";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +53,10 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import type { Ticket, TicketComment, TicketStatus } from "@/lib/mock-data";
+import type {
+  UiTicket as Ticket,
+  UiTicketStatus as TicketStatus,
+} from "@/lib/dashboard/types";
 
 type TicketDetailClientProps = {
   ticket: Ticket;
@@ -59,10 +70,22 @@ const workflowStatuses: TicketStatus[] = [
   "Closed",
 ];
 
+const uiToDbStatus: Record<TicketStatus, DbTicketStatus> = {
+  New: DbTicketStatus.NEW,
+  Investigating: DbTicketStatus.INVESTIGATING,
+  "In Progress": DbTicketStatus.IN_PROGRESS,
+  Fixed: DbTicketStatus.FIXED,
+  Closed: DbTicketStatus.CLOSED,
+};
+
 export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
+  const router = useRouter();
   const [status, setStatus] = useState<TicketStatus>(ticket.status);
   const [commentText, setCommentText] = useState("");
-  const [comments, setComments] = useState<TicketComment[]>(ticket.comments);
+  const [statusError, setStatusError] = useState("");
+  const [commentError, setCommentError] = useState("");
+  const [isStatusPending, startStatusTransition] = useTransition();
+  const [isCommentPending, startCommentTransition] = useTransition();
 
   const statusIndex = workflowStatuses.indexOf(status);
 
@@ -71,22 +94,55 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
     return Math.round(((statusIndex + 1) / workflowStatuses.length) * 100);
   }, [statusIndex]);
 
+  function handleStatusChange(nextStatus: TicketStatus) {
+    if (nextStatus === status) {
+      return;
+    }
+
+    const previousStatus = status;
+    setStatus(nextStatus);
+    setStatusError("");
+
+    startStatusTransition(async () => {
+      const result = await updateTicketStatusAction({
+        ticketCode: ticket.id,
+        status: uiToDbStatus[nextStatus],
+      });
+
+      if (!result.ok) {
+        setStatus(previousStatus);
+        setStatusError(result.error);
+        return;
+      }
+
+      router.refresh();
+    });
+  }
+
   function handleAddComment() {
     const trimmed = commentText.trim();
 
-    if (!trimmed) return;
+    if (!trimmed) {
+      setCommentError("Comment cannot be empty.");
+      return;
+    }
 
-    const newComment: TicketComment = {
-      id: `comment-${comments.length + 1}`,
-      author: "Sarah Chen",
-      role: "Engineering Lead",
-      initials: "SC",
-      createdAt: "Just now",
-      body: trimmed,
-    };
+    setCommentError("");
 
-    setComments((current) => [newComment, ...current]);
-    setCommentText("");
+    startCommentTransition(async () => {
+      const result = await addTicketCommentAction({
+        ticketCode: ticket.id,
+        body: trimmed,
+      });
+
+      if (!result.ok) {
+        setCommentError(result.error);
+        return;
+      }
+
+      setCommentText("");
+      router.refresh();
+    });
   }
 
   return (
@@ -121,8 +177,8 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
             </h1>
 
             <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-              AI-generated ticket detail, original report, engineering context,
-              and status workflow in one command center.
+              Real ticket detail, original report, AI context, comments, and activity
+              history in one workspace-safe view.
             </p>
           </div>
         </div>
@@ -143,7 +199,7 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
               </div>
 
               <Badge className="rounded-full border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
-                Ready
+                {ticket.confidence > 0 ? "Ready" : "Pending"}
               </Badge>
             </div>
 
@@ -165,7 +221,7 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                 <div>
                   <CardTitle>Original Bug Report</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Raw user/support input before AI triage.
+                    Raw user or support input before AI triage.
                   </p>
                 </div>
               </div>
@@ -237,7 +293,7 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                   <div className="space-y-3">
                     {ticket.reproductionSteps.map((step, index) => (
                       <div
-                        key={step}
+                        key={`${ticket.id}-step-${index + 1}`}
                         className="flex gap-3 rounded-2xl border border-white/10 bg-black/20 p-4"
                       >
                         <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-xs font-bold text-violet-200">
@@ -271,14 +327,20 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {ticket.tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        className="rounded-full border-white/10 bg-white/[0.06] text-slate-200"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+                    {ticket.tags.length > 0 ? (
+                      ticket.tags.map((tag) => (
+                        <Badge
+                          key={tag}
+                          className="rounded-full border-white/10 bg-white/[0.06] text-slate-200"
+                        >
+                          {tag}
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        No AI tags were recorded for this ticket.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -291,69 +353,75 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
             </CardHeader>
 
             <CardContent className="grid gap-4 md:grid-cols-2">
-              {ticket.attachments.map((attachment) => {
-                const Icon = attachment.type === "screenshot" ? ImageIcon : Code2;
+              {ticket.attachments.length > 0 ? (
+                ticket.attachments.map((attachment) => {
+                  const Icon = attachment.type === "screenshot" ? ImageIcon : Code2;
 
-                return (
-                  <div
-                    key={attachment.id}
-                    className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-violet-500/30 hover:bg-violet-500/[0.04]"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex gap-4">
-                        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
-                          <Icon className="size-5 text-violet-300" />
+                  return (
+                    <div
+                      key={attachment.id}
+                      className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-violet-500/30 hover:bg-violet-500/[0.04]"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex gap-4">
+                          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
+                            <Icon className="size-5 text-violet-300" />
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-white">
+                              {attachment.name}
+                            </p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {attachment.size} | {attachment.format}
+                            </p>
+                            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                              Uploaded {attachment.uploadedAt}
+                            </p>
+                          </div>
                         </div>
 
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold text-white">
-                            {attachment.name}
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {attachment.size} • {attachment.format}
-                          </p>
-                          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                            Uploaded {attachment.uploadedAt}
-                          </p>
-                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          asChild={Boolean(attachment.downloadUrl)}
+                          disabled={!attachment.downloadUrl}
+                          className="rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
+                        >
+                          {attachment.downloadUrl ? (
+                            <a
+                              href={attachment.downloadUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={`Download ${attachment.name}`}
+                            >
+                              <Download className="size-4" />
+                            </a>
+                          ) : (
+                            <span aria-hidden="true">
+                              <Download className="size-4" />
+                            </span>
+                          )}
+                        </Button>
                       </div>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        asChild={Boolean(attachment.downloadUrl)}
-                        disabled={!attachment.downloadUrl}
-                        className="rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
-                      >
-                        {attachment.downloadUrl ? (
-                          <a
-                            href={attachment.downloadUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`Download ${attachment.name}`}
-                          >
-                            <Download className="size-4" />
-                          </a>
-                        ) : (
-                          <span aria-hidden="true">
-                            <Download className="size-4" />
-                          </span>
-                        )}
-                      </Button>
+                      <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                          Preview
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          {attachment.preview}
+                        </p>
+                      </div>
                     </div>
-
-                    <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                        Preview
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        {attachment.preview}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground md:col-span-2">
+                  No files were attached to this ticket.
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -375,48 +443,71 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                     className="min-h-24 rounded-2xl border-white/10 bg-white/[0.04]"
                   />
 
+                  {commentError ? (
+                    <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                      {commentError}
+                    </p>
+                  ) : null}
+
                   <Button
                     type="button"
+                    disabled={isCommentPending}
                     onClick={handleAddComment}
                     className="rounded-xl bg-violet-600 hover:bg-violet-500"
                   >
-                    <Send className="mr-2 size-4" />
-                    Add Comment
+                    {isCommentPending ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        Saving Comment...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 size-4" />
+                        Add Comment
+                      </>
+                    )}
                   </Button>
                 </div>
 
                 <Separator className="bg-white/10" />
 
                 <div className="space-y-4">
-                  {comments.map((comment) => (
-                    <div
-                      key={comment.id}
-                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-sky-500 text-xs font-bold text-white">
-                          {comment.initials}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <p className="font-semibold text-white">
-                              {comment.author}
-                            </p>
-                            <span className="text-xs text-muted-foreground">
-                              {comment.role}
-                            </span>
+                  {ticket.comments.length > 0 ? (
+                    ticket.comments.map((comment) => (
+                      <div
+                        key={comment.id}
+                        className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-sky-500 text-xs font-bold text-white">
+                            {comment.initials}
                           </div>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {comment.createdAt}
-                          </p>
-                          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                            {comment.body}
-                          </p>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <p className="font-semibold text-white">
+                                {comment.author}
+                              </p>
+                              <span className="text-xs text-muted-foreground">
+                                {comment.role}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {comment.createdAt}
+                            </p>
+                            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                              {comment.body}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
+                      No comments yet. Add the first internal note to capture the next
+                      investigation step.
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -430,30 +521,37 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
               </CardHeader>
 
               <CardContent>
-                <div className="space-y-5">
-                  {ticket.activity.map((item, index) => (
-                    <div key={item.id} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.05]">
-                          <ChevronRight className="size-4 text-violet-300" />
+                {ticket.activity.length > 0 ? (
+                  <div className="space-y-5">
+                    {ticket.activity.map((item, index) => (
+                      <div key={item.id} className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <div className="flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.05]">
+                            <ChevronRight className="size-4 text-violet-300" />
+                          </div>
+                          {index !== ticket.activity.length - 1 ? (
+                            <div className="h-full w-px bg-white/10" />
+                          ) : null}
                         </div>
-                        {index !== ticket.activity.length - 1 ? (
-                          <div className="h-full w-px bg-white/10" />
-                        ) : null}
-                      </div>
 
-                      <div className="pb-5">
-                        <p className="font-semibold text-white">{item.title}</p>
-                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                          {item.description}
-                        </p>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          {item.time}
-                        </p>
+                        <div className="pb-5">
+                          <p className="font-semibold text-white">{item.title}</p>
+                          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                            {item.description}
+                          </p>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            {item.time}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
+                    Activity will appear here as the ticket moves through triage,
+                    comments, and status changes.
+                  </div>
+                )}
               </CardContent>
             </Card>
           </section>
@@ -468,11 +566,11 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
             <CardContent className="space-y-6">
               <div>
                 <p className="mb-2 text-sm text-muted-foreground">
-                  Change local status
+                  Update ticket status
                 </p>
                 <Select
                   value={status}
-                  onValueChange={(value) => setStatus(value as TicketStatus)}
+                  onValueChange={(value) => handleStatusChange(value as TicketStatus)}
                 >
                   <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">
                     <SelectValue />
@@ -485,6 +583,16 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {statusError ? (
+                  <p className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    {statusError}
+                  </p>
+                ) : null}
+                {isStatusPending ? (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Saving status update...
+                  </p>
+                ) : null}
               </div>
 
               <div>
@@ -543,7 +651,7 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
               <MetadataRow
                 icon={UserRound}
                 label="Assignee"
-                value={`${ticket.assignee} • ${ticket.assigneeRole}`}
+                value={`${ticket.assignee} | ${ticket.assigneeRole}`}
               />
               <MetadataRow icon={Globe2} label="Browser" value={ticket.browser} />
               <MetadataRow
@@ -580,7 +688,7 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
 }
 
 type MetadataRowProps = {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   label: string;
   value: string;
 };

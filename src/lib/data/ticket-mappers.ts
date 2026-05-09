@@ -5,14 +5,14 @@ import {
 } from "@prisma/client";
 import { format, formatDistanceToNow } from "date-fns";
 
-import type { TicketDetail, TicketListItem } from "@/lib/data/tickets";
 import type {
   PriorityQueueItem,
   RecentTicket,
-  Ticket as UiTicket,
-  TicketSeverity as UiTicketSeverity,
-  TicketStatus as UiTicketStatus,
-} from "@/lib/mock-data";
+  UiTicket,
+  UiTicketSeverity,
+  UiTicketStatus,
+} from "@/lib/dashboard/types";
+import type { TicketDetail, TicketListItem } from "@/lib/data/tickets";
 
 function initialsFromName(name?: string | null) {
   if (!name) return "NA";

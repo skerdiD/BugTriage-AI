@@ -9,7 +9,7 @@ import {
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { SeverityDistributionItem } from "@/lib/mock-data";
+import type { SeverityDistributionItem } from "@/lib/dashboard/types";
 
 type SeverityChartProps = {
   data: SeverityDistributionItem[];

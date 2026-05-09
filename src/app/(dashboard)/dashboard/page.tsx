@@ -4,28 +4,17 @@ import {
   CheckCircle2,
   TrendingUp,
 } from "lucide-react";
-import { TicketSeverity, TicketStatus } from "@prisma/client";
 
-import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PriorityQueue } from "@/components/dashboard/priority-queue";
+import { RecentActivityFeed } from "@/components/dashboard/recent-activity-feed";
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
 import { SeverityChart } from "@/components/dashboard/severity-chart";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TrendChart } from "@/components/dashboard/trend-chart";
-import { getTickets, type TicketListItem } from "@/lib/data/tickets";
-import {
-  mapDbSeverityToUiSeverity,
-  mapTicketListItemToPriorityQueueItem,
-  mapTicketListItemToRecentTicket,
-} from "@/lib/data/ticket-mappers";
-import {
-  type DashboardStat,
-  type PriorityQueueItem,
-  type RecentTicket,
-  type SeverityDistributionItem,
-  type TrendDataItem,
-} from "@/lib/mock-data";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
+import { getDashboardPageData } from "@/lib/data/dashboard";
 
 const statIcons = {
   bugs: Bug,
@@ -34,144 +23,27 @@ const statIcons = {
   fixed: CheckCircle2,
 };
 
-function buildDashboardStats(tickets: TicketListItem[]): DashboardStat[] {
-  const fixedThisWeek = tickets.filter((ticket) => {
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-    return (
-      (ticket.status === TicketStatus.FIXED ||
-        ticket.status === TicketStatus.CLOSED) &&
-      ticket.updatedAt.getTime() >= sevenDaysAgo
-    );
-  }).length;
-
-  return [
-    {
-      icon: "bugs",
-      value: tickets.length.toLocaleString(),
-      label: "Total Bugs",
-      trend: "+ live",
-      trendType: "positive",
-      accent: "blue",
-    },
-    {
-      icon: "critical",
-      value: tickets
-        .filter((ticket) => ticket.severity === TicketSeverity.CRITICAL)
-        .length.toString(),
-      label: "Critical Issues",
-      trend: "real",
-      trendType: "negative",
-      accent: "red",
-    },
-    {
-      icon: "reports",
-      value: tickets
-        .filter((ticket) => ticket.status === TicketStatus.NEW)
-        .length.toString(),
-      label: "New Reports",
-      trend: "open",
-      trendType: "positive",
-      accent: "violet",
-    },
-    {
-      icon: "fixed",
-      value: fixedThisWeek.toString(),
-      label: "Fixed This Week",
-      trend: "7d",
-      trendType: "positive",
-      accent: "green",
-    },
-  ];
-}
-
-function buildSeverityData(tickets: TicketListItem[]): SeverityDistributionItem[] {
-  const colors = {
-    Critical: "#ef4444",
-    High: "#f97316",
-    Medium: "#eab308",
-    Low: "#3b82f6",
-  } as const;
-
-  const counts = {
-    Critical: 0,
-    High: 0,
-    Medium: 0,
-    Low: 0,
-  };
-
-  tickets.forEach((ticket) => {
-    counts[mapDbSeverityToUiSeverity(ticket.severity)] += 1;
-  });
-
-  return Object.entries(counts).map(([name, value]) => ({
-    name: name as SeverityDistributionItem["name"],
-    value,
-    color: colors[name as keyof typeof colors],
-  }));
-}
-
-function buildTrendData(tickets: TicketListItem[]): TrendDataItem[] {
-  const days = Array.from({ length: 6 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (5 - index));
-
-    return date;
-  });
-
-  return days.map((date) => {
-    const label = date.toLocaleDateString("en-US", {
-      weekday: "short",
-    });
-
-    const bugs = tickets.filter((ticket) => {
-      return ticket.createdAt.toDateString() === date.toDateString();
-    }).length;
-
-    return {
-      label,
-      bugs,
-    };
-  });
-}
-
-async function loadDashboardData() {
-  const context = await getCurrentWorkspaceContextOrRedirect();
-  const dbTickets = await getTickets({
-    workspaceId: context.workspace.id,
-    projectId: context.project?.id,
-    take: 250,
-  });
-
-  const priorityItems: PriorityQueueItem[] = dbTickets
-    .filter(
-      (ticket) =>
-        (ticket.severity === TicketSeverity.CRITICAL ||
-          ticket.severity === TicketSeverity.HIGH) &&
-        ticket.status !== TicketStatus.FIXED &&
-        ticket.status !== TicketStatus.CLOSED
-    )
-    .sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0))
-    .slice(0, 3)
-    .map(mapTicketListItemToPriorityQueueItem);
-
-  return {
-    stats: buildDashboardStats(dbTickets),
-    severity: buildSeverityData(dbTickets),
-    trend: buildTrendData(dbTickets),
-    recent: dbTickets.slice(0, 4).map(mapTicketListItemToRecentTicket) as RecentTicket[],
-    priority: priorityItems,
-  };
-}
+const statusStyles = {
+  New: "border-violet-500/25 bg-violet-500/15 text-violet-300",
+  Investigating: "border-sky-500/25 bg-sky-500/15 text-sky-300",
+  "In Progress": "border-yellow-500/25 bg-yellow-500/15 text-yellow-300",
+  Fixed: "border-emerald-500/25 bg-emerald-500/15 text-emerald-300",
+  Closed: "border-slate-500/25 bg-slate-500/15 text-slate-300",
+} as const;
 
 export default async function DashboardPage() {
-  const data = await loadDashboardData();
+  const context = await getCurrentWorkspaceContextOrRedirect();
+  const data = await getDashboardPageData({
+    workspaceId: context.workspace.id,
+    projectId: context.project?.id,
+    userId: context.user.id,
+  });
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Engineering Dashboard"
-        description="AI-powered bug triage and ticket management"
+        description="Real-time bug triage, ticket health, and workspace activity from your selected project scope."
       />
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -193,9 +65,50 @@ export default async function DashboardPage() {
         <TrendChart data={data.trend} />
       </section>
 
+      <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Ticket Status Distribution</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Average AI confidence: {data.averageConfidenceLabel}
+            {data.confidenceSampleCount > 0
+              ? ` across ${data.confidenceSampleCount} scored tickets.`
+              : " because this scope has not recorded AI scores yet."}
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {data.statusSummary.map((item) => (
+            <div
+              key={item.status}
+              className={`rounded-2xl border p-4 ${statusStyles[item.status]}`}
+            >
+              <p className="text-xs uppercase tracking-[0.18em] text-current/80">
+                {item.status}
+              </p>
+              <p className="mt-3 text-3xl font-bold text-white">{item.count}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
       <RecentTickets tickets={data.recent} />
 
-      <PriorityQueue items={data.priority} />
+      <RecentActivityFeed items={data.recentActivity} />
+
+      <PriorityQueue
+        items={data.priority}
+        criticalCount={data.criticalOpenCount}
+        highCount={data.highOpenCount}
+      />
+
+      {!data.hasTickets ? (
+        <Card className="rounded-3xl border-dashed border-white/10 bg-white/[0.02] shadow-xl shadow-black/20">
+          <CardContent className="p-6 text-sm leading-6 text-muted-foreground">
+            This workspace does not have any submitted tickets yet. Create the first
+            bug report to populate the dashboard, charts, and activity feed with real
+            data.
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

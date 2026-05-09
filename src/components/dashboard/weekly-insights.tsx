@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { WeeklyInsight } from "@/lib/mock-data";
+import type { WeeklyInsight } from "@/lib/dashboard/types";
 
 type WeeklyInsightsProps = {
   insights: WeeklyInsight[];
@@ -43,39 +43,46 @@ export function WeeklyInsights({ insights }: WeeklyInsightsProps) {
       </CardHeader>
 
       <CardContent className="grid gap-4 md:grid-cols-3">
-        {insights.map((insight) => {
-          const Icon = insightIcons[insight.type];
+        {insights.length > 0 ? (
+          insights.map((insight) => {
+            const Icon = insightIcons[insight.type];
 
-          return (
-            <div
-              key={insight.title}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-violet-500/30 hover:bg-white/[0.06]"
-            >
+            return (
               <div
-                className={`flex size-11 items-center justify-center rounded-2xl border ${insightStyles[insight.type]}`}
+                key={insight.title}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-violet-500/30 hover:bg-white/[0.06]"
               >
-                <Icon className="size-5" />
-              </div>
+                <div
+                  className={`flex size-11 items-center justify-center rounded-2xl border ${insightStyles[insight.type]}`}
+                >
+                  <Icon className="size-5" />
+                </div>
 
-              <p className="mt-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                {insight.label}
-              </p>
-
-              <h3 className="mt-2 font-semibold text-white">{insight.title}</h3>
-
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {insight.description}
-              </p>
-
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="text-xs font-medium text-violet-200">Recommendation</p>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  {insight.recommendation}
+                <p className="mt-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  {insight.label}
                 </p>
+
+                <h3 className="mt-2 font-semibold text-white">{insight.title}</h3>
+
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {insight.description}
+                </p>
+
+                <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-xs font-medium text-violet-200">Recommendation</p>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {insight.recommendation}
+                  </p>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground md:col-span-3">
+            AI insights need a little more real ticket history before they can offer
+            meaningful recommendations for this workspace.
+          </div>
+        )}
       </CardContent>
     </Card>
   );

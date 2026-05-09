@@ -2,7 +2,7 @@ import { Code2, ExternalLink } from "lucide-react";
 
 import { SeverityBadge } from "@/components/dashboard/severity-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { TopAffectedPage } from "@/lib/mock-data";
+import type { TopAffectedPage } from "@/lib/dashboard/types";
 
 type TopAffectedPagesProps = {
   pages: TopAffectedPage[];
@@ -26,33 +26,40 @@ export function TopAffectedPages({ pages }: TopAffectedPagesProps) {
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {pages.map((page, index) => (
-          <div
-            key={page.path}
-            className="group flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-violet-500/30 hover:bg-violet-500/[0.04] sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-xs font-bold text-muted-foreground">
-                {index + 1}
-              </div>
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-mono text-sm font-semibold text-violet-300">
-                    {page.path}
-                  </p>
-                  <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+        {pages.length > 0 ? (
+          pages.map((page, index) => (
+            <div
+              key={page.path}
+              className="group flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-violet-500/30 hover:bg-violet-500/[0.04] sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex min-w-0 items-start gap-4">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-xs font-bold text-muted-foreground">
+                  {index + 1}
                 </div>
 
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {page.bugCount} bugs reported
-                </p>
-              </div>
-            </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-mono text-sm font-semibold text-violet-300">
+                      {page.path}
+                    </p>
+                    <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+                  </div>
 
-            <SeverityBadge severity={page.severity} />
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {page.bugCount} bugs reported
+                  </p>
+                </div>
+              </div>
+
+              <SeverityBadge severity={page.severity} />
+            </div>
+          ))
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
+            Affected pages will appear here once tickets start capturing page or route
+            details.
           </div>
-        ))}
+        )}
       </CardContent>
     </Card>
   );

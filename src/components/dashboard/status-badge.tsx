@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { TicketStatus } from "@/lib/mock-data";
+import type { UiTicketStatus as TicketStatus } from "@/lib/dashboard/types";
 import { cn } from "@/lib/utils";
 
 type StatusBadgeProps = {

@@ -11,7 +11,7 @@ import {
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { TrendDataItem } from "@/lib/mock-data";
+import type { TrendDataItem } from "@/lib/dashboard/types";
 
 type TrendChartProps = {
   data: TrendDataItem[];

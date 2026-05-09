@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Ticket } from "@/lib/mock-data";
+import type { UiTicket as Ticket } from "@/lib/dashboard/types";
 
 type TicketTableProps = {
   tickets: Ticket[];

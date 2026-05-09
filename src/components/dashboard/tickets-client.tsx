@@ -9,7 +9,7 @@ import {
   type TicketStatusFilter,
 } from "@/components/dashboard/ticket-filters";
 import { TicketTable } from "@/components/dashboard/ticket-table";
-import type { Ticket } from "@/lib/mock-data";
+import type { UiTicket as Ticket } from "@/lib/dashboard/types";
 
 type TicketsClientProps = {
   initialTickets: Ticket[];
@@ -47,6 +47,7 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
         (ticket) => ticket.status === "In Progress"
       ).length,
       Fixed: initialTickets.filter((ticket) => ticket.status === "Fixed").length,
+      Closed: initialTickets.filter((ticket) => ticket.status === "Closed").length,
     };
   }, [initialTickets]);
 
@@ -67,6 +68,11 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
 
       {filteredTickets.length > 0 ? (
         <TicketTable tickets={filteredTickets} />
+      ) : initialTickets.length === 0 ? (
+        <EmptyState
+          title="No tickets yet"
+          description="This workspace has not received any bug reports yet. Submit the first ticket to populate the queue."
+        />
       ) : (
         <EmptyState
           title="No tickets found"

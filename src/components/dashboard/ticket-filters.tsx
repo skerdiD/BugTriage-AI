@@ -17,7 +17,8 @@ export type TicketStatusFilter =
   | "New"
   | "Investigating"
   | "In Progress"
-  | "Fixed";
+  | "Fixed"
+  | "Closed";
 
 type TicketFiltersProps = {
   searchQuery: string;
@@ -33,6 +34,7 @@ const statusTabs: TicketStatusFilter[] = [
   "Investigating",
   "In Progress",
   "Fixed",
+  "Closed",
 ];
 
 export function TicketFilters({
