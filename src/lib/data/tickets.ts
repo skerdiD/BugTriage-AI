@@ -163,6 +163,8 @@ export type AddTicketCommentInput = {
   body: string;
 };
 
+export const MAX_TICKET_COMMENT_LENGTH = 4_000;
+
 function clampPageSize(take?: number) {
   const normalized = take ?? 50;
   return Math.min(Math.max(normalized, 1), 100);
@@ -502,6 +504,20 @@ export async function updateTicketStatus(
         throw new Error(`Ticket ${code} not found.`);
       }
 
+      if (existingTicket.status === status) {
+        return tx.ticket.findUniqueOrThrow({
+          where: {
+            id: existingTicket.id,
+          },
+          include: {
+            assignee: {
+              select: minimalUserSelect,
+            },
+            aiAnalysis: true,
+          },
+        });
+      }
+
       const updatedTicket = await tx.ticket.update({
         where: {
           id: existingTicket.id,
@@ -553,6 +569,12 @@ export async function addTicketComment(input: AddTicketCommentInput) {
 
   if (!body) {
     throw new Error("Comment body cannot be empty.");
+  }
+
+  if (body.length > MAX_TICKET_COMMENT_LENGTH) {
+    throw new Error(
+      `Comment must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or less.`
+    );
   }
 
   const currentUser = await getCurrentUserOrThrow();

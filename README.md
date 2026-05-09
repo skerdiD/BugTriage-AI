@@ -31,6 +31,7 @@ NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET="bugtriage-private"
 
 GOOGLE_GENERATIVE_AI_API_KEY="your_gemini_api_key"
 
+APP_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 SENTRY_DSN="your_server_sentry_dsn"
@@ -50,3 +51,5 @@ Production observability is wired through Sentry with redacted event payloads.
 - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`: required only if you want source maps uploaded during production builds.
 
 Sensitive inputs such as cookies, authorization headers, AI prompts, uploaded log contents, and token-like values are redacted before logging or sending events to Sentry.
+
+For production invite links and other server-generated absolute URLs, prefer setting `APP_URL`. The server now treats environment-based base URLs as trusted and avoids deriving production origins from forwarded host headers.

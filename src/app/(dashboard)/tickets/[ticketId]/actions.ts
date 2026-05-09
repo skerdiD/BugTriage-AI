@@ -9,12 +9,23 @@ import {
   getCurrentUserOrThrow,
   getCurrentWorkspaceContextOrThrow,
 } from "@/lib/auth/session";
-import { addTicketComment, updateTicketStatus } from "@/lib/data/tickets";
+import {
+  addTicketComment,
+  MAX_TICKET_COMMENT_LENGTH,
+  updateTicketStatus,
+} from "@/lib/data/tickets";
 import { captureServerException } from "@/lib/observability/server-monitoring";
 
 const commentSchema = z.object({
   ticketCode: z.string().trim().min(1),
-  body: z.string().trim().min(1, "Comment cannot be empty."),
+  body: z
+    .string()
+    .trim()
+    .min(1, "Comment cannot be empty.")
+    .max(
+      MAX_TICKET_COMMENT_LENGTH,
+      `Comment must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or less.`
+    ),
 });
 
 const statusSchema = z.object({
@@ -70,7 +81,12 @@ export async function addTicketCommentAction(input: {
       };
     }
 
-    if (error instanceof Error && error.message === "Comment body cannot be empty.") {
+    if (
+      error instanceof Error &&
+      (error.message === "Comment body cannot be empty." ||
+        error.message ===
+          `Comment must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or less.`)
+    ) {
       return {
         ok: false as const,
         error: error.message,

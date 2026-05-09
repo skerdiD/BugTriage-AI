@@ -40,6 +40,22 @@ const nextConfig: NextConfig = {
         value: "strict-origin-when-cross-origin",
       },
       {
+        key: "Cross-Origin-Opener-Policy",
+        value: "same-origin",
+      },
+      {
+        key: "Cross-Origin-Resource-Policy",
+        value: "same-origin",
+      },
+      {
+        key: "Origin-Agent-Cluster",
+        value: "?1",
+      },
+      {
+        key: "X-DNS-Prefetch-Control",
+        value: "off",
+      },
+      {
         key: "Permissions-Policy",
         value:
           "camera=(), microphone=(), geolocation=(), interest-cohort=(), payment=(), usb=()",

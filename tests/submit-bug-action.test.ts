@@ -15,6 +15,7 @@ const {
   getArcjetRequestMock,
   getPublicAiTriageFailureMessageMock,
   getCurrentWorkspaceContextOrThrowMock,
+  deleteUploadedTicketFilesMock,
   logArcjetErrorMock,
   protectMock,
   uploadLogFileMock,
@@ -32,6 +33,7 @@ const {
     getArcjetRequestMock: vi.fn(),
     getPublicAiTriageFailureMessageMock: vi.fn(),
     getCurrentWorkspaceContextOrThrowMock: vi.fn(),
+    deleteUploadedTicketFilesMock: vi.fn(),
     logArcjetErrorMock: vi.fn(),
     protectMock: vi.fn(),
     uploadLogFileMock: vi.fn(),
@@ -75,6 +77,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/supabase/storage", () => ({
   MAX_UPLOAD_FILES_PER_TYPE: 3,
+  deleteUploadedTicketFiles: deleteUploadedTicketFilesMock,
   uploadLogFile: uploadLogFileMock,
   uploadScreenshotFile: uploadScreenshotFileMock,
 }));
@@ -176,6 +179,7 @@ describe("analyzeAndCreateTicketAction", () => {
         "private/workspace-1/user-1/tickets/BUG-4242/logs/console.log",
       attachmentType: "LOG",
     });
+    deleteUploadedTicketFilesMock.mockResolvedValue(undefined);
     createTicketMock.mockResolvedValue({
       id: "ticket-1",
       code: "BUG-4242",
@@ -314,6 +318,31 @@ describe("analyzeAndCreateTicketAction", () => {
     }
     expect(result.warning).toBe(
       "Ticket was created, but AI analysis timed out, so the ticket was saved for manual review."
+    );
+  });
+
+  it("cleans up uploaded files if the database write fails after upload", async () => {
+    const formData = buildValidFormData();
+    formData.append(
+      "screenshots",
+      new File(["image"], "checkout.png", { type: "image/png" })
+    );
+    createTicketMock.mockRejectedValue(new Error("database unavailable"));
+
+    const result = await analyzeAndCreateTicketAction(formData);
+
+    expect(result).toEqual({
+      ok: false,
+      error: "We couldn't create the ticket right now. Please try again.",
+    });
+    expect(deleteUploadedTicketFilesMock).toHaveBeenCalledWith(
+      expect.anything(),
+      [
+        expect.objectContaining({
+          storagePath:
+            "private/workspace-1/user-1/tickets/BUG-4242/screenshots/checkout.png",
+        }),
+      ]
     );
   });
 });

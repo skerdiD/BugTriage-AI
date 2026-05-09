@@ -30,6 +30,7 @@ import {
 } from "@/lib/observability/server-monitoring";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
+  deleteUploadedTicketFiles,
   MAX_UPLOAD_FILES_PER_TYPE,
   type UploadedTicketFile,
   uploadLogFile,
@@ -291,62 +292,67 @@ export async function analyzeAndCreateTicketAction(
       console.warn("[submit-bug] AI triage fallback", getSafeErrorMessage(error));
     }
 
-    await withServerSpan(
-      {
-        name: "ticket.create",
-        op: "db.ticket.create",
-        context: {
-          workspaceId: workspaceContext.workspace.id,
-          projectId: project.id,
-          ticketCode,
-          attachmentCount: uploadedFiles.length,
-          aiFailed: !aiOutput,
+    try {
+      await withServerSpan(
+        {
+          name: "ticket.create",
+          op: "db.ticket.create",
+          context: {
+            workspaceId: workspaceContext.workspace.id,
+            projectId: project.id,
+            ticketCode,
+            attachmentCount: uploadedFiles.length,
+            aiFailed: !aiOutput,
+          },
         },
-      },
-      () =>
-        createTicket({
-          code: ticketCode,
-          workspaceId: workspaceContext.workspace.id,
-          projectId: project.id,
-          reporterId: workspaceContext.user.id,
-          title: aiOutput?.improvedTitle ?? parsed.data.title,
-          description: parsed.data.description,
-          expectedBehavior: parsed.data.expectedBehavior,
-          actualBehavior: parsed.data.actualBehavior,
-          stepsToReproduce: parsed.data.stepsToReproduce,
-          browser: parsed.data.browser,
-          device: parsed.data.device,
-          environment: parsed.data.environment,
-          affectedPage: parsed.data.affectedPage,
-          severity: mapAiSeverityToDbSeverity(aiOutput?.severity),
-          status: TicketStatus.NEW,
-          category: aiOutput?.category ?? "Manual Review",
-          priorityScore: aiOutput?.priorityScore ?? null,
-          aiConfidence: aiOutput?.confidenceScore ?? null,
-          aiAnalysis: aiOutput
-            ? {
-                summary: aiOutput.summary,
-                likelyCause: aiOutput.likelyCause,
-                suggestedFix: aiOutput.suggestedFix,
-                reproductionSteps: aiOutput.reproductionSteps,
-                tags: aiOutput.tags,
-                confidenceScore: aiOutput.confidenceScore,
-                rawAiResponse: {
-                  ...aiOutput,
-                  developerTask: aiOutput.developerTask,
-                },
-              }
-            : undefined,
-          attachments: uploadedFiles.map((file) => ({
-            filename: file.fileName,
-            fileType: file.fileType,
-            fileSize: file.fileSize,
-            storagePath: file.storagePath,
-            url: null,
-            attachmentType: mapAttachmentType(file.attachmentType),
-          })),
-        })
-    );
+        () =>
+          createTicket({
+            code: ticketCode,
+            workspaceId: workspaceContext.workspace.id,
+            projectId: project.id,
+            reporterId: workspaceContext.user.id,
+            title: aiOutput?.improvedTitle ?? parsed.data.title,
+            description: parsed.data.description,
+            expectedBehavior: parsed.data.expectedBehavior,
+            actualBehavior: parsed.data.actualBehavior,
+            stepsToReproduce: parsed.data.stepsToReproduce,
+            browser: parsed.data.browser,
+            device: parsed.data.device,
+            environment: parsed.data.environment,
+            affectedPage: parsed.data.affectedPage,
+            severity: mapAiSeverityToDbSeverity(aiOutput?.severity),
+            status: TicketStatus.NEW,
+            category: aiOutput?.category ?? "Manual Review",
+            priorityScore: aiOutput?.priorityScore ?? null,
+            aiConfidence: aiOutput?.confidenceScore ?? null,
+            aiAnalysis: aiOutput
+              ? {
+                  summary: aiOutput.summary,
+                  likelyCause: aiOutput.likelyCause,
+                  suggestedFix: aiOutput.suggestedFix,
+                  reproductionSteps: aiOutput.reproductionSteps,
+                  tags: aiOutput.tags,
+                  confidenceScore: aiOutput.confidenceScore,
+                  rawAiResponse: {
+                    ...aiOutput,
+                    developerTask: aiOutput.developerTask,
+                  },
+                }
+              : undefined,
+            attachments: uploadedFiles.map((file) => ({
+              filename: file.fileName,
+              fileType: file.fileType,
+              fileSize: file.fileSize,
+              storagePath: file.storagePath,
+              url: null,
+              attachmentType: mapAttachmentType(file.attachmentType),
+            })),
+          })
+      );
+    } catch (error) {
+      await deleteUploadedTicketFiles(supabase, uploadedFiles);
+      throw error;
+    }
 
     return {
       ok: true,

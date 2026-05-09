@@ -12,6 +12,10 @@ import { getSupabaseStorageBucket } from "@/lib/supabase/env";
 export type TicketAttachmentKind = "SCREENSHOT" | "LOG" | "OTHER";
 export const MAX_UPLOAD_FILES_PER_TYPE = 3;
 export const MAX_TICKET_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+export const MIN_SIGNED_URL_TTL_SECONDS = 60;
+export const MAX_SIGNED_URL_TTL_SECONDS = 60 * 15;
+const FILE_SIGNATURE_BYTES = 16;
+const LOG_TEXT_VALIDATION_BYTES = 512;
 
 export type UploadedTicketFile = {
   bucket: string;
@@ -136,6 +140,83 @@ export function validateTicketFile(
   };
 }
 
+function matchesPngSignature(bytes: Uint8Array) {
+  const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+
+  return pngSignature.every((value, index) => bytes[index] === value);
+}
+
+function matchesJpegSignature(bytes: Uint8Array) {
+  return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+}
+
+function matchesWebpSignature(bytes: Uint8Array) {
+  const riff = String.fromCharCode(...bytes.slice(0, 4));
+  const webp = String.fromCharCode(...bytes.slice(8, 12));
+
+  return riff === "RIFF" && webp === "WEBP";
+}
+
+async function validateScreenshotFileContents(file: File) {
+  const bytes = new Uint8Array(
+    await file.slice(0, FILE_SIGNATURE_BYTES).arrayBuffer()
+  );
+
+  if (
+    matchesPngSignature(bytes) ||
+    matchesJpegSignature(bytes) ||
+    matchesWebpSignature(bytes)
+  ) {
+    return;
+  }
+
+  throw new TicketStorageError(
+    "Screenshot file signature did not match an allowed image format.",
+    "Screenshot content did not match a valid PNG, JPG, JPEG, or WEBP file."
+  );
+}
+
+async function validateLogFileContents(file: File) {
+  const bytes = new Uint8Array(
+    await file.slice(0, LOG_TEXT_VALIDATION_BYTES).arrayBuffer()
+  );
+  const decodedText = new TextDecoder().decode(bytes);
+  const suspiciousCharacterMatches = decodedText.match(
+    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uFFFD]/g
+  );
+  const suspiciousCharacterCount = suspiciousCharacterMatches?.length ?? 0;
+
+  if (
+    suspiciousCharacterCount >
+    Math.max(8, Math.floor(decodedText.length * 0.1))
+  ) {
+    throw new TicketStorageError(
+      "Log file contents appeared to be binary data.",
+      "Log uploads must contain plain text or JSON content."
+    );
+  }
+}
+
+export async function validateTicketFileContents(
+  file: File,
+  attachmentType: TicketAttachmentKind
+) {
+  if (attachmentType === "SCREENSHOT") {
+    await validateScreenshotFileContents(file);
+  }
+
+  if (attachmentType === "LOG") {
+    await validateLogFileContents(file);
+  }
+}
+
+function clampSignedUrlTtl(expiresInSeconds: number) {
+  return Math.min(
+    Math.max(Math.floor(expiresInSeconds), MIN_SIGNED_URL_TTL_SECONDS),
+    MAX_SIGNED_URL_TTL_SECONDS
+  );
+}
+
 export function buildTicketStoragePath({
   userId,
   workspaceId,
@@ -177,6 +258,8 @@ export async function uploadTicketFile({
       validation.message ?? "Invalid file."
     );
   }
+
+  await validateTicketFileContents(file, attachmentType);
 
   const bucket = getTicketStorageBucket();
 
@@ -283,6 +366,7 @@ export async function createSignedTicketFileUrl(
   }
 
   const bucket = getTicketStorageBucket();
+  const safeExpiresInSeconds = clampSignedUrlTtl(expiresInSeconds);
 
   try {
     const { data, error } = await withServerSpan(
@@ -291,13 +375,13 @@ export async function createSignedTicketFileUrl(
         op: "storage.signed-url",
         context: {
           workspaceId,
-          expiresInSeconds,
+          expiresInSeconds: safeExpiresInSeconds,
         },
       },
       () =>
         supabase.storage
           .from(bucket)
-          .createSignedUrl(storagePath, expiresInSeconds)
+          .createSignedUrl(storagePath, safeExpiresInSeconds)
     );
 
     if (error) {
@@ -315,9 +399,53 @@ export async function createSignedTicketFileUrl(
       message: "[storage] signed url creation failed",
       context: {
         workspaceId,
-        expiresInSeconds,
+        expiresInSeconds: safeExpiresInSeconds,
       },
     });
     throw error;
+  }
+}
+
+export async function deleteUploadedTicketFiles(
+  supabase: SupabaseClient,
+  files: Array<Pick<UploadedTicketFile, "bucket" | "storagePath">>
+) {
+  if (files.length === 0) {
+    return;
+  }
+
+  const bucket = files[0]?.bucket ?? getTicketStorageBucket();
+  const storagePaths = files.map((file) => file.storagePath);
+
+  try {
+    await withServerSpan(
+      {
+        name: "storage.ticket-file.cleanup",
+        op: "storage.delete",
+        context: {
+          bucket,
+          fileCount: storagePaths.length,
+        },
+      },
+      async () => {
+        const { error } = await supabase.storage.from(bucket).remove(storagePaths);
+
+        if (error) {
+          throw new TicketStorageError(
+            "Supabase Storage cleanup failed after a ticket write error."
+          );
+        }
+      }
+    );
+  } catch (error) {
+    captureServerException(error, {
+      area: "storage",
+      action: "delete-uploaded-ticket-files",
+      message: "[storage] ticket file cleanup failed",
+      context: {
+        bucket,
+        fileCount: storagePaths.length,
+      },
+    });
   }
 }
