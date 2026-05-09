@@ -85,13 +85,13 @@ type RecentActivityRecord = Prisma.TicketActivityGetPayload<{
   select: typeof recentActivitySelect;
 }>;
 
-type ReportingScopeInput = {
+export type ReportingScopeInput = {
   workspaceId: string;
   projectId?: string | null;
   userId?: string;
 };
 
-type DashboardPageData = {
+export type DashboardPageData = {
   hasTickets: boolean;
   stats: DashboardStat[];
   severity: SeverityDistributionItem[];
@@ -109,7 +109,7 @@ type DashboardPageData = {
   }>;
 };
 
-type AnalyticsPageData = {
+export type AnalyticsPageData = {
   hasTickets: boolean;
   metrics: AnalyticsMetric[];
   bugReportsOverTime: BugReportsOverTimeItem[];
@@ -624,15 +624,10 @@ function buildWeeklyInsights(
   ];
 }
 
-export async function getDashboardPageData(
-  input: ReportingScopeInput
-): Promise<DashboardPageData> {
-  await assertReportingScope(input);
-
-  const [tickets, recentActivity] = await Promise.all([
-    queryReportingTickets(input),
-    queryRecentActivities(input),
-  ]);
+export function buildDashboardPageData(
+  tickets: ReportingTicket[],
+  recentActivity: RecentActivityItem[] = []
+): DashboardPageData {
   const confidenceValues = tickets
     .map(getTicketConfidence)
     .filter((value): value is number => value !== null);
@@ -667,11 +662,9 @@ export async function getDashboardPageData(
   };
 }
 
-export async function getAnalyticsPageData(
-  input: ReportingScopeInput
-): Promise<AnalyticsPageData> {
-  await assertReportingScope(input);
-  const tickets = await queryReportingTickets(input);
+export function buildAnalyticsPageData(
+  tickets: ReportingTicket[]
+): AnalyticsPageData {
   const resolvedThisWeek = tickets.filter(
     (ticket) =>
       (ticket.status === TicketStatus.FIXED || ticket.status === TicketStatus.CLOSED) &&
@@ -749,4 +742,26 @@ export async function getAnalyticsPageData(
     repeatedPatterns: buildRepeatedPatterns(tickets),
     weeklyInsights: buildWeeklyInsights(tickets, topCategories, topPages),
   };
+}
+
+export async function getDashboardPageData(
+  input: ReportingScopeInput
+): Promise<DashboardPageData> {
+  await assertReportingScope(input);
+
+  const [tickets, recentActivity] = await Promise.all([
+    queryReportingTickets(input),
+    queryRecentActivities(input),
+  ]);
+
+  return buildDashboardPageData(tickets, recentActivity);
+}
+
+export async function getAnalyticsPageData(
+  input: ReportingScopeInput
+): Promise<AnalyticsPageData> {
+  await assertReportingScope(input);
+  const tickets = await queryReportingTickets(input);
+
+  return buildAnalyticsPageData(tickets);
 }

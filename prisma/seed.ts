@@ -1,3 +1,6 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import {
   PrismaClient,
   TicketActivityType,
@@ -17,13 +20,13 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg(databaseUrl),
 });
 
-const DEFAULT_DEMO_USER_EMAIL = "mirejemi896@gmail.com";
-const DEMO_TICKET_CODE_PREFIX = "DEMO-";
-const DEMO_WORKSPACE_SLUG = "portfolio-demo-mirejemi";
-const DEMO_WORKSPACE_NAME = "BugTriage AI Portfolio Demo";
-const DEMO_PROJECT_SLUG = "saas-demo-workspace";
-const DEMO_PROJECT_NAME = "SaaS Demo Workspace";
-const DEMO_PROJECT_DESCRIPTION =
+export const DEFAULT_DEMO_USER_EMAIL = "mirejemi896@gmail.com";
+export const DEMO_TICKET_CODE_PREFIX = "DEMO-";
+export const DEMO_WORKSPACE_SLUG = "portfolio-demo-mirejemi";
+export const DEMO_WORKSPACE_NAME = "BugTriage AI Portfolio Demo";
+export const DEMO_PROJECT_SLUG = "saas-demo-workspace";
+export const DEMO_PROJECT_NAME = "SaaS Demo Workspace";
+export const DEMO_PROJECT_DESCRIPTION =
   "Demo-only project seeded for portfolio screenshots, walkthroughs, and realistic dashboard footage.";
 
 type DemoCommentSeed = {
@@ -77,7 +80,22 @@ function hoursAfter(date: Date, hours: number) {
   return new Date(date.getTime() + hours * 60 * 60 * 1000);
 }
 
-function buildDemoTickets(): DemoTicketSeed[] {
+export function resolveDemoSeedUserEmail(env?: { SEED_DEMO_USER_EMAIL?: string }) {
+  const source = env ?? process.env;
+
+  return (
+    source.SEED_DEMO_USER_EMAIL?.trim() || DEFAULT_DEMO_USER_EMAIL
+  ).toLowerCase();
+}
+
+export function getObsoleteDemoTicketCodes(
+  existingDemoCodes: string[],
+  currentDemoCodes: string[]
+) {
+  return existingDemoCodes.filter((code) => !currentDemoCodes.includes(code));
+}
+
+export function buildDemoTickets(): DemoTicketSeed[] {
   const loginCreatedAt = daysAgo(22, 9, 15);
   const chartFreezeCreatedAt = daysAgo(18, 11, 10);
   const uploadCreatedAt = daysAgo(14, 14, 20);
@@ -733,9 +751,10 @@ async function removeObsoleteDemoTickets(projectId: string, demoTicketCodes: str
     },
   });
 
-  const obsoleteCodes = existingDemoTickets
-    .map((ticket) => ticket.code)
-    .filter((code) => !demoTicketCodes.includes(code));
+  const obsoleteCodes = getObsoleteDemoTicketCodes(
+    existingDemoTickets.map((ticket) => ticket.code),
+    demoTicketCodes
+  );
 
   if (obsoleteCodes.length === 0) {
     return;
@@ -949,11 +968,8 @@ function upsertDemoTicket(input: {
   });
 }
 
-async function main() {
-  const demoUserEmail = (
-    process.env.SEED_DEMO_USER_EMAIL?.trim() || DEFAULT_DEMO_USER_EMAIL
-  ).toLowerCase();
-
+export async function runDemoSeed() {
+  const demoUserEmail = resolveDemoSeedUserEmail();
   const demoUser = await prisma.user.findUnique({
     where: {
       email: demoUserEmail,
@@ -1000,12 +1016,17 @@ async function main() {
   );
 }
 
-main()
-  .catch((error) => {
-    console.error("Demo seed failed.");
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+const executedScriptPath = process.argv[1] ? path.resolve(process.argv[1]) : null;
+const currentFilePath = fileURLToPath(import.meta.url);
+
+if (executedScriptPath === currentFilePath) {
+  runDemoSeed()
+    .catch((error) => {
+      console.error("Demo seed failed.");
+      console.error(error);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

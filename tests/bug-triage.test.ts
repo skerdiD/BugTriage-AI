@@ -125,4 +125,27 @@ ${"trace-line ".repeat(3_000)}`;
       "AI analysis timed out, so the ticket was saved for manual review."
     );
   });
+
+  it("rejects malformed AI output with a manual-review fallback message", async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        ...validAiResponse,
+        severity: "URGENT",
+      },
+    });
+
+    await expect(
+      analyzeBugReportWithGemini({
+        report: defaultBugReportValues,
+      })
+    ).rejects.toThrow("invalid bug triage response");
+
+    expect(
+      getPublicAiTriageFailureMessage(
+        new Error("AI returned an invalid bug triage response.")
+      )
+    ).toBe(
+      "AI analysis returned an unreliable result, so the ticket was saved for manual review."
+    );
+  });
 });

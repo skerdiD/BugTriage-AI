@@ -220,6 +220,30 @@ describe("analyzeAndCreateTicketAction", () => {
     expect(uploadLogFileMock).not.toHaveBeenCalled();
   });
 
+  it("returns a safe upload validation error when storage rejects an unsupported file", async () => {
+    uploadScreenshotFileMock.mockRejectedValue(
+      Object.assign(new Error("invalid screenshot content"), {
+        name: "TicketStorageError",
+        userMessage: "Screenshot content did not match a valid PNG, JPG, JPEG, or WEBP file.",
+      })
+    );
+
+    const formData = buildValidFormData();
+    formData.append(
+      "screenshots",
+      new File(["not-an-image"], "checkout.png", { type: "image/png" })
+    );
+
+    const result = await analyzeAndCreateTicketAction(formData);
+
+    expect(result).toEqual({
+      ok: false,
+      error:
+        "Screenshot content did not match a valid PNG, JPG, JPEG, or WEBP file.",
+    });
+    expect(createTicketMock).not.toHaveBeenCalled();
+  });
+
   it("creates a ticket with AI-enriched fields when analysis succeeds", async () => {
     analyzeBugReportWithGeminiMock.mockResolvedValue(validAiResponse);
 

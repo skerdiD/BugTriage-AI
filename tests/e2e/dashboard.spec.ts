@@ -16,12 +16,23 @@ test("@smoke home page renders primary product CTAs", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("@smoke protected dashboard routes redirect unauthenticated users to login", async ({
-  page,
-}) => {
-  await page.goto("/dashboard");
+for (const route of [
+  "/dashboard",
+  "/tickets",
+  "/analytics",
+  "/team",
+  "/settings",
+]) {
+  test(`@smoke protected route ${route} redirects unauthenticated users to login`, async ({
+    page,
+  }) => {
+    await page.goto(route);
 
-  await expect(page).toHaveURL(/\/login(?:\?redirectedFrom=%2Fdashboard)?$/);
-  await expect(page.getByLabel("Email address")).toBeVisible();
-  await expect(page.getByRole("button", { name: /^sign in$/i })).toBeVisible();
-});
+    const encodedRoute = route.replace(/\//g, "%2F");
+    await expect(
+      page
+    ).toHaveURL(new RegExp(`/login(?:\\?redirectedFrom=${encodedRoute})?$`));
+    await expect(page.getByLabel("Email address")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^sign in$/i })).toBeVisible();
+  });
+}
