@@ -1,6 +1,6 @@
-import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
+import { captureServerException } from "@/lib/observability/server-monitoring";
 import {
   authCallbackProtection,
   getArcjetDeniedMessage,
@@ -38,12 +38,11 @@ export async function GET(request: Request) {
     const error = exchangeResult?.error;
 
     if (error) {
-      Sentry.captureException(error, {
-        tags: {
-          area: "auth",
-          action: "exchange-code-for-session",
-        },
-        extra: {
+      captureServerException(error, {
+        area: "auth",
+        action: "exchange-code-for-session",
+        message: "[auth-callback] failed to exchange auth code for session",
+        context: {
           hasCode: true,
           hasNextParam: requestUrl.searchParams.has("next"),
         },

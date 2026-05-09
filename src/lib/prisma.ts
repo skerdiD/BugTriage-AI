@@ -1,6 +1,8 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
+import { captureServerException } from "@/lib/observability/server-monitoring";
+
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
@@ -12,13 +14,26 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL is not set.");
   }
 
-  return new PrismaClient({
+  const client = new PrismaClient({
     adapter: new PrismaPg(databaseUrl),
     log:
       process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"],
+        ? ["query", { emit: "event", level: "error" }, "warn"]
+        : [{ emit: "event", level: "error" }],
   });
+
+  client.$on("error", (event) => {
+    captureServerException(new Error(event.message), {
+      area: "database",
+      action: "prisma-client",
+      message: "[database] prisma client error",
+      context: {
+        target: event.target,
+      },
+    });
+  });
+
+  return client;
 }
 
 function getPrismaClient() {

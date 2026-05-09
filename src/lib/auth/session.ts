@@ -17,6 +17,10 @@ import {
   WORKSPACE_COOKIE_NAME,
   type WorkspaceSummary,
 } from "@/lib/data/workspaces";
+import {
+  addServerBreadcrumb,
+  captureServerException,
+} from "@/lib/observability/server-monitoring";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function normalizeNameFromUserMetadata(metadata: User["user_metadata"]) {
@@ -36,18 +40,51 @@ export class AuthenticationError extends Error {
   }
 }
 
-export const getCurrentUserOrThrow = cache(async () => {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+function isExpectedDynamicServerUsageError(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.message.includes("Dynamic server usage:")
+  );
+}
 
-  if (error || !user) {
+export const getCurrentUserOrThrow = cache(async () => {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error) {
+      captureServerException(error, {
+        area: "auth",
+        action: "get-current-user",
+        message: "[auth] failed to fetch current user",
+      });
+      throw new AuthenticationError("You must be signed in to continue.");
+    }
+
+    if (!user) {
+      throw new AuthenticationError("You must be signed in to continue.");
+    }
+
+    return user;
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      throw error;
+    }
+
+    if (isExpectedDynamicServerUsageError(error)) {
+      throw error;
+    }
+
+    captureServerException(error, {
+      area: "auth",
+      action: "get-current-user",
+      message: "[auth] unexpected current user lookup failure",
+    });
     throw new AuthenticationError("You must be signed in to continue.");
   }
-
-  return user;
 });
 
 export const getCurrentDashboardUser = cache(async () => {
@@ -93,37 +130,64 @@ export type CurrentWorkspaceContext = {
 };
 
 export const getCurrentWorkspaceContextOrThrow = cache(async () => {
-  const user = await getCurrentUserOrThrow();
-  const cookieStore = await cookies();
-  const ensuredContext = await ensureUserWorkspace({
-    authUserId: user.id,
-    email: user.email,
-    name: normalizeNameFromUserMetadata(user.user_metadata),
-  });
-  const availableWorkspaces = await listUserWorkspaces(user.id);
-  const selectedWorkspace = pickCurrentWorkspace(
-    availableWorkspaces,
-    cookieStore.get(WORKSPACE_COOKIE_NAME)?.value ?? ensuredContext.workspace.id
-  );
+  try {
+    const user = await getCurrentUserOrThrow();
+    const cookieStore = await cookies();
+    const ensuredContext = await ensureUserWorkspace({
+      authUserId: user.id,
+      email: user.email,
+      name: normalizeNameFromUserMetadata(user.user_metadata),
+    });
+    const availableWorkspaces = await listUserWorkspaces(user.id);
+    const selectedWorkspace = pickCurrentWorkspace(
+      availableWorkspaces,
+      cookieStore.get(WORKSPACE_COOKIE_NAME)?.value ?? ensuredContext.workspace.id
+    );
 
-  if (!selectedWorkspace) {
-    throw new Error("No workspace is available for the current user.");
+    if (!selectedWorkspace) {
+      throw new Error("No workspace is available for the current user.");
+    }
+
+    addServerBreadcrumb({
+      category: "workspace",
+      message: "Resolved current workspace context.",
+      data: {
+        action: "get-current-workspace-context",
+        workspaceId: selectedWorkspace.id,
+        availableWorkspaceCount: availableWorkspaces.length,
+      },
+    });
+
+    const availableProjects = await listWorkspaceProjects(selectedWorkspace.id, user.id);
+    const selectedProject = pickCurrentProject(
+      availableProjects,
+      cookieStore.get(PROJECT_COOKIE_NAME)?.value
+    );
+
+    return {
+      user: ensuredContext.user,
+      workspace: selectedWorkspace,
+      project: selectedProject,
+      role: selectedWorkspace.role,
+      availableWorkspaces,
+      availableProjects,
+    } satisfies CurrentWorkspaceContext;
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      throw error;
+    }
+
+    if (isExpectedDynamicServerUsageError(error)) {
+      throw error;
+    }
+
+    captureServerException(error, {
+      area: "workspace",
+      action: "get-current-workspace-context",
+      message: "[workspace] failed to resolve current workspace context",
+    });
+    throw error;
   }
-
-  const availableProjects = await listWorkspaceProjects(selectedWorkspace.id, user.id);
-  const selectedProject = pickCurrentProject(
-    availableProjects,
-    cookieStore.get(PROJECT_COOKIE_NAME)?.value
-  );
-
-  return {
-    user: ensuredContext.user,
-    workspace: selectedWorkspace,
-    project: selectedProject,
-    role: selectedWorkspace.role,
-    availableWorkspaces,
-    availableProjects,
-  } satisfies CurrentWorkspaceContext;
 });
 
 export const getCurrentWorkspaceContextOrRedirect = cache(async () => {

@@ -93,14 +93,24 @@ export function getSentryEnvironment() {
   return process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "development";
 }
 
+export function getSentryDsn(runtime: "client" | "server" | "edge" = "server") {
+  if (runtime === "client") {
+    return process.env.NEXT_PUBLIC_SENTRY_DSN ?? process.env.SENTRY_DSN;
+  }
+
+  return process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN;
+}
+
 export function getSentryTracesSampleRate() {
   return process.env.NODE_ENV === "production" ? 0.1 : 1;
 }
 
-export function getSharedSentryOptions() {
+export function getSharedSentryOptions(runtime: "client" | "server" | "edge" = "server") {
+  const dsn = getSentryDsn(runtime);
+
   return {
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-    enabled: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),
+    dsn,
+    enabled: Boolean(dsn),
     environment: getSentryEnvironment(),
     sendDefaultPii: false,
     attachStacktrace: true,

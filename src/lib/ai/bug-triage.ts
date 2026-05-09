@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
@@ -8,6 +9,11 @@ import {
   bugTriageAiOutputSchema,
   type BugTriageAiOutput,
 } from "@/lib/ai/bug-triage-schema";
+import {
+  addServerBreadcrumb,
+  captureServerException,
+  withServerSpan,
+} from "@/lib/observability/server-monitoring";
 import { redactSensitiveText } from "@/lib/security/redaction";
 import type { BugReportFormValues } from "@/lib/validation/bug-report";
 import { bugReportFormSchema } from "@/lib/validation/bug-report";
@@ -16,6 +22,7 @@ export { bugTriageAiOutputSchema };
 export type { BugTriageAiOutput };
 
 export const AI_TRIAGE_MODEL = "gemini-2.0-flash-001";
+export const AI_PROVIDER_NAME = "google-gemini";
 export const AI_TRIAGE_TIMEOUT_MS = 12_000;
 export const AI_TRIAGE_MAX_RETRIES = 1;
 export const AI_TRIAGE_MAX_OUTPUT_TOKENS = 900;
@@ -317,17 +324,45 @@ export async function analyzeBugReportWithGemini(
     });
 
     const builtPrompt = buildPromptWithBudget(normalizedInput);
-
-    const result = await generateObject({
-      model: google(AI_TRIAGE_MODEL),
-      schema: bugTriageAiOutputSchema,
-      system: BUG_TRIAGE_SYSTEM_PROMPT,
-      prompt: builtPrompt.prompt,
-      temperature: 0.2,
-      maxOutputTokens: AI_TRIAGE_MAX_OUTPUT_TOKENS,
-      maxRetries: AI_TRIAGE_MAX_RETRIES,
-      timeout: { totalMs: AI_TRIAGE_TIMEOUT_MS },
+    addServerBreadcrumb({
+      category: "ai",
+      message: "Starting AI bug triage request.",
+      data: {
+        action: "analyze-bug-report",
+        provider: AI_PROVIDER_NAME,
+        model: AI_TRIAGE_MODEL,
+        attachmentCount: builtPrompt.safeAttachmentNames.length,
+        hasConsoleLogs: Boolean(builtPrompt.safeConsoleLogs),
+        hasUploadedLogText: Boolean(builtPrompt.safeLogText),
+        promptChars: builtPrompt.prompt.length,
+      },
     });
+
+    const result = await withServerSpan(
+      {
+        name: "ai.triage.generate-object",
+        op: "ai.request",
+        context: {
+          provider: AI_PROVIDER_NAME,
+          model: AI_TRIAGE_MODEL,
+          attachmentCount: builtPrompt.safeAttachmentNames.length,
+          hasConsoleLogs: Boolean(builtPrompt.safeConsoleLogs),
+          hasUploadedLogText: Boolean(builtPrompt.safeLogText),
+          promptChars: builtPrompt.prompt.length,
+        },
+      },
+      () =>
+        generateObject({
+          model: google(AI_TRIAGE_MODEL),
+          schema: bugTriageAiOutputSchema,
+          system: BUG_TRIAGE_SYSTEM_PROMPT,
+          prompt: builtPrompt.prompt,
+          temperature: 0.2,
+          maxOutputTokens: AI_TRIAGE_MAX_OUTPUT_TOKENS,
+          maxRetries: AI_TRIAGE_MAX_RETRIES,
+          timeout: { totalMs: AI_TRIAGE_TIMEOUT_MS },
+        })
+    );
 
     const parsed = bugTriageAiOutputSchema.safeParse(result.object);
 
@@ -341,6 +376,23 @@ export async function analyzeBugReportWithGemini(
 
     return parsed.data;
   } catch (error) {
-    throw normalizeAiError(error);
+    const normalizedError = normalizeAiError(error);
+
+    Sentry.setTag("ai.provider", AI_PROVIDER_NAME);
+    captureServerException(normalizedError, {
+      area: "ai-triage",
+      action: "analyze-bug-report",
+      message: "[ai-triage] analyze bug report failed",
+      context: {
+        provider: AI_PROVIDER_NAME,
+        model: AI_TRIAGE_MODEL,
+        errorCode: normalizedError.code,
+        attachmentCount: input.attachmentNames?.length ?? 0,
+        hasLogText: Boolean(input.logText),
+        hasConsoleLogs: Boolean(input.report.consoleLogs),
+      },
+    });
+
+    throw normalizedError;
   }
 }

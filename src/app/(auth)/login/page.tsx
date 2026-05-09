@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 import {
   AlertCircle,
   ArrowRight,
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getSafeAuthClientErrorMessage } from "@/lib/security/public-errors";
 import { getSafeRedirectPath } from "@/lib/security/urls";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -52,18 +54,26 @@ function LoginContent() {
       });
 
       if (error) {
-        setErrorMessage(error.message);
+        Sentry.captureException(error, {
+          tags: {
+            area: "auth",
+            action: "login",
+          },
+        });
+        setErrorMessage(getSafeAuthClientErrorMessage(error, "login"));
         return;
       }
 
       router.push(redirectedFrom);
       router.refresh();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while signing in."
-      );
+      Sentry.captureException(error, {
+        tags: {
+          area: "auth",
+          action: "login",
+        },
+      });
+      setErrorMessage(getSafeAuthClientErrorMessage(error, "login"));
     } finally {
       setIsLoading(false);
     }

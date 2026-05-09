@@ -2,6 +2,11 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  addServerBreadcrumb,
+  captureServerException,
+  withServerSpan,
+} from "@/lib/observability/server-monitoring";
 import { getSupabaseStorageBucket } from "@/lib/supabase/env";
 
 export type TicketAttachmentKind = "SCREENSHOT" | "LOG" | "OTHER";
@@ -33,6 +38,16 @@ type UploadTicketFileInput = {
   ticketCode: string;
   attachmentType: TicketAttachmentKind;
 };
+
+export class TicketStorageError extends Error {
+  userMessage: string;
+
+  constructor(message: string, userMessage = "We couldn't process that file upload.") {
+    super(message);
+    this.name = "TicketStorageError";
+    this.userMessage = userMessage;
+  }
+}
 
 const screenshotMimeTypes = ["image/png", "image/jpeg", "image/webp"];
 const screenshotExtensions = [".png", ".jpg", ".jpeg", ".webp"];
@@ -157,7 +172,10 @@ export async function uploadTicketFile({
   const validation = validateTicketFile(file, attachmentType);
 
   if (!validation.valid) {
-    throw new Error(validation.message ?? "Invalid file.");
+    throw new TicketStorageError(
+      validation.message ?? "Invalid file.",
+      validation.message ?? "Invalid file."
+    );
   }
 
   const bucket = getTicketStorageBucket();
@@ -170,15 +188,60 @@ export async function uploadTicketFile({
     fileName: file.name,
   });
 
-  const { error } = await supabase.storage.from(bucket).upload(storagePath, file, {
-    cacheControl: "3600",
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
+  addServerBreadcrumb({
+    category: "storage",
+    message: "Starting ticket file upload.",
+    data: {
+      action: "upload-ticket-file",
+      workspaceId,
+      ticketCode,
+      attachmentType,
+      fileType: file.type || "application/octet-stream",
+      fileSize: file.size,
+    },
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  await withServerSpan(
+    {
+      name: "storage.ticket-file.upload",
+      op: "storage.upload",
+      context: {
+        workspaceId,
+        ticketCode,
+        attachmentType,
+        fileType: file.type || "application/octet-stream",
+        fileSize: file.size,
+      },
+    },
+    async () => {
+      const { error } = await supabase.storage.from(bucket).upload(storagePath, file, {
+        cacheControl: "3600",
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+
+      if (error) {
+        throw new TicketStorageError(
+          "Supabase Storage upload failed.",
+          "We couldn't upload one of the selected files."
+        );
+      }
+    }
+  ).catch((error) => {
+    captureServerException(error, {
+      area: "storage",
+      action: "upload-ticket-file",
+      message: "[storage] ticket file upload failed",
+      context: {
+        workspaceId,
+        ticketCode,
+        attachmentType,
+        fileType: file.type || "application/octet-stream",
+        fileSize: file.size,
+      },
+    });
+    throw error;
+  });
 
   return {
     bucket,
@@ -213,18 +276,48 @@ export async function createSignedTicketFileUrl(
   expiresInSeconds = 60 * 5
 ) {
   if (!isTicketStoragePathInWorkspace(storagePath, workspaceId)) {
-    throw new Error("Attachment storage path failed workspace validation.");
+    throw new TicketStorageError(
+      "Attachment storage path failed workspace validation.",
+      "We couldn't prepare that file for download."
+    );
   }
 
   const bucket = getTicketStorageBucket();
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(storagePath, expiresInSeconds);
+  try {
+    const { data, error } = await withServerSpan(
+      {
+        name: "storage.ticket-file.sign-url",
+        op: "storage.signed-url",
+        context: {
+          workspaceId,
+          expiresInSeconds,
+        },
+      },
+      () =>
+        supabase.storage
+          .from(bucket)
+          .createSignedUrl(storagePath, expiresInSeconds)
+    );
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      throw new TicketStorageError(
+        "Supabase Storage signed URL creation failed.",
+        "We couldn't prepare that file for download."
+      );
+    }
+
+    return data.signedUrl;
+  } catch (error) {
+    captureServerException(error, {
+      area: "storage",
+      action: "create-signed-ticket-file-url",
+      message: "[storage] signed url creation failed",
+      context: {
+        workspaceId,
+        expiresInSeconds,
+      },
+    });
+    throw error;
   }
-
-  return data.signedUrl;
 }

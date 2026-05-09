@@ -1,6 +1,5 @@
 "use server";
 
-import * as Sentry from "@sentry/nextjs";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
@@ -8,7 +7,7 @@ import { getCurrentUserOrThrow } from "@/lib/auth/session";
 import { PROJECT_COOKIE_NAME, WORKSPACE_COOKIE_NAME } from "@/lib/data/workspaces";
 import { acceptWorkspaceInvite } from "@/lib/data/workspace-invites";
 import { ensureUserWorkspace } from "@/lib/data/workspaces";
-import { getSafeErrorMessage } from "@/lib/security/redaction";
+import { captureServerException } from "@/lib/observability/server-monitoring";
 
 const cookieOptions = {
   httpOnly: true,
@@ -89,16 +88,14 @@ export async function acceptWorkspaceInviteAction(input: { token: string }) {
         : "Invite accepted. Your workspace access is ready.",
     };
   } catch (error) {
-    Sentry.captureException(error, {
-      tags: {
-        area: "workspace",
-        action: "accept-invite",
+    captureServerException(error, {
+      area: "workspace",
+      action: "accept-invite",
+      message: "[invite-actions] accept invite failed",
+      context: {
+        hasToken: Boolean(input.token),
       },
     });
-    console.error(
-      "[invite-actions] accept invite failed",
-      getSafeErrorMessage(error)
-    );
 
     return {
       ok: false as const,

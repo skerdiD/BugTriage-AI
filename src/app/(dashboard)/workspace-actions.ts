@@ -1,6 +1,5 @@
 "use server";
 
-import * as Sentry from "@sentry/nextjs";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
@@ -17,7 +16,7 @@ import {
   PROJECT_COOKIE_NAME,
   WORKSPACE_COOKIE_NAME,
 } from "@/lib/data/workspaces";
-import { getSafeErrorMessage } from "@/lib/security/redaction";
+import { captureServerException } from "@/lib/observability/server-monitoring";
 
 const cookieOptions = {
   httpOnly: true,
@@ -113,16 +112,14 @@ export async function createProjectAction(input: {
       };
     }
 
-    Sentry.captureException(error, {
-      tags: {
-        area: "workspace",
-        action: "create-project",
-      },
-      extra: {
+    captureServerException(error, {
+      area: "workspace",
+      action: "create-project",
+      message: "[workspace-actions] create project failed",
+      context: {
         workspaceId: input.workspaceId,
       },
     });
-    console.error("[workspace-actions] create project failed", getSafeErrorMessage(error));
 
     return {
       ok: false as const,

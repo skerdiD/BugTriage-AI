@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import * as Sentry from "@sentry/nextjs";
 import { TicketStatus } from "@prisma/client";
 import { z } from "zod";
 
@@ -11,7 +10,7 @@ import {
   getCurrentWorkspaceContextOrThrow,
 } from "@/lib/auth/session";
 import { addTicketComment, updateTicketStatus } from "@/lib/data/tickets";
-import { getSafeErrorMessage } from "@/lib/security/redaction";
+import { captureServerException } from "@/lib/observability/server-monitoring";
 
 const commentSchema = z.object({
   ticketCode: z.string().trim().min(1),
@@ -78,19 +77,14 @@ export async function addTicketCommentAction(input: {
       };
     }
 
-    Sentry.captureException(error, {
-      tags: {
-        area: "tickets",
-        action: "add-comment",
-      },
-      extra: {
+    captureServerException(error, {
+      area: "tickets",
+      action: "add-comment",
+      message: "[ticket-actions] add comment failed",
+      context: {
         ticketCode: input.ticketCode,
       },
     });
-    console.error(
-      "[ticket-actions] add comment failed",
-      getSafeErrorMessage(error)
-    );
 
     return {
       ok: false as const,
@@ -138,20 +132,15 @@ export async function updateTicketStatusAction(input: {
       };
     }
 
-    Sentry.captureException(error, {
-      tags: {
-        area: "tickets",
-        action: "update-status",
-      },
-      extra: {
+    captureServerException(error, {
+      area: "tickets",
+      action: "update-status",
+      message: "[ticket-actions] update status failed",
+      context: {
         ticketCode: input.ticketCode,
-        status: input.status,
+        status: String(input.status),
       },
     });
-    console.error(
-      "[ticket-actions] update status failed",
-      getSafeErrorMessage(error)
-    );
 
     return {
       ok: false as const,

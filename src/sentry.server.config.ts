@@ -6,7 +6,7 @@ import {
 } from "@/lib/observability/sentry";
 
 Sentry.init({
-  ...getSharedSentryOptions(),
+  ...getSharedSentryOptions("server"),
   tracesSampleRate: getSentryTracesSampleRate(),
   shutdownTimeout: 2,
 });

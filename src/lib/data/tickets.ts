@@ -18,6 +18,10 @@ import {
   assertWorkspaceMember,
 } from "@/lib/auth/authorization";
 import { getCurrentUserOrThrow } from "@/lib/auth/session";
+import {
+  captureServerException,
+  withServerSpan,
+} from "@/lib/observability/server-monitoring";
 import { prisma } from "@/lib/prisma";
 
 const minimalUserSelect = {
@@ -207,18 +211,27 @@ function assertTicketAttachmentPaths(
 }
 
 export async function generateUniqueTicketCode() {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const code = `BUG-${Math.floor(1000 + Math.random() * 9000)}`;
+  try {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const code = `BUG-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const existing = await prisma.ticket.findUnique({
-      where: { code },
-      select: { id: true },
+      const existing = await prisma.ticket.findUnique({
+        where: { code },
+        select: { id: true },
+      });
+
+      if (!existing) return code;
+    }
+
+    return `BUG-${Date.now().toString().slice(-6)}`;
+  } catch (error) {
+    captureServerException(error, {
+      area: "database",
+      action: "generate-ticket-code",
+      message: "[tickets] failed to generate unique ticket code",
     });
-
-    if (!existing) return code;
+    throw error;
   }
-
-  return `BUG-${Date.now().toString().slice(-6)}`;
 }
 
 export async function getTickets(input: GetTicketsInput) {
@@ -281,15 +294,30 @@ export async function getTickets(input: GetTicketsInput) {
       : {}),
   };
 
-  return prisma.ticket.findMany({
-    where,
-    include: ticketListInclude,
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: clampPageSize(take),
-    skip: clampOffset(skip),
-  });
+  try {
+    return await prisma.ticket.findMany({
+      where,
+      include: ticketListInclude,
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: clampPageSize(take),
+      skip: clampOffset(skip),
+    });
+  } catch (error) {
+    captureServerException(error, {
+      area: "database",
+      action: "get-tickets",
+      message: "[tickets] failed to load tickets",
+      context: {
+        workspaceId,
+        projectId,
+        status,
+        severity,
+      },
+    });
+    throw error;
+  }
 }
 
 export async function getTicketByCode(code: string, workspaceId: string) {
@@ -298,12 +326,25 @@ export async function getTicketByCode(code: string, workspaceId: string) {
     workspaceId,
   });
 
-  return prisma.ticket.findFirst({
-    where: {
-      id: access.ticket.id,
-    },
-    include: ticketDetailInclude,
-  });
+  try {
+    return await prisma.ticket.findFirst({
+      where: {
+        id: access.ticket.id,
+      },
+      include: ticketDetailInclude,
+    });
+  } catch (error) {
+    captureServerException(error, {
+      area: "database",
+      action: "get-ticket-by-code",
+      message: "[tickets] failed to load ticket detail",
+      context: {
+        workspaceId,
+        ticketCode: code,
+      },
+    });
+    throw error;
+  }
 }
 
 export async function createTicket(input: CreateTicketInput) {
@@ -328,72 +369,100 @@ export async function createTicket(input: CreateTicketInput) {
 
   const reporterId = input.reporterId ?? currentUser.id;
 
-  return prisma.ticket.create({
-    data: {
-      code: input.code,
-      workspaceId: access.workspaceAccess.workspace.id,
-      projectId: access.project.id,
-      reporterId,
-      assigneeId: input.assigneeId,
-      title: input.title,
-      description: input.description,
-      expectedBehavior: input.expectedBehavior,
-      actualBehavior: input.actualBehavior,
-      stepsToReproduce: input.stepsToReproduce,
-      browser: input.browser,
-      device: input.device,
-      environment: input.environment,
-      affectedPage: input.affectedPage,
-      severity: input.severity ?? TicketSeverity.MEDIUM,
-      status: input.status ?? TicketStatus.NEW,
-      category: input.category,
-      priorityScore: input.priorityScore,
-      aiConfidence: input.aiConfidence,
-      aiAnalysis: input.aiAnalysis
-        ? {
-            create: {
-              summary: input.aiAnalysis.summary,
-              likelyCause: input.aiAnalysis.likelyCause,
-              suggestedFix: input.aiAnalysis.suggestedFix,
-              reproductionSteps: input.aiAnalysis.reproductionSteps,
-              tags: input.aiAnalysis.tags,
-              confidenceScore: input.aiAnalysis.confidenceScore,
-              rawAiResponse: input.aiAnalysis.rawAiResponse,
-            },
-          }
-        : undefined,
-      attachments: input.attachments?.length
-        ? {
-            create: input.attachments.map((attachment) => ({
-              filename: attachment.filename,
-              fileType: attachment.fileType,
-              fileSize: attachment.fileSize,
-              storagePath: attachment.storagePath,
-              url: attachment.url,
-              attachmentType: attachment.attachmentType ?? AttachmentType.OTHER,
-            })),
-          }
-        : undefined,
-      activities: {
-        create: {
-          actorId: reporterId,
-          type: TicketActivityType.CREATED,
-          title: "Bug submitted",
-          description: input.aiAnalysis
-            ? "Ticket created after AI triage completed."
-            : "Ticket created from manual report because AI analysis was unavailable.",
-          metadata: {
-            code: input.code,
-            aiAnalyzed: Boolean(input.aiAnalysis),
-          },
+  try {
+    return await withServerSpan(
+      {
+        name: "prisma.ticket.create",
+        op: "db.query",
+        context: {
+          workspaceId: access.workspaceAccess.workspace.id,
+          projectId: access.project.id,
+          ticketCode: input.code,
+          attachmentCount: input.attachments?.length ?? 0,
+          hasAiAnalysis: Boolean(input.aiAnalysis),
         },
       },
-    },
-    select: {
-      id: true,
-      code: true,
-    },
-  });
+      () =>
+        prisma.ticket.create({
+          data: {
+            code: input.code,
+            workspaceId: access.workspaceAccess.workspace.id,
+            projectId: access.project.id,
+            reporterId,
+            assigneeId: input.assigneeId,
+            title: input.title,
+            description: input.description,
+            expectedBehavior: input.expectedBehavior,
+            actualBehavior: input.actualBehavior,
+            stepsToReproduce: input.stepsToReproduce,
+            browser: input.browser,
+            device: input.device,
+            environment: input.environment,
+            affectedPage: input.affectedPage,
+            severity: input.severity ?? TicketSeverity.MEDIUM,
+            status: input.status ?? TicketStatus.NEW,
+            category: input.category,
+            priorityScore: input.priorityScore,
+            aiConfidence: input.aiConfidence,
+            aiAnalysis: input.aiAnalysis
+              ? {
+                  create: {
+                    summary: input.aiAnalysis.summary,
+                    likelyCause: input.aiAnalysis.likelyCause,
+                    suggestedFix: input.aiAnalysis.suggestedFix,
+                    reproductionSteps: input.aiAnalysis.reproductionSteps,
+                    tags: input.aiAnalysis.tags,
+                    confidenceScore: input.aiAnalysis.confidenceScore,
+                    rawAiResponse: input.aiAnalysis.rawAiResponse,
+                  },
+                }
+              : undefined,
+            attachments: input.attachments?.length
+              ? {
+                  create: input.attachments.map((attachment) => ({
+                    filename: attachment.filename,
+                    fileType: attachment.fileType,
+                    fileSize: attachment.fileSize,
+                    storagePath: attachment.storagePath,
+                    url: attachment.url,
+                    attachmentType: attachment.attachmentType ?? AttachmentType.OTHER,
+                  })),
+                }
+              : undefined,
+            activities: {
+              create: {
+                actorId: reporterId,
+                type: TicketActivityType.CREATED,
+                title: "Bug submitted",
+                description: input.aiAnalysis
+                  ? "Ticket created after AI triage completed."
+                  : "Ticket created from manual report because AI analysis was unavailable.",
+                metadata: {
+                  code: input.code,
+                  aiAnalyzed: Boolean(input.aiAnalysis),
+                },
+              },
+            },
+          },
+          select: {
+            id: true,
+            code: true,
+          },
+        })
+    );
+  } catch (error) {
+    captureServerException(error, {
+      area: "database",
+      action: "create-ticket",
+      message: "[tickets] failed to create ticket",
+      context: {
+        workspaceId: input.workspaceId,
+        projectId: input.projectId,
+        ticketCode: input.code,
+      },
+    });
+    throw error;
+  }
 }
 
 export async function updateTicketStatus(
@@ -417,52 +486,66 @@ export async function updateTicketStatus(
     );
   }
 
-  return prisma.$transaction(async (tx) => {
-    const existingTicket = await tx.ticket.findUnique({
-      where: {
-        id: access.ticket.id,
-      },
-      select: {
-        id: true,
-        status: true,
-      },
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const existingTicket = await tx.ticket.findUnique({
+        where: {
+          id: access.ticket.id,
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+
+      if (!existingTicket) {
+        throw new Error(`Ticket ${code} not found.`);
+      }
+
+      const updatedTicket = await tx.ticket.update({
+        where: {
+          id: existingTicket.id,
+        },
+        data: {
+          status,
+        },
+        include: {
+          assignee: {
+            select: minimalUserSelect,
+          },
+          aiAnalysis: true,
+        },
+      });
+
+      await tx.ticketActivity.create({
+        data: {
+          ticketId: existingTicket.id,
+          actorId: actorId ?? currentUser.id,
+          type: TicketActivityType.STATUS_CHANGED,
+          title: "Status changed",
+          description: `Ticket moved from ${existingTicket.status} to ${status}.`,
+          metadata: {
+            from: existingTicket.status,
+            to: status,
+          },
+        },
+      });
+
+      return updatedTicket;
     });
-
-    if (!existingTicket) {
-      throw new Error(`Ticket ${code} not found.`);
-    }
-
-    const updatedTicket = await tx.ticket.update({
-      where: {
-        id: existingTicket.id,
-      },
-      data: {
+  } catch (error) {
+    captureServerException(error, {
+      area: "database",
+      action: "update-ticket-status",
+      message: "[tickets] failed to update ticket status",
+      context: {
+        workspaceId,
+        ticketCode: code,
         status,
       },
-      include: {
-        assignee: {
-          select: minimalUserSelect,
-        },
-        aiAnalysis: true,
-      },
     });
-
-    await tx.ticketActivity.create({
-      data: {
-        ticketId: existingTicket.id,
-        actorId: actorId ?? currentUser.id,
-        type: TicketActivityType.STATUS_CHANGED,
-        title: "Status changed",
-        description: `Ticket moved from ${existingTicket.status} to ${status}.`,
-        metadata: {
-          from: existingTicket.status,
-          to: status,
-        },
-      },
-    });
-
-    return updatedTicket;
-  });
+    throw error;
+  }
 }
 
 export async function addTicketComment(input: AddTicketCommentInput) {
@@ -489,33 +572,46 @@ export async function addTicketComment(input: AddTicketCommentInput) {
 
   const authorId = input.authorId ?? currentUser.id;
 
-  return prisma.$transaction(async (tx) => {
-    const comment = await tx.ticketComment.create({
-      data: {
-        ticketId: access.ticket.id,
-        authorId,
-        body,
-      },
-      include: {
-        author: {
-          select: minimalUserSelect,
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const comment = await tx.ticketComment.create({
+        data: {
+          ticketId: access.ticket.id,
+          authorId,
+          body,
         },
+        include: {
+          author: {
+            select: minimalUserSelect,
+          },
+        },
+      });
+
+      await tx.ticketActivity.create({
+        data: {
+          ticketId: access.ticket.id,
+          actorId: authorId,
+          type: TicketActivityType.COMMENTED,
+          title: "Comment added",
+          description: "A new internal comment was added to the ticket.",
+          metadata: {
+            commentId: comment.id,
+          },
+        },
+      });
+
+      return comment;
+    });
+  } catch (error) {
+    captureServerException(error, {
+      area: "database",
+      action: "add-ticket-comment",
+      message: "[tickets] failed to add ticket comment",
+      context: {
+        workspaceId: input.workspaceId,
+        ticketCode: input.ticketCode,
       },
     });
-
-    await tx.ticketActivity.create({
-      data: {
-        ticketId: access.ticket.id,
-        actorId: authorId,
-        type: TicketActivityType.COMMENTED,
-        title: "Comment added",
-        description: "A new internal comment was added to the ticket.",
-        metadata: {
-          commentId: comment.id,
-        },
-      },
-    });
-
-    return comment;
-  });
+    throw error;
+  }
 }

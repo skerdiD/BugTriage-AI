@@ -1,6 +1,5 @@
 "use server";
 
-import * as Sentry from "@sentry/nextjs";
 import { WorkspaceRole } from "@prisma/client";
 import { z } from "zod";
 
@@ -11,8 +10,8 @@ import {
   revokeWorkspaceInvite,
   WorkspaceInviteError,
 } from "@/lib/data/workspace-invites";
+import { captureServerException } from "@/lib/observability/server-monitoring";
 import { buildAppUrl } from "@/lib/security/app-url";
-import { getSafeErrorMessage } from "@/lib/security/redaction";
 
 const inviteInputSchema = z.object({
   workspaceId: z.string().trim().min(1),
@@ -73,20 +72,15 @@ export async function createWorkspaceInviteAction(input: {
       };
     }
 
-    Sentry.captureException(error, {
-      tags: {
-        area: "workspace",
-        action: "create-invite",
-      },
-      extra: {
+    captureServerException(error, {
+      area: "workspace",
+      action: "create-invite",
+      message: "[team-actions] create invite failed",
+      context: {
         workspaceId: input.workspaceId,
-        role: input.role,
+        role: String(input.role),
       },
     });
-    console.error(
-      "[team-actions] create invite failed",
-      getSafeErrorMessage(error)
-    );
 
     return {
       ok: false as const,
@@ -135,19 +129,14 @@ export async function revokeWorkspaceInviteAction(input: {
       };
     }
 
-    Sentry.captureException(error, {
-      tags: {
-        area: "workspace",
-        action: "revoke-invite",
-      },
-      extra: {
+    captureServerException(error, {
+      area: "workspace",
+      action: "revoke-invite",
+      message: "[team-actions] revoke invite failed",
+      context: {
         workspaceId: input.workspaceId,
       },
     });
-    console.error(
-      "[team-actions] revoke invite failed",
-      getSafeErrorMessage(error)
-    );
 
     return {
       ok: false as const,

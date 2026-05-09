@@ -2,7 +2,6 @@
 
 import { request as getArcjetRequest } from "@arcjet/next";
 import { AttachmentType, TicketSeverity, TicketStatus } from "@prisma/client";
-import * as Sentry from "@sentry/nextjs";
 
 import {
   AuthenticationError,
@@ -24,6 +23,11 @@ import {
   logArcjetError,
 } from "@/lib/security/arcjet";
 import { getSafeErrorMessage } from "@/lib/security/redaction";
+import {
+  addServerBreadcrumb,
+  captureServerException,
+  withServerSpan,
+} from "@/lib/observability/server-monitoring";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   MAX_UPLOAD_FILES_PER_TYPE,
@@ -45,6 +49,8 @@ type CreateBugTicketActionResult =
       ok: false;
       error: string;
     };
+
+const AI_PROVIDER_NAME = "google-gemini";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -97,6 +103,17 @@ ${text.slice(0, 12_000)}
   return chunks.join("\n\n").slice(0, 20_000);
 }
 
+function isTicketStorageFailure(
+  error: unknown
+): error is Error & { userMessage: string } {
+  return (
+    error instanceof Error &&
+    error.name === "TicketStorageError" &&
+    "userMessage" in error &&
+    typeof error.userMessage === "string"
+  );
+}
+
 export async function analyzeAndCreateTicketAction(
   formData: FormData
 ): Promise<CreateBugTicketActionResult> {
@@ -131,7 +148,17 @@ export async function analyzeAndCreateTicketAction(
           "Create a project for this workspace in Settings before submitting bug tickets.",
       };
     }
+    const project = workspaceContext.project;
     const supabase = await createServerSupabaseClient();
+    addServerBreadcrumb({
+      category: "ticket",
+      message: "Starting bug submission action.",
+      data: {
+        action: "submit-bug",
+        workspaceId: workspaceContext.workspace.id,
+        projectId: project.id,
+      },
+    });
 
     const arcjetRequest = await getArcjetRequest();
     const arcjetDecision = await bugSubmissionProtection.protect(arcjetRequest, {
@@ -167,30 +194,68 @@ export async function analyzeAndCreateTicketAction(
       };
     }
 
-    const ticketCode = await generateUniqueTicketCode();
-
-    const uploadedScreenshots = await Promise.all(
-      screenshotFiles.map((file) =>
-        uploadScreenshotFile({
-          supabase,
-          file,
-          userId: workspaceContext.user.id,
+    const ticketCode = await withServerSpan(
+      {
+        name: "ticket.generate-code",
+        op: "db.ticket.generate-code",
+        context: {
           workspaceId: workspaceContext.workspace.id,
-          ticketCode,
-        })
-      )
+          projectId: project.id,
+        },
+      },
+      () => generateUniqueTicketCode()
     );
 
-    const uploadedLogs = await Promise.all(
-      logFiles.map((file) =>
-        uploadLogFile({
-          supabase,
-          file,
-          userId: workspaceContext.user.id,
+    const uploadedScreenshots = await withServerSpan(
+      {
+        name: "ticket.upload-screenshots",
+        op: "storage.batch-upload",
+        context: {
           workspaceId: workspaceContext.workspace.id,
+          projectId: project.id,
           ticketCode,
-        })
-      )
+          fileCount: screenshotFiles.length,
+          attachmentType: "SCREENSHOT",
+        },
+      },
+      () =>
+        Promise.all(
+          screenshotFiles.map((file) =>
+            uploadScreenshotFile({
+              supabase,
+              file,
+              userId: workspaceContext.user.id,
+              workspaceId: workspaceContext.workspace.id,
+              ticketCode,
+            })
+          )
+        )
+    );
+
+    const uploadedLogs = await withServerSpan(
+      {
+        name: "ticket.upload-logs",
+        op: "storage.batch-upload",
+        context: {
+          workspaceId: workspaceContext.workspace.id,
+          projectId: project.id,
+          ticketCode,
+          fileCount: logFiles.length,
+          attachmentType: "LOG",
+        },
+      },
+      () =>
+        Promise.all(
+          logFiles.map((file) =>
+            uploadLogFile({
+              supabase,
+              file,
+              userId: workspaceContext.user.id,
+              workspaceId: workspaceContext.workspace.id,
+              ticketCode,
+            })
+          )
+        )
     );
 
     const uploadedFiles = [...uploadedScreenshots, ...uploadedLogs];
@@ -208,16 +273,16 @@ export async function analyzeAndCreateTicketAction(
       });
     } catch (error) {
       aiErrorMessage = getPublicAiTriageFailureMessage(error);
-      Sentry.captureException(error, {
-        tags: {
-          area: "ai-triage",
+      addServerBreadcrumb({
+        category: "ai",
+        level: "warning",
+        message: "AI triage fell back to manual ticket creation.",
+        data: {
           action: "ticket-analysis-fallback",
-          handled: "true",
-        },
-        extra: {
+          provider: AI_PROVIDER_NAME,
           ticketCode,
           workspaceId: workspaceContext.workspace.id,
-          projectId: workspaceContext.project.id,
+          projectId: project.id,
           screenshotCount: screenshotFiles.length,
           logFileCount: logFiles.length,
           hasConsoleLogs: Boolean(parsed.data.consoleLogs),
@@ -226,48 +291,62 @@ export async function analyzeAndCreateTicketAction(
       console.warn("[submit-bug] AI triage fallback", getSafeErrorMessage(error));
     }
 
-    await createTicket({
-      code: ticketCode,
-      workspaceId: workspaceContext.workspace.id,
-      projectId: workspaceContext.project.id,
-      reporterId: workspaceContext.user.id,
-      title: aiOutput?.improvedTitle ?? parsed.data.title,
-      description: parsed.data.description,
-      expectedBehavior: parsed.data.expectedBehavior,
-      actualBehavior: parsed.data.actualBehavior,
-      stepsToReproduce: parsed.data.stepsToReproduce,
-      browser: parsed.data.browser,
-      device: parsed.data.device,
-      environment: parsed.data.environment,
-      affectedPage: parsed.data.affectedPage,
-      severity: mapAiSeverityToDbSeverity(aiOutput?.severity),
-      status: TicketStatus.NEW,
-      category: aiOutput?.category ?? "Manual Review",
-      priorityScore: aiOutput?.priorityScore ?? null,
-      aiConfidence: aiOutput?.confidenceScore ?? null,
-      aiAnalysis: aiOutput
-        ? {
-            summary: aiOutput.summary,
-            likelyCause: aiOutput.likelyCause,
-            suggestedFix: aiOutput.suggestedFix,
-            reproductionSteps: aiOutput.reproductionSteps,
-            tags: aiOutput.tags,
-            confidenceScore: aiOutput.confidenceScore,
-            rawAiResponse: {
-              ...aiOutput,
-              developerTask: aiOutput.developerTask,
-            },
-          }
-        : undefined,
-      attachments: uploadedFiles.map((file) => ({
-        filename: file.fileName,
-        fileType: file.fileType,
-        fileSize: file.fileSize,
-        storagePath: file.storagePath,
-        url: null,
-        attachmentType: mapAttachmentType(file.attachmentType),
-      })),
-    });
+    await withServerSpan(
+      {
+        name: "ticket.create",
+        op: "db.ticket.create",
+        context: {
+          workspaceId: workspaceContext.workspace.id,
+          projectId: project.id,
+          ticketCode,
+          attachmentCount: uploadedFiles.length,
+          aiFailed: !aiOutput,
+        },
+      },
+      () =>
+        createTicket({
+          code: ticketCode,
+          workspaceId: workspaceContext.workspace.id,
+          projectId: project.id,
+          reporterId: workspaceContext.user.id,
+          title: aiOutput?.improvedTitle ?? parsed.data.title,
+          description: parsed.data.description,
+          expectedBehavior: parsed.data.expectedBehavior,
+          actualBehavior: parsed.data.actualBehavior,
+          stepsToReproduce: parsed.data.stepsToReproduce,
+          browser: parsed.data.browser,
+          device: parsed.data.device,
+          environment: parsed.data.environment,
+          affectedPage: parsed.data.affectedPage,
+          severity: mapAiSeverityToDbSeverity(aiOutput?.severity),
+          status: TicketStatus.NEW,
+          category: aiOutput?.category ?? "Manual Review",
+          priorityScore: aiOutput?.priorityScore ?? null,
+          aiConfidence: aiOutput?.confidenceScore ?? null,
+          aiAnalysis: aiOutput
+            ? {
+                summary: aiOutput.summary,
+                likelyCause: aiOutput.likelyCause,
+                suggestedFix: aiOutput.suggestedFix,
+                reproductionSteps: aiOutput.reproductionSteps,
+                tags: aiOutput.tags,
+                confidenceScore: aiOutput.confidenceScore,
+                rawAiResponse: {
+                  ...aiOutput,
+                  developerTask: aiOutput.developerTask,
+                },
+              }
+            : undefined,
+          attachments: uploadedFiles.map((file) => ({
+            filename: file.fileName,
+            fileType: file.fileType,
+            fileSize: file.fileSize,
+            storagePath: file.storagePath,
+            url: null,
+            attachmentType: mapAttachmentType(file.attachmentType),
+          })),
+        })
+    );
 
     return {
       ok: true,
@@ -286,13 +365,18 @@ export async function analyzeAndCreateTicketAction(
       };
     }
 
-    Sentry.captureException(error, {
-      tags: {
-        area: "tickets",
-        action: "create-ticket",
-      },
+    if (isTicketStorageFailure(error)) {
+      return {
+        ok: false,
+        error: error.userMessage,
+      };
+    }
+
+    captureServerException(error, {
+      area: "tickets",
+      action: "submit-bug",
+      message: "[submit-bug] failed to create ticket",
     });
-    console.error("[submit-bug] failed to create ticket", getSafeErrorMessage(error));
 
     return {
       ok: false,
