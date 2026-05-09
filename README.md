@@ -53,3 +53,23 @@ Production observability is wired through Sentry with redacted event payloads.
 Sensitive inputs such as cookies, authorization headers, AI prompts, uploaded log contents, and token-like values are redacted before logging or sending events to Sentry.
 
 For production invite links and other server-generated absolute URLs, prefer setting `APP_URL`. The server now treats environment-based base URLs as trusted and avoids deriving production origins from forwarded host headers.
+
+## Demo seed data
+
+Demo seed data is opt-in and only targets a single existing account.
+
+1. Create or sign in with `mirejemi896@gmail.com` first so the user record exists.
+2. Set `SEED_DEMO_USER_EMAIL` in your local environment if you want to override the default target email.
+3. Run `npm run db:seed` or `npx prisma db seed`.
+
+What it does:
+
+- Creates or reuses a dedicated demo workspace and project for the configured demo email.
+- Seeds realistic ticket, comment, AI analysis, and activity data into that demo workspace only.
+- Leaves every other user's workspace empty unless they create their own real tickets.
+
+What it does not do:
+
+- It does not auto-seed on sign-up.
+- It does not inject frontend mock data into authenticated pages.
+- It does not wipe the whole database or remove other users' data.
