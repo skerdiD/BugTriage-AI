@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   ArrowRight,
   Bug,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const contextChips = ["Safari", "iOS", "Checkout", "Payment"] as const;
@@ -30,6 +32,7 @@ const attachedContext = [
 const structuredMeta = [
   { label: "Severity", value: "Critical", tone: "critical" },
   { label: "Category", value: "Payment / Checkout", tone: "default" },
+  { label: "Reviewer", value: "Engineering review", tone: "default" },
   { label: "Confidence", value: "94%", tone: "default" },
   { label: "Status", value: "Triaged", tone: "success" },
 ] as const;
@@ -44,16 +47,22 @@ const reproductionSteps = [
 const structuredSections = [
   {
     title: "Summary",
-    body: "Checkout freezes on Safari mobile after card details are entered, blocking payment completion for affected users.",
+    body: "Safari mobile users can enter card details, but checkout freezes before payment completes.",
   },
   {
     title: "Likely cause",
-    body: "Safari-specific client-side handling in the payment form is likely failing after card input validation or tokenization.",
+    body: "Safari-specific payment form handling is likely failing after card validation or tokenization.",
   },
   {
     title: "Suggested fix",
-    body: "Review Safari payment form event handling, reproduce on iPhone, and harden the submit flow around card validation and async state updates.",
+    body: "Reproduce on iPhone Safari, inspect payment submit state transitions, and harden the post-validation flow.",
   },
+] as const;
+
+const workflowSteps = [
+  "Raw report",
+  "AI triage",
+  "Engineering-ready ticket",
 ] as const;
 
 function MetaBadge({
@@ -98,13 +107,19 @@ export function BeforeAfterPreview() {
         </div>
 
         <div className="grid gap-4 p-5 lg:grid-cols-[0.94fr_auto_1.06fr] lg:items-stretch">
-          <div className="rounded-[28px] border border-white/10 bg-slate-950/72 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <section
+            aria-labelledby="messy-report-title"
+            className="rounded-[28px] border border-white/10 bg-slate-950/72 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs tracking-[0.22em] text-slate-500 uppercase">
-                  Messy bug report
+                  Before
                 </p>
-                <h3 className="mt-2 text-xl font-semibold text-white">
+                <h3
+                  id="messy-report-title"
+                  className="mt-2 text-xl font-semibold text-white"
+                >
                   Checkout freezes on Safari mobile
                 </h3>
               </div>
@@ -113,9 +128,13 @@ export function BeforeAfterPreview() {
               </span>
             </div>
 
-            <div className="mt-5 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+            <div className="mt-4 rounded-full border border-amber-400/16 bg-amber-500/8 px-3 py-1.5 text-xs text-amber-100">
+              Missing priority and unclear next step
+            </div>
+
+            <div className="mt-4 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
               <p className="text-[0.68rem] tracking-[0.2em] text-slate-500 uppercase">
-                User message
+                Unclear user complaint
               </p>
               <p className="mt-3 text-sm leading-7 text-slate-200">
                 &quot;Customer says payment form freezes after adding card details. Only
@@ -125,7 +144,7 @@ export function BeforeAfterPreview() {
 
             <div className="mt-4">
               <p className="text-[0.68rem] tracking-[0.2em] text-slate-500 uppercase">
-                Context
+                Device and browser context
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {contextChips.map((chip) => (
@@ -139,7 +158,7 @@ export function BeforeAfterPreview() {
               </div>
             </div>
 
-            <div className="mt-5 space-y-3">
+            <div className="mt-4 space-y-3">
               {attachedContext.map((item) => (
                 <div
                   key={item.label}
@@ -156,11 +175,11 @@ export function BeforeAfterPreview() {
               ))}
             </div>
 
-            <div className="mt-5 flex items-start gap-3 rounded-[22px] border border-amber-400/18 bg-amber-500/10 p-4 text-sm leading-6 text-amber-50">
+            <div className="mt-4 flex items-start gap-3 rounded-[22px] border border-amber-400/18 bg-amber-500/10 p-4 text-sm leading-6 text-amber-50">
               <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-              <span>Engineering still has to interpret severity, cause, and next steps.</span>
+              <span>Useful evidence is present, but engineering still has to translate it into a ticket.</span>
             </div>
-          </div>
+          </section>
 
           <div className="flex items-center justify-center">
             <div className="hidden size-14 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 shadow-lg shadow-cyan-950/60 lg:flex">
@@ -171,14 +190,20 @@ export function BeforeAfterPreview() {
             </Badge>
           </div>
 
-          <div className="rounded-[28px] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(8,145,178,0.18),rgba(15,23,42,0.62))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <section
+            aria-labelledby="structured-ticket-title"
+            className="rounded-[28px] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(8,145,178,0.18),rgba(15,23,42,0.62))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs tracking-[0.22em] text-cyan-100/70 uppercase">
-                  AI structured ticket
+                  After
                 </p>
-                <h3 className="mt-2 text-xl font-semibold text-white">
-                  Engineering-ready ticket
+                <h3
+                  id="structured-ticket-title"
+                  className="mt-2 text-xl font-semibold text-white"
+                >
+                  Safari mobile checkout freezes after card entry
                 </h3>
               </div>
               <span className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08]">
@@ -186,7 +211,11 @@ export function BeforeAfterPreview() {
               </span>
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 rounded-full border border-emerald-400/16 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-100">
+              Reviewed and ready for engineering triage
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {structuredMeta.map((item) => (
                 <MetaBadge
                   key={item.label}
@@ -197,17 +226,26 @@ export function BeforeAfterPreview() {
               ))}
             </div>
 
-            {structuredSections.map((section) => (
-              <div
-                key={section.title}
-                className="mt-4 rounded-[24px] border border-white/10 bg-slate-950/55 p-4"
-              >
-                <p className="text-[0.68rem] tracking-[0.2em] text-slate-400 uppercase">
-                  {section.title}
-                </p>
-                <p className="mt-3 text-sm leading-7 text-slate-200">{section.body}</p>
+            <div className="mt-4 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
+              <p className="text-[0.68rem] tracking-[0.2em] text-slate-400 uppercase">
+                What the AI creates
+              </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {structuredSections.map((section) => (
+                  <div
+                    key={section.title}
+                    className="rounded-2xl border border-white/8 bg-white/[0.03] p-3.5"
+                  >
+                    <p className="text-[0.68rem] tracking-[0.2em] text-slate-400 uppercase">
+                      {section.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-200">
+                      {section.body}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
 
             <div className="mt-4 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
               <p className="text-[0.68rem] tracking-[0.2em] text-slate-400 uppercase">
@@ -227,12 +265,52 @@ export function BeforeAfterPreview() {
 
             <div className="mt-4 flex items-start gap-3 rounded-[22px] border border-emerald-400/18 bg-emerald-500/10 p-4 text-sm leading-6 text-emerald-50">
               <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
-              <span>Severity, summary, and next action are clear before engineering picks it up.</span>
+              <span>Severity, summary, likely cause, and next action are clear before engineering picks it up.</span>
             </div>
 
             <div className="mt-4 flex items-center gap-2 text-xs text-slate-300">
               <ShieldCheck className="size-4 text-emerald-200" />
               Structured AI triage with private uploads and review-ready output
+            </div>
+          </section>
+        </div>
+
+        <div className="border-t border-white/10 bg-slate-950/42 px-5 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-200">
+                {workflowSteps.map((step, index) => (
+                  <div key={step} className="flex items-center gap-2">
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">
+                      {step}
+                    </span>
+                    {index < workflowSteps.length - 1 ? (
+                      <ArrowRight className="size-4 text-cyan-100/70" />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-sm text-slate-400">
+                Raw report → AI triage → Engineering-ready ticket
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                asChild
+                size="sm"
+                className="h-10 rounded-full bg-[linear-gradient(135deg,#0891b2,#10b981)] px-5 text-white shadow-lg shadow-cyan-950/60 hover:brightness-110"
+              >
+                <Link href="/submit-bug">Submit Demo Bug</Link>
+              </Button>
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="h-10 rounded-full border-white/10 bg-white/[0.04] px-5 text-white hover:bg-white/[0.08]"
+              >
+                <Link href="/dashboard">View Dashboard</Link>
+              </Button>
             </div>
           </div>
         </div>
