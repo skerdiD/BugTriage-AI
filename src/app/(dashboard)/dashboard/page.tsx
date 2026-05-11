@@ -5,6 +5,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PriorityQueue } from "@/components/dashboard/priority-queue";
 import { RecentActivityFeed } from "@/components/dashboard/recent-activity-feed";
@@ -101,13 +102,12 @@ export default async function DashboardPage() {
       />
 
       {!data.hasTickets ? (
-        <Card className="rounded-3xl border-dashed border-white/10 bg-white/[0.02] shadow-xl shadow-black/20">
-          <CardContent className="p-6 text-sm leading-6 text-muted-foreground">
-            This workspace does not have any submitted tickets yet. Create the first
-            bug report to populate the dashboard, charts, and activity feed with real
-            data.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No dashboard data yet"
+          description="Create the first bug report to populate the dashboard, charts, and activity feed with real workspace data."
+          actionLabel="Submit a bug report"
+          actionHref="/submit-bug"
+        />
       ) : null}
     </div>
   );

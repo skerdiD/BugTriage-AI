@@ -177,8 +177,8 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
             </h1>
 
             <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-              Real ticket detail, original report, AI context, comments, and activity
-              history in one workspace-safe view.
+              Review the original report, structured AI output, attachments, comments,
+              and ticket activity in one workspace-safe view.
             </p>
           </div>
         </div>
@@ -440,11 +440,15 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                     value={commentText}
                     onChange={(event) => setCommentText(event.target.value)}
                     placeholder="Add an internal engineering note..."
+                    aria-label="Internal engineering note"
                     className="min-h-24 rounded-2xl border-white/10 bg-white/[0.04]"
                   />
 
                   {commentError ? (
-                    <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    <p
+                      role="alert"
+                      className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+                    >
                       {commentError}
                     </p>
                   ) : null}
@@ -584,7 +588,10 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                   </SelectContent>
                 </Select>
                 {statusError ? (
-                  <p className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  <p
+                    role="alert"
+                    className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+                  >
                     {statusError}
                   </p>
                 ) : null}

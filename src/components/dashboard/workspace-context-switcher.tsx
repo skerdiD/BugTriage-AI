@@ -61,11 +61,15 @@ export function WorkspaceContextSwitcher({
     <div className="w-full md:w-auto">
       <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
         <div className="grid min-w-0 gap-1">
-          <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <label
+            htmlFor="workspace-switcher-workspace"
+            className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+          >
             <Users className="size-3.5 text-violet-300" />
             Workspace
-          </span>
+          </label>
           <select
+            id="workspace-switcher-workspace"
             value={currentWorkspaceId}
             onChange={(event) => handleWorkspaceChange(event.target.value)}
             disabled={isPending}
@@ -80,11 +84,15 @@ export function WorkspaceContextSwitcher({
         </div>
 
         <div className="grid min-w-0 gap-1">
-          <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <label
+            htmlFor="workspace-switcher-project"
+            className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+          >
             <FolderKanban className="size-3.5 text-sky-300" />
             Project
-          </span>
+          </label>
           <select
+            id="workspace-switcher-project"
             value={currentProjectId ?? ""}
             onChange={(event) => handleProjectChange(event.target.value)}
             disabled={isPending || projects.length === 0}

@@ -28,6 +28,7 @@ export function LandingFaq({ items }: LandingFaqProps) {
             className="rounded-[28px] border border-white/10 bg-white/[0.035] shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]"
           >
             <button
+              id={`faq-trigger-${index}`}
               type="button"
               aria-expanded={isOpen}
               aria-controls={`faq-panel-${index}`}
@@ -48,6 +49,8 @@ export function LandingFaq({ items }: LandingFaqProps) {
             </button>
             <div
               id={`faq-panel-${index}`}
+              role="region"
+              aria-labelledby={`faq-trigger-${index}`}
               className={cn(
                 "grid overflow-hidden px-6 transition-[grid-template-rows,opacity,padding-bottom] duration-300 ease-out",
                 isOpen ? "grid-rows-[1fr] pb-5 opacity-100" : "grid-rows-[0fr] pb-0 opacity-70"

@@ -72,7 +72,8 @@ export default async function SettingsPage() {
                     {context.workspace.memberCount} members
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {context.workspace.projectCount} projects · {context.workspace.ticketCount} tickets
+                    {context.workspace.projectCount} projects {"\u00B7"}{" "}
+                    {context.workspace.ticketCount} tickets
                   </p>
                 </div>
               </div>

@@ -35,8 +35,8 @@ function SignupContent() {
 
   const redirectedFrom = getSafeRedirectPath(searchParams.get("redirectedFrom"));
 
-  const [name, setName] = useState("Sarah Chen");
-  const [email, setEmail] = useState("sarah@bugtriage.ai");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -215,17 +215,28 @@ function SignupContent() {
                     className="h-11 rounded-xl border-white/10 bg-white/[0.04]"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Use at least 6 characters. You&apos;ll confirm the account by email if
+                    your Supabase project requires verification.
+                  </p>
                 </div>
 
                 {errorMessage ? (
-                  <div className="flex gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+                  <div
+                    role="alert"
+                    className="flex gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200"
+                  >
                     <AlertCircle className="mt-0.5 size-4 shrink-0" />
                     <p>{errorMessage}</p>
                   </div>
                 ) : null}
 
                 {successMessage ? (
-                  <div className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200"
+                  >
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
                     <p>{successMessage}</p>
                   </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock3 } from "lucide-react";
+import { ArrowRight, Clock3 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,9 +24,10 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
         <CardTitle className="text-lg">Recently AI-Triaged Tickets</CardTitle>
         <Link
           href="/tickets"
-          className="text-sm font-semibold text-violet-300 transition hover:text-violet-200"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-violet-300 transition hover:text-violet-200"
         >
-          View all {"->"}
+          View all tickets
+          <ArrowRight className="size-4" />
         </Link>
       </CardHeader>
 

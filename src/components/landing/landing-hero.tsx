@@ -42,7 +42,7 @@ export function LandingHero() {
             variant="outline"
             className="h-12 rounded-full border-white/10 bg-white/[0.04] px-6 text-base text-white hover:bg-white/[0.08]"
           >
-            <Link href="/dashboard">View Dashboard</Link>
+            <Link href="/dashboard">Open Dashboard</Link>
           </Button>
         </div>
 

@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -28,6 +29,10 @@ export function TicketTable({ tickets }: TicketTableProps) {
     <Card className="overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
       <div className="overflow-x-auto">
         <Table>
+          <TableCaption className="sr-only">
+            Ticket list with severity, status, assignee, created date, and AI
+            confidence for the current workspace scope.
+          </TableCaption>
           <TableHeader>
             <TableRow className="border-white/10 bg-white/[0.025] hover:bg-white/[0.025]">
               <TableHead className="min-w-[330px] px-5 py-4">Ticket</TableHead>
@@ -48,6 +53,7 @@ export function TicketTable({ tickets }: TicketTableProps) {
                 key={ticket.id}
                 role="link"
                 tabIndex={0}
+                aria-label={`Open ticket ${ticket.id}: ${ticket.title}`}
                 onClick={() => router.push(`/tickets/${ticket.id}`)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -55,7 +61,7 @@ export function TicketTable({ tickets }: TicketTableProps) {
                     router.push(`/tickets/${ticket.id}`);
                   }
                 }}
-                className="group cursor-pointer border-white/10 transition hover:bg-violet-500/[0.045]"
+                className="group cursor-pointer border-white/10 transition hover:bg-violet-500/[0.045] focus-visible:bg-violet-500/[0.045] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 focus-visible:ring-inset"
               >
                 <TableCell className="px-5 py-4">
                   <div className="flex items-start gap-3">

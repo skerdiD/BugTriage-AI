@@ -88,6 +88,23 @@ export default function SubmitBugPage() {
     return 0;
   }, [createdCode, isSubmitting]);
 
+  const totalUploadBytes = useMemo(
+    () =>
+      [...screenshotFiles, ...logFiles].reduce((sum, file) => sum + file.size, 0),
+    [logFiles, screenshotFiles]
+  );
+
+  const totalUploadSizeLabel = useMemo(() => {
+    if (totalUploadBytes === 0) {
+      return "No files selected yet.";
+    }
+
+    return `${(
+      totalUploadBytes /
+      (1024 * 1024)
+    ).toFixed(1)} MB selected across ${screenshotFiles.length + logFiles.length} file(s).`;
+  }, [logFiles.length, screenshotFiles.length, totalUploadBytes]);
+
   function submit(values: BugReportFormValues) {
     setSubmitError("");
     setSubmitWarning("");
@@ -135,7 +152,7 @@ export default function SubmitBugPage() {
     <div className="space-y-8">
       <PageHeader
         title="Submit Bug Report"
-        description="Provide details about the issue and AI will analyze it for you"
+        description="Upload the raw bug context your team already has, and BugTriage AI will turn it into a structured engineering ticket."
         badge="Real AI workflow"
       />
 
@@ -283,6 +300,10 @@ export default function SubmitBugPage() {
                           {...field}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Use the route, screen, feature area, or component name engineers
+                        will recognize fastest.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -295,17 +316,20 @@ export default function SubmitBugPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Steps to Reproduce *</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="1. Open checkout&#10;2. Enter card details&#10;3. Click submit"
-                            className="min-h-36 rounded-xl border-white/10 bg-white/[0.04] font-mono text-sm"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      <FormControl>
+                        <Textarea
+                          placeholder={"1. Open checkout\n2. Enter card details\n3. Click submit"}
+                          className="min-h-36 rounded-xl border-white/10 bg-white/[0.04] font-mono text-sm"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Use one step per line so the AI can preserve the sequence clearly.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                   <div className="grid gap-5">
                     <FormField
@@ -348,9 +372,9 @@ export default function SubmitBugPage() {
 
                 <div className="grid gap-5 lg:grid-cols-2">
                   <UploadDropzone
-                    title="Screenshot"
-                    description="Drop image here or click to upload"
-                    helperText="PNG, JPG, WEBP up to 10MB"
+                    title="Screenshots"
+                    description="Drop image files here or click to upload"
+                    helperText="PNG, JPG, and WEBP up to 10MB each. Up to 3 files."
                     icon={ImageIcon}
                     accept={{
                       "image/png": [".png"],
@@ -363,8 +387,8 @@ export default function SubmitBugPage() {
 
                   <UploadDropzone
                     title="Console Logs"
-                    description="Drop log file here or click to upload"
-                    helperText="TXT, LOG, JSON up to 10MB"
+                    description="Drop log files here or click to upload"
+                    helperText="TXT, LOG, and JSON up to 10MB each. Up to 3 files."
                     icon={FileText}
                     accept={{
                       "text/plain": [".txt", ".log"],
@@ -373,6 +397,19 @@ export default function SubmitBugPage() {
                     files={logFiles}
                     onFilesChange={setLogFiles}
                   />
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium text-white">Upload summary</span>
+                    <Badge className="border-white/10 bg-white/[0.05] text-slate-200">
+                      20MB total ticket limit
+                    </Badge>
+                  </div>
+                  <p className="mt-2 leading-6">
+                    {totalUploadSizeLabel} Private files are stored securely and only
+                    surfaced back through authorized ticket views.
+                  </p>
                 </div>
 
                 <FormField
@@ -397,21 +434,32 @@ export default function SubmitBugPage() {
                 />
 
                 {submitError ? (
-                  <div className="flex gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+                  <div
+                    role="alert"
+                    className="flex gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200"
+                  >
                     <AlertCircle className="mt-0.5 size-4 shrink-0" />
                     <p>{submitError}</p>
                   </div>
                 ) : null}
 
                 {submitWarning ? (
-                  <div className="flex gap-3 rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-4 text-sm text-yellow-100">
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="flex gap-3 rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-4 text-sm text-yellow-100"
+                  >
                     <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                     <p>{submitWarning}</p>
                   </div>
                 ) : null}
 
                 {createdCode ? (
-                  <div className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100"
+                  >
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
                     <p>Ticket {createdCode} created. Redirecting to ticket detail...</p>
                   </div>

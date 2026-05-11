@@ -23,6 +23,7 @@ import {
 } from "recharts";
 
 import { AnalyticsMetricCard } from "@/components/dashboard/analytics-metric-card";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { RepeatedPatterns } from "@/components/dashboard/repeated-patterns";
 import { TopAffectedPages } from "@/components/dashboard/top-affected-pages";
@@ -268,12 +269,12 @@ export function AnalyticsClient({
       <WeeklyInsights insights={weeklyInsights} />
 
       {!hasTickets ? (
-        <Card className="rounded-3xl border-dashed border-white/10 bg-white/[0.02] shadow-xl shadow-black/20">
-          <CardContent className="p-6 text-sm leading-6 text-muted-foreground">
-            Analytics will populate automatically after this workspace has real
-            tickets, status updates, and closures to analyze.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No analytics yet"
+          description="Analytics will populate automatically after this workspace has real tickets, status updates, and closures to analyze."
+          actionLabel="Submit a bug report"
+          actionHref="/submit-bug"
+        />
       ) : null}
     </div>
   );

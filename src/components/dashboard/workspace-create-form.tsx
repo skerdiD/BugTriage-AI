@@ -37,8 +37,11 @@ export function WorkspaceCreateForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-2">
-        <label className="text-sm font-medium">Workspace Name</label>
+        <label htmlFor="workspace-name" className="text-sm font-medium">
+          Workspace Name
+        </label>
         <Input
+          id="workspace-name"
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="Example: Growth Engineering"
@@ -49,13 +52,20 @@ export function WorkspaceCreateForm() {
       </div>
 
       {errorMessage ? (
-        <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <p
+          role="alert"
+          className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
           {errorMessage}
         </p>
       ) : null}
 
       {successMessage ? (
-        <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <p
+          role="status"
+          aria-live="polite"
+          className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"
+        >
           {successMessage}
         </p>
       ) : null}

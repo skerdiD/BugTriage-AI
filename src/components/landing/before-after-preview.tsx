@@ -291,7 +291,7 @@ export function BeforeAfterPreview() {
                 ))}
               </div>
               <p className="mt-2 text-sm text-slate-400">
-                Raw report → AI triage → Engineering-ready ticket
+                Raw report {"\u2192"} AI triage {"\u2192"} Engineering-ready ticket
               </p>
             </div>
 
@@ -309,7 +309,7 @@ export function BeforeAfterPreview() {
                 variant="outline"
                 className="h-10 rounded-full border-white/10 bg-white/[0.04] px-5 text-white hover:bg-white/[0.08]"
               >
-                <Link href="/dashboard">View Dashboard</Link>
+                <Link href="/dashboard">Open Dashboard</Link>
               </Button>
             </div>
           </div>

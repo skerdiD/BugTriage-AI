@@ -74,6 +74,8 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
         <EmptyState
           title="No tickets yet"
           description="This workspace has not received any bug reports yet. Submit the first ticket to populate the queue."
+          actionLabel="Submit the first bug"
+          actionHref="/submit-bug"
         />
       ) : (
         <EmptyState

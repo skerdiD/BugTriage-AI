@@ -61,8 +61,11 @@ export function ProjectCreateForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-2">
-        <label className="text-sm font-medium">Project Name</label>
+        <label htmlFor="project-name" className="text-sm font-medium">
+          Project Name
+        </label>
         <Input
+          id="project-name"
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="Example: Checkout Experience"
@@ -73,8 +76,11 @@ export function ProjectCreateForm({
       </div>
 
       <div className="grid gap-2">
-        <label className="text-sm font-medium">Project Description</label>
+        <label htmlFor="project-description" className="text-sm font-medium">
+          Project Description
+        </label>
         <Textarea
+          id="project-description"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           placeholder="What area of the product should this team route bugs into?"
@@ -84,13 +90,20 @@ export function ProjectCreateForm({
       </div>
 
       {errorMessage ? (
-        <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <p
+          role="alert"
+          className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
           {errorMessage}
         </p>
       ) : null}
 
       {successMessage ? (
-        <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <p
+          role="status"
+          aria-live="polite"
+          className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"
+        >
           {successMessage}
         </p>
       ) : null}

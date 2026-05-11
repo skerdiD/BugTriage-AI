@@ -34,7 +34,7 @@ function LoginContent() {
 
   const redirectedFrom = getSafeRedirectPath(searchParams.get("redirectedFrom"));
 
-  const [email, setEmail] = useState("sarah@bugtriage.ai");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -183,7 +183,10 @@ function LoginContent() {
                 </div>
 
                 {errorMessage ? (
-                  <div className="flex gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+                  <div
+                    role="alert"
+                    className="flex gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200"
+                  >
                     <AlertCircle className="mt-0.5 size-4 shrink-0" />
                     <p>{errorMessage}</p>
                   </div>
