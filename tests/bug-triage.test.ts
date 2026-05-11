@@ -86,7 +86,7 @@ ${"trace-line ".repeat(3_000)}`;
     });
 
     expect(result).toEqual(validAiResponse);
-    expect(googleMock).toHaveBeenCalledWith("gemini-2.0-flash-001");
+    expect(googleMock).toHaveBeenCalledWith("gemini-2.5-flash-lite");
     expect(generateObjectMock).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "mock-gemini-model",
@@ -123,6 +123,18 @@ ${"trace-line ".repeat(3_000)}`;
       getPublicAiTriageFailureMessage(new Error("Request timed out after 12000ms"))
     ).toBe(
       "AI analysis timed out, so the ticket was saved for manual review."
+    );
+  });
+
+  it("converts quota provider failures into a rate-limit fallback message", () => {
+    expect(
+      getPublicAiTriageFailureMessage(
+        new Error(
+          "You exceeded your current quota. Quota exceeded for metric: generate_content_free_tier_requests, limit: 0. 429"
+        )
+      )
+    ).toBe(
+      "AI analysis is temporarily rate limited, so the ticket was saved for manual review."
     );
   });
 

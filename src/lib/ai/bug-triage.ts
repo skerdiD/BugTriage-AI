@@ -21,7 +21,7 @@ import { bugReportFormSchema } from "@/lib/validation/bug-report";
 export { bugTriageAiOutputSchema };
 export type { BugTriageAiOutput };
 
-export const AI_TRIAGE_MODEL = "gemini-2.0-flash-001";
+export const AI_TRIAGE_MODEL = "gemini-2.5-flash-lite";
 export const AI_PROVIDER_NAME = "google-gemini";
 export const AI_TRIAGE_TIMEOUT_MS = 12_000;
 export const AI_TRIAGE_MAX_RETRIES = 1;
@@ -259,6 +259,8 @@ function normalizeAiError(error: unknown) {
 
   if (
     normalizedMessage.includes("rate limit") ||
+    normalizedMessage.includes("quota") ||
+    normalizedMessage.includes("resource has been exhausted") ||
     normalizedMessage.includes("too many requests") ||
     normalizedMessage.includes("429")
   ) {
