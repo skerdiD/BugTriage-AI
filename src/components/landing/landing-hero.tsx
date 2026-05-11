@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 
-import { LandingProductVisual } from "@/components/landing/landing-product-visual";
+import { BeforeAfterPreview } from "@/components/landing/before-after-preview";
 import { LandingReveal } from "@/components/landing/landing-reveal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ export function LandingHero() {
       </LandingReveal>
 
       <LandingReveal delayMs={120}>
-        <LandingProductVisual />
+        <BeforeAfterPreview />
       </LandingReveal>
     </section>
   );
