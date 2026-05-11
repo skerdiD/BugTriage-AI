@@ -20,19 +20,19 @@ export function LandingPage() {
       <LandingHeader />
       <LandingHero />
 
-      <section id="features" className="py-16 md:py-20">
+      <section id="features" className="py-14 md:py-18">
         <div className="mx-auto max-w-7xl px-6">
           <LandingReveal className="max-w-2xl">
             <p className="text-xs tracking-[0.22em] text-cyan-100/70 uppercase">
               Product features
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Compact by design, but built for real bug triage work.
+              Smaller, clearer, and more useful at first glance.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-300">
-              The landing page now stays focused on the workflow that matters most:
-              collecting messy inputs, structuring the issue, and handing engineering
-              a cleaner ticket.
+              The experience now stays focused on the workflow that matters most:
+              collect the raw report, structure it with AI, and move a cleaner ticket
+              into the review queue.
             </p>
           </LandingReveal>
 
@@ -58,10 +58,10 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="pb-16 pt-4 md:pb-20">
+      <section className="pb-14 pt-4 md:pb-18">
         <div className="mx-auto max-w-6xl px-6">
           <LandingReveal>
-            <Card className="rounded-[34px] border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.07),rgba(8,145,178,0.18),rgba(15,23,42,0.92))] shadow-[0_40px_120px_-65px_rgba(0,0,0,0.98)]">
+            <Card className="rounded-[34px] border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(8,145,178,0.16),rgba(15,23,42,0.94))] shadow-[0_40px_120px_-65px_rgba(0,0,0,0.98)]">
               <CardContent className="flex flex-col gap-8 p-8 md:p-10 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-1.5 text-[0.72rem] tracking-[0.18em] text-slate-200 uppercase">
@@ -105,26 +105,55 @@ export function LandingPage() {
       </section>
 
       <footer className="border-t border-white/8 pb-10 pt-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 md:flex-row md:items-start md:justify-between">
-          <div className="max-w-md">
-            <p className="text-sm font-semibold tracking-[0.22em] text-white/60 uppercase">
-              BugTriage AI
-            </p>
-            <p className="mt-3 text-sm leading-7 text-slate-400">
-              AI bug triage workspace for modern software teams.
-            </p>
-          </div>
+        <div className="mx-auto max-w-7xl px-6">
+          <LandingReveal>
+            <Card className="rounded-[28px] border-white/10 bg-white/[0.03] shadow-[0_24px_90px_-62px_rgba(0,0,0,0.98)]">
+              <CardContent className="flex flex-col gap-8 p-6 md:p-7 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-md">
+                  <p className="text-sm font-semibold tracking-[0.22em] text-white/60 uppercase">
+                    BugTriage AI
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-slate-400">
+                    AI bug triage workspace for modern software teams.
+                  </p>
+                  <p className="mt-4 text-sm leading-7 text-slate-500">
+                    Built to turn raw support and QA inputs into cleaner engineering
+                    tickets without adding more process overhead.
+                  </p>
+                </div>
 
-          <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-400">
-            <Link href="/login" className="transition-colors hover:text-white">
-              Sign in
-            </Link>
-            <Link href="/submit-bug" className="transition-colors hover:text-white">
-              Submit a bug
-            </Link>
-            <Link href="/dashboard" className="transition-colors hover:text-white">
-              Open app
-            </Link>
+                <div className="grid gap-8 sm:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-white">Actions</p>
+                    <div className="mt-4 grid gap-3 text-sm text-slate-400">
+                      <Link href="/submit-bug" className="transition-colors hover:text-white">
+                        Submit a bug
+                      </Link>
+                      <Link href="/dashboard" className="transition-colors hover:text-white">
+                        Open app
+                      </Link>
+                      <Link href="/login" className="transition-colors hover:text-white">
+                        Sign in
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-white">Workflow</p>
+                    <div className="mt-4 grid gap-3 text-sm text-slate-400">
+                      <span>Raw report intake</span>
+                      <span>AI triage output</span>
+                      <span>Engineering review queue</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </LandingReveal>
+
+          <div className="mt-6 flex flex-col gap-3 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+            <p>© {new Date().getFullYear()} BugTriage AI</p>
+            <p>Structured bug triage for support, QA, product, and engineering.</p>
           </div>
         </div>
       </footer>

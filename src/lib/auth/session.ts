@@ -47,6 +47,14 @@ function isExpectedDynamicServerUsageError(error: unknown) {
   );
 }
 
+function isExpectedMissingSessionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === "AuthSessionMissingError" ||
+      error.message.toLowerCase().includes("auth session missing"))
+  );
+}
+
 export const getCurrentUserOrThrow = cache(async () => {
   try {
     const supabase = await createServerSupabaseClient();
@@ -56,6 +64,10 @@ export const getCurrentUserOrThrow = cache(async () => {
     } = await supabase.auth.getUser();
 
     if (error) {
+      if (isExpectedMissingSessionError(error)) {
+        throw new AuthenticationError("You must be signed in to continue.");
+      }
+
       captureServerException(error, {
         area: "auth",
         action: "get-current-user",
