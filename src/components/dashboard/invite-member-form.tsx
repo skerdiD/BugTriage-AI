@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { Loader2, MailPlus, Sparkles } from "lucide-react";
 import { WorkspaceRole } from "@prisma/client";
 import { useRouter } from "next/navigation";
@@ -33,6 +33,8 @@ export function InviteMemberForm({
   roleOptions,
 }: InviteMemberFormProps) {
   const router = useRouter();
+  const emailInputId = useId();
+  const roleLabelId = useId();
   const [isPending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<WorkspaceRole>(roleOptions[0] ?? WorkspaceRole.MEMBER);
@@ -69,8 +71,11 @@ export function InviteMemberForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-2">
-        <label className="text-sm font-medium">Teammate Email</label>
+        <label htmlFor={emailInputId} className="text-sm font-medium">
+          Teammate Email
+        </label>
         <Input
+          id={emailInputId}
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -83,9 +88,14 @@ export function InviteMemberForm({
       </div>
 
       <div className="grid gap-2">
-        <label className="text-sm font-medium">Workspace Role</label>
+        <label id={roleLabelId} className="text-sm font-medium">
+          Workspace Role
+        </label>
         <Select value={role} onValueChange={(value) => setRole(value as WorkspaceRole)}>
-          <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]">
+          <SelectTrigger
+            aria-labelledby={roleLabelId}
+            className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]"
+          >
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>
           <SelectContent>
@@ -102,13 +112,20 @@ export function InviteMemberForm({
       </div>
 
       {errorMessage ? (
-        <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <p
+          role="alert"
+          className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
           {errorMessage}
         </p>
       ) : null}
 
       {successMessage ? (
-        <div className="space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+        <div
+          role="status"
+          aria-live="polite"
+          className="space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100"
+        >
           <div className="flex items-start gap-3">
             <Sparkles className="mt-0.5 size-4 shrink-0" />
             <p>{successMessage}</p>

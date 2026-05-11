@@ -29,7 +29,7 @@ export function CopyInviteLinkButton({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" aria-live="polite">
       <Button
         type="button"
         variant="outline"
@@ -55,7 +55,7 @@ export function CopyInviteLinkButton({
         )}
       </Button>
       {feedback === "error" ? (
-        <p className="text-xs text-red-200">
+        <p role="alert" className="text-xs text-red-200">
           Copy failed on this browser. You can still copy the link manually.
         </p>
       ) : null}

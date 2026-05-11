@@ -55,7 +55,10 @@ export function AcceptWorkspaceInviteButton({
         )}
       </Button>
       {errorMessage ? (
-        <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <p
+          role="alert"
+          className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
           {errorMessage}
         </p>
       ) : null}

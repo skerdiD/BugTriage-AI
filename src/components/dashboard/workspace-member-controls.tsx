@@ -104,7 +104,10 @@ export function WorkspaceMemberControls({
           onValueChange={(value) => setSelectedRole(value as WorkspaceRole)}
           disabled={isPending || !canChangeRole}
         >
-          <SelectTrigger className="h-10 w-full rounded-xl border-white/10 bg-white/[0.04] sm:max-w-[220px]">
+          <SelectTrigger
+            aria-label={`Role for ${memberName}`}
+            className="h-10 w-full rounded-xl border-white/10 bg-white/[0.04] sm:max-w-[220px]"
+          >
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>
           <SelectContent>
@@ -156,13 +159,20 @@ export function WorkspaceMemberControls({
       ) : null}
 
       {errorMessage ? (
-        <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <p
+          role="alert"
+          className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
           {errorMessage}
         </p>
       ) : null}
 
       {successMessage ? (
-        <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <p
+          role="status"
+          aria-live="polite"
+          className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"
+        >
           {successMessage}
         </p>
       ) : null}

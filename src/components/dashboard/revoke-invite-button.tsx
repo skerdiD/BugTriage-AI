@@ -60,7 +60,9 @@ export function RevokeInviteButton({
         )}
       </Button>
       {errorMessage ? (
-        <p className="text-xs text-red-200">{errorMessage}</p>
+        <p role="alert" className="text-xs text-red-200">
+          {errorMessage}
+        </p>
       ) : null}
     </div>
   );

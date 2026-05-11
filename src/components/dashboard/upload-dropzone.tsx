@@ -69,7 +69,12 @@ export function UploadDropzone({
       }
     },
     onDropRejected: (fileRejections) => {
-      setRejectionMessage(getRejectionMessage(fileRejections[0]));
+      const firstRejection = fileRejections[0];
+      setRejectionMessage(
+        firstRejection
+          ? getRejectionMessage(firstRejection)
+          : "The selected file could not be added."
+      );
     },
   });
 
