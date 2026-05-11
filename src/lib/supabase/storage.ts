@@ -242,6 +242,19 @@ export function isTicketStoragePathInWorkspace(
   return storagePath.replace(/\\/g, "/").startsWith(`private/${workspaceId}/`);
 }
 
+export function isTicketStoragePathForTicket(
+  storagePath: string,
+  workspaceId: string,
+  ticketCode: string
+) {
+  const normalizedPath = storagePath.replace(/\\/g, "/");
+
+  return (
+    normalizedPath.startsWith(`private/${workspaceId}/`) &&
+    normalizedPath.includes(`/tickets/${ticketCode}/`)
+  );
+}
+
 export async function uploadTicketFile({
   supabase,
   file,
@@ -356,11 +369,22 @@ export async function createSignedTicketFileUrl(
   supabase: SupabaseClient,
   storagePath: string,
   workspaceId: string,
-  expiresInSeconds = 60 * 5
+  expiresInSeconds = 60 * 5,
+  ticketCode?: string
 ) {
   if (!isTicketStoragePathInWorkspace(storagePath, workspaceId)) {
     throw new TicketStorageError(
       "Attachment storage path failed workspace validation.",
+      "We couldn't prepare that file for download."
+    );
+  }
+
+  if (
+    ticketCode &&
+    !isTicketStoragePathForTicket(storagePath, workspaceId, ticketCode)
+  ) {
+    throw new TicketStorageError(
+      "Attachment storage path failed ticket validation.",
       "We couldn't prepare that file for download."
     );
   }

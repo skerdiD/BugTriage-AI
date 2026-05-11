@@ -17,9 +17,10 @@ import {
 } from "@/lib/data/workspaces";
 import { captureServerException } from "@/lib/observability/server-monitoring";
 import { buildAppUrl } from "@/lib/security/app-url";
+import { resourceIdSchema } from "@/lib/validation/resource-identifiers";
 
 const inviteInputSchema = z.object({
-  workspaceId: z.string().trim().min(1),
+  workspaceId: resourceIdSchema,
   email: z
     .string()
     .trim()
@@ -28,19 +29,19 @@ const inviteInputSchema = z.object({
 });
 
 const revokeInviteInputSchema = z.object({
-  workspaceId: z.string().trim().min(1),
-  inviteId: z.string().trim().min(1),
+  workspaceId: resourceIdSchema,
+  inviteId: resourceIdSchema,
 });
 
 const updateMemberRoleInputSchema = z.object({
-  workspaceId: z.string().trim().min(1),
-  memberId: z.string().trim().min(1),
+  workspaceId: resourceIdSchema,
+  memberId: resourceIdSchema,
   role: z.nativeEnum(WorkspaceRole),
 });
 
 const removeMemberInputSchema = z.object({
-  workspaceId: z.string().trim().min(1),
-  memberId: z.string().trim().min(1),
+  workspaceId: resourceIdSchema,
+  memberId: resourceIdSchema,
 });
 
 export async function createWorkspaceInviteAction(input: {

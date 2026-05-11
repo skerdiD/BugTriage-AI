@@ -30,7 +30,9 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
           const signedUrl = await createSignedTicketFileUrl(
             supabase,
             attachment.storagePath,
-            dbTicket.workspaceId
+            dbTicket.workspaceId,
+            undefined,
+            dbTicket.code
           );
 
           return [attachment.id, signedUrl] as const;

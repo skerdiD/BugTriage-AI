@@ -76,4 +76,22 @@ describe("storage security helpers", () => {
       60 * 15
     );
   });
+
+  it("rejects signed URL generation when the storage path does not belong to the ticket", async () => {
+    const supabase = {
+      storage: {
+        from: vi.fn(),
+      },
+    };
+
+    await expect(
+      createSignedTicketFileUrl(
+        supabase as never,
+        "private/workspace-1/user-1/tickets/BUG-999/logs/trace.log",
+        "workspace-1",
+        300,
+        "BUG-123"
+      )
+    ).rejects.toThrow("Attachment storage path failed ticket validation.");
+  });
 });

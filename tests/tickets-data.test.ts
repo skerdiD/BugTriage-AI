@@ -272,6 +272,28 @@ describe("ticket data layer", () => {
     expect(prismaMock.ticket.create).not.toHaveBeenCalled();
   });
 
+  it("rejects attachment paths that do not belong to the authenticated uploader scope", async () => {
+    await expect(
+      createTicket({
+        code: "BUG-1003",
+        workspaceId: "workspace-1",
+        projectId: "project-1",
+        title: "Wrong uploader scope",
+        description: "This should fail.",
+        attachments: [
+          {
+            filename: "escape.png",
+            fileType: "image/png",
+            fileSize: 128,
+            storagePath: "private/workspace-1/user-9/tickets/BUG-1003/screenshots/escape.png",
+          },
+        ],
+      })
+    ).rejects.toThrow("Attachment storage path does not belong");
+
+    expect(prismaMock.ticket.create).not.toHaveBeenCalled();
+  });
+
   it("loads ticket detail only after a workspace-safe ticket access lookup", async () => {
     prismaMock.ticket.findFirst.mockResolvedValue({
       id: "ticket-1",

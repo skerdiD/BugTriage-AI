@@ -15,9 +15,10 @@ import {
   updateTicketStatus,
 } from "@/lib/data/tickets";
 import { captureServerException } from "@/lib/observability/server-monitoring";
+import { ticketCodeSchema } from "@/lib/validation/resource-identifiers";
 
 const commentSchema = z.object({
-  ticketCode: z.string().trim().min(1),
+  ticketCode: ticketCodeSchema,
   body: z
     .string()
     .trim()
@@ -29,7 +30,7 @@ const commentSchema = z.object({
 });
 
 const statusSchema = z.object({
-  ticketCode: z.string().trim().min(1),
+  ticketCode: ticketCodeSchema,
   status: z.nativeEnum(TicketStatus),
 });
 

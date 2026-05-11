@@ -98,7 +98,9 @@ describe("ticket detail page", () => {
         storage: {},
       },
       "private/workspace-1/user-1/tickets/BUG-4242/screenshots/checkout.png",
-      "workspace-1"
+      "workspace-1",
+      undefined,
+      "BUG-4242"
     );
     expect(createSignedTicketFileUrlMock.mock.invocationCallOrder[0]).toBeGreaterThan(
       getTicketByCodeMock.mock.invocationCallOrder[0]

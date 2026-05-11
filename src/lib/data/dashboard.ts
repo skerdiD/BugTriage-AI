@@ -253,14 +253,19 @@ function buildSeverityDistribution(
 }
 
 function buildDailyTrend(tickets: ReportingTicket[], days = 7): TrendDataItem[] {
+  const countsByDay = new Map<number, number>();
+
+  for (const ticket of tickets) {
+    const dayKey = startOfDay(ticket.createdAt).getTime();
+    countsByDay.set(dayKey, (countsByDay.get(dayKey) ?? 0) + 1);
+  }
+
   return Array.from({ length: days }, (_, index) => {
     const date = startOfDay(subDays(new Date(), days - index - 1));
 
     return {
       label: format(date, "EEE"),
-      bugs: tickets.filter(
-        (ticket) => startOfDay(ticket.createdAt).getTime() === date.getTime()
-      ).length,
+      bugs: countsByDay.get(date.getTime()) ?? 0,
     };
   });
 }

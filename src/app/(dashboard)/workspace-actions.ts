@@ -19,6 +19,7 @@ import {
   WorkspaceManagementError,
 } from "@/lib/data/workspaces";
 import { captureServerException } from "@/lib/observability/server-monitoring";
+import { resourceIdSchema } from "@/lib/validation/resource-identifiers";
 
 const cookieOptions = {
   httpOnly: true,
@@ -28,7 +29,7 @@ const cookieOptions = {
 };
 
 const createProjectInputSchema = z.object({
-  workspaceId: z.string().min(1),
+  workspaceId: resourceIdSchema,
   name: z
     .string()
     .trim()
@@ -52,7 +53,13 @@ const createWorkspaceInputSchema = z.object({
 
 export async function setCurrentWorkspaceAction(workspaceId: string) {
   const user = await getCurrentUserOrThrow();
-  const access = await assertWorkspaceMember(workspaceId, user.id);
+  const parsedWorkspaceId = resourceIdSchema.safeParse(workspaceId);
+
+  if (!parsedWorkspaceId.success) {
+    return { ok: false as const };
+  }
+
+  const access = await assertWorkspaceMember(parsedWorkspaceId.data, user.id);
   const cookieStore = await cookies();
   const projects = await listWorkspaceProjects(access.workspace.id, user.id);
   const selectedProject = pickCurrentProject(projects);
@@ -70,7 +77,13 @@ export async function setCurrentWorkspaceAction(workspaceId: string) {
 
 export async function setCurrentProjectAction(projectId: string) {
   const user = await getCurrentUserOrThrow();
-  const access = await assertCanAccessProject(projectId, user.id);
+  const parsedProjectId = resourceIdSchema.safeParse(projectId);
+
+  if (!parsedProjectId.success) {
+    return { ok: false as const };
+  }
+
+  const access = await assertCanAccessProject(parsedProjectId.data, user.id);
   const cookieStore = await cookies();
 
   cookieStore.set(WORKSPACE_COOKIE_NAME, access.project.workspaceId, cookieOptions);

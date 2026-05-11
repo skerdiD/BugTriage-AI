@@ -178,12 +178,13 @@ function clampOffset(skip?: number) {
 function hasValidTicketAttachmentPath(
   storagePath: string,
   workspaceId: string,
-  ticketCode: string
+  ticketCode: string,
+  userId: string
 ) {
   const normalizedPath = storagePath.replace(/\\/g, "/");
 
   return (
-    normalizedPath.startsWith(`private/${workspaceId}/`) &&
+    normalizedPath.startsWith(`private/${workspaceId}/${userId}/`) &&
     normalizedPath.includes(`/tickets/${ticketCode}/`)
   );
 }
@@ -191,7 +192,8 @@ function hasValidTicketAttachmentPath(
 function assertTicketAttachmentPaths(
   attachments: CreateTicketInput["attachments"],
   workspaceId: string,
-  ticketCode: string
+  ticketCode: string,
+  userId: string
 ) {
   if (!attachments?.length) {
     return;
@@ -202,7 +204,8 @@ function assertTicketAttachmentPaths(
       !hasValidTicketAttachmentPath(
         attachment.storagePath,
         workspaceId,
-        ticketCode
+        ticketCode,
+        userId
       )
     ) {
       throw new AuthorizationError(
@@ -367,7 +370,12 @@ export async function createTicket(input: CreateTicketInput) {
     await assertWorkspaceMember(input.workspaceId, input.assigneeId);
   }
 
-  assertTicketAttachmentPaths(input.attachments, input.workspaceId, input.code);
+  assertTicketAttachmentPaths(
+    input.attachments,
+    input.workspaceId,
+    input.code,
+    currentUser.id
+  );
 
   const reporterId = input.reporterId ?? currentUser.id;
 

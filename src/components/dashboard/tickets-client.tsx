@@ -37,18 +37,20 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
   }, [activeStatus, initialTickets, searchQuery]);
 
   const statusCounts = useMemo(() => {
-    return {
+    const counts: Record<TicketStatusFilter, number> = {
       All: initialTickets.length,
-      New: initialTickets.filter((ticket) => ticket.status === "New").length,
-      Investigating: initialTickets.filter(
-        (ticket) => ticket.status === "Investigating"
-      ).length,
-      "In Progress": initialTickets.filter(
-        (ticket) => ticket.status === "In Progress"
-      ).length,
-      Fixed: initialTickets.filter((ticket) => ticket.status === "Fixed").length,
-      Closed: initialTickets.filter((ticket) => ticket.status === "Closed").length,
+      New: 0,
+      Investigating: 0,
+      "In Progress": 0,
+      Fixed: 0,
+      Closed: 0,
     };
+
+    for (const ticket of initialTickets) {
+      counts[ticket.status] += 1;
+    }
+
+    return counts;
   }, [initialTickets]);
 
   return (
