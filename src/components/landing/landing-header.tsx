@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Menu, Zap } from "lucide-react";
+import { ArrowRight, Menu, Sparkles } from "lucide-react";
 
+import type { LandingNavItem } from "@/components/landing/landing-data";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -14,11 +15,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-type LandingNavItem = {
-  href: string;
-  label: string;
-};
-
 type LandingHeaderProps = {
   navItems: LandingNavItem[];
 };
@@ -29,16 +25,16 @@ export function LandingHeader({ navItems }: LandingHeaderProps) {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
         <Link
           href="/"
-          className="flex items-center gap-3 rounded-2xl outline-none transition-transform hover:translate-y-[-1px] focus-visible:ring-2 focus-visible:ring-violet-400/60"
+          className="flex items-center gap-3 rounded-2xl outline-none transition-transform hover:translate-y-[-1px] focus-visible:ring-2 focus-visible:ring-cyan-400/60"
         >
-          <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-sky-500 shadow-lg shadow-violet-500/20">
-            <Zap className="size-5 text-white" />
+          <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,#0891b2,#10b981)] shadow-lg shadow-cyan-950/60">
+            <Sparkles className="size-5 text-white" />
           </div>
           <div>
             <p className="text-sm font-semibold tracking-[0.24em] text-white/60 uppercase">
               BugTriage AI
             </p>
-            <p className="text-sm text-zinc-300">Engineering command center</p>
+            <p className="text-sm text-slate-300">AI issue triage platform</p>
           </div>
         </Link>
 
@@ -57,17 +53,17 @@ export function LandingHeader({ navItems }: LandingHeaderProps) {
         <div className="hidden items-center gap-3 lg:flex">
           <Button
             asChild
-            variant="ghost"
-            className="rounded-full px-4 text-zinc-200 hover:bg-white/8 hover:text-white"
+            variant="outline"
+            className="rounded-full border-white/10 bg-white/[0.03] px-4 text-white hover:bg-white/[0.08]"
           >
-            <Link href="/login">Sign in</Link>
+            <Link href="/submit-bug">Submit Demo Bug</Link>
           </Button>
           <Button
             asChild
-            className="rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-sky-600 px-5 text-white hover:from-violet-500 hover:via-fuchsia-500 hover:to-sky-500"
+            className="rounded-full bg-[linear-gradient(135deg,#0891b2,#10b981)] px-5 text-white shadow-lg shadow-cyan-950/60 hover:brightness-110"
           >
-            <Link href="/signup">
-              Start triaging
+            <Link href="/dashboard">
+              Open Dashboard
               <ArrowRight className="size-4" />
             </Link>
           </Button>
@@ -90,8 +86,8 @@ export function LandingHeader({ navItems }: LandingHeaderProps) {
           >
             <SheetHeader className="border-b border-white/10 pb-5">
               <SheetTitle className="text-white">BugTriage AI</SheetTitle>
-              <SheetDescription className="text-zinc-400">
-                Structured bug intake for support, product, and engineering.
+              <SheetDescription className="text-slate-400">
+                Structured bug triage for support, product, QA, and engineering.
               </SheetDescription>
             </SheetHeader>
 
@@ -101,7 +97,7 @@ export function LandingHeader({ navItems }: LandingHeaderProps) {
                   <SheetClose key={item.href} asChild>
                     <Link
                       href={item.href}
-                      className="rounded-2xl border border-transparent px-4 py-3 text-sm text-zinc-200 transition-colors hover:border-white/10 hover:bg-white/[0.04] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+                      className="rounded-2xl border border-transparent px-4 py-3 text-sm text-zinc-200 transition-colors hover:border-white/10 hover:bg-white/[0.04] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
                     >
                       {item.label}
                     </Link>
@@ -112,19 +108,19 @@ export function LandingHeader({ navItems }: LandingHeaderProps) {
               <div className="mt-auto grid gap-3 pt-8">
                 <SheetClose asChild>
                   <Link
-                    href="/signup"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-sky-600 px-5 text-sm font-medium text-white transition-colors hover:from-violet-500 hover:via-fuchsia-500 hover:to-sky-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+                    href="/dashboard"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#0891b2,#10b981)] px-5 text-sm font-medium text-white shadow-lg shadow-cyan-950/60 transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
                   >
-                    Start triaging
+                    Open Dashboard
                     <ArrowRight className="size-4" />
                   </Link>
                 </SheetClose>
                 <SheetClose asChild>
                   <Link
-                    href="/login"
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-white transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+                    href="/submit-bug"
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-white transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
                   >
-                    Sign in
+                    Submit Demo Bug
                   </Link>
                 </SheetClose>
               </div>

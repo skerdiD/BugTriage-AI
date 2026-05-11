@@ -34,7 +34,7 @@ export function LandingFaq({ items }: LandingFaqProps) {
               onClick={() => {
                 setOpenIndex((currentIndex) => (currentIndex === index ? -1 : index));
               }}
-              className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left outline-none transition-colors hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-violet-400/60"
+              className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left outline-none transition-colors hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             >
               <span className="text-base font-medium text-white">{item.question}</span>
               <span
