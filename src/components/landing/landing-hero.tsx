@@ -12,14 +12,14 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export function LandingHero() {
   return (
-    <section className="mx-auto max-w-7xl px-6 pb-16 pt-12 md:pb-20 lg:pt-16">
-      <div className="grid gap-8 lg:grid-cols-[0.98fr_0.82fr] lg:items-start lg:gap-12">
+    <section className="mx-auto max-w-7xl px-6 pb-14 pt-10 md:pb-18 lg:pt-14">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,460px)] lg:items-start lg:gap-12">
         <LandingReveal className="relative">
           <Badge className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-1.5 text-[0.74rem] tracking-[0.16em] text-cyan-100 uppercase shadow-[0_12px_30px_-18px_rgba(14,165,233,0.65)]">
             AI-powered bug triage
           </Badge>
 
-          <h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-[3.5rem] lg:leading-[1.04]">
+          <h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:max-w-[12ch] lg:text-[3.45rem] lg:leading-[1.03]">
             Turn messy bug reports into engineering-ready tickets.
           </h1>
 
@@ -57,12 +57,12 @@ export function LandingHero() {
           </div>
         </LandingReveal>
 
-        <LandingReveal delayMs={110} className="lg:pt-3">
+        <LandingReveal delayMs={110} className="lg:pt-20 xl:pt-24">
           <BeforeAfterPreview />
         </LandingReveal>
       </div>
 
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
+      <div className="mt-9 grid gap-4 md:grid-cols-3">
         {landingInsightCards.map((item, index) => (
           <LandingReveal key={item.label} delayMs={index * 70}>
             <Card className="rounded-[26px] border-white/10 bg-white/[0.03] shadow-[0_28px_70px_-56px_rgba(0,0,0,0.95)] transition-transform duration-300 hover:-translate-y-1">

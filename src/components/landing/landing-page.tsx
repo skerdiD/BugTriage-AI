@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 
-import {
-  landingFeatureCards,
-} from "@/components/landing/landing-data";
+import { landingFeatureCards } from "@/components/landing/landing-data";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { LandingReveal } from "@/components/landing/landing-reveal";
@@ -30,9 +28,9 @@ export function LandingPage() {
               Smaller, clearer, and more useful at first glance.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-300">
-              The experience now stays focused on the workflow that matters most:
-              collect the raw report, structure it with AI, and move a cleaner ticket
-              into the review queue.
+              The experience stays focused on the workflow that matters most:
+              collect the raw report, structure it with AI, and move a cleaner
+              ticket into the review queue.
             </p>
           </LandingReveal>
 
@@ -126,20 +124,29 @@ export function LandingPage() {
                   <div>
                     <p className="text-sm font-medium text-white">Actions</p>
                     <div className="mt-4 grid gap-3 text-sm text-slate-400">
-                      <Link href="/submit-bug" className="transition-colors hover:text-white">
+                      <Link
+                        href="/submit-bug"
+                        className="transition-colors hover:text-white"
+                      >
                         Submit a bug
                       </Link>
-                      <Link href="/dashboard" className="transition-colors hover:text-white">
+                      <Link
+                        href="/dashboard"
+                        className="transition-colors hover:text-white"
+                      >
                         Open app
                       </Link>
-                      <Link href="/login" className="transition-colors hover:text-white">
+                      <Link
+                        href="/login"
+                        className="transition-colors hover:text-white"
+                      >
                         Sign in
                       </Link>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-white">Workflow</p>
+                    <p className="text-sm font-medium text-white">Product</p>
                     <div className="mt-4 grid gap-3 text-sm text-slate-400">
                       <span>Raw report intake</span>
                       <span>AI triage output</span>
@@ -151,8 +158,8 @@ export function LandingPage() {
             </Card>
           </LandingReveal>
 
-          <div className="mt-6 flex flex-col gap-3 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
-            <p>© {new Date().getFullYear()} BugTriage AI</p>
+          <div className="mt-6 flex flex-col gap-3 border-t border-white/8 pt-5 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+            <p>&copy; {new Date().getFullYear()} BugTriage AI</p>
             <p>Structured bug triage for support, QA, product, and engineering.</p>
           </div>
         </div>

@@ -561,8 +561,8 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
           </section>
         </div>
 
-        <aside className="space-y-6">
-          <Card className="sticky top-24 rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+        <aside className="space-y-6 xl:self-start">
+          <Card className="sticky top-24 z-20 overflow-hidden rounded-3xl border-white/10 bg-[#15121d] shadow-[0_28px_90px_-46px_rgba(0,0,0,0.96)] supports-[backdrop-filter]:bg-[#15121d]/95">
             <CardHeader>
               <CardTitle>Status Workflow</CardTitle>
             </CardHeader>
