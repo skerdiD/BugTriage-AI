@@ -1,103 +1,136 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Bug,
+  CheckCircle2,
+  FileSearch,
   FileStack,
   FolderKanban,
+  LockKeyhole,
+  Route,
   ShieldCheck,
+  Sparkles,
+  UserCheck,
 } from "lucide-react";
 
-export type LandingInsightCard = {
-  label: string;
+export type ProofCard = {
+  title: string;
   value: string;
-  detail: string;
+  description: string;
 };
 
-export type LandingFeatureCard = {
+export type FeatureCard = {
   icon: LucideIcon;
   title: string;
   description: string;
 };
 
-export type PreviewMetaItem = {
-  label: string;
-  value: string;
-  tone: "default" | "critical" | "success";
+export type WorkflowStep = {
+  title: string;
+  description: string;
 };
 
-export const landingInsightCards: LandingInsightCard[] = [
+export type SecurityItem = {
+  icon: LucideIcon;
+  label: string;
+};
+
+export const proofCards: ProofCard[] = [
   {
-    label: "Raw reports cleaned",
+    title: "Raw reports cleaned",
     value: "Messy -> structured",
-    detail: "Turn vague intake into a ticket format engineering can scan quickly.",
+    description: "Turn vague intake into a ticket format engineering can scan.",
   },
   {
-    label: "Triage output",
+    title: "Triage output",
     value: "Severity + cause",
-    detail: "Highlight impact, likely cause, and the next thing to investigate.",
+    description: "Surface impact, likely source, and the next investigation path.",
   },
   {
-    label: "Team handoff",
+    title: "Engineering handoff",
     value: "Ready for review",
-    detail: "Keep screenshots, logs, and triage context attached to the same issue.",
+    description: "Keep screenshots, logs, and context attached to the same issue.",
   },
 ];
 
-export const landingFeatureCards: LandingFeatureCard[] = [
+export const features: FeatureCard[] = [
   {
-    icon: Bug,
+    icon: Sparkles,
     title: "AI Ticket Generation",
-    description:
-      "Convert messy reports into structured tickets with clear summary, severity, and next steps.",
+    description: "Convert messy reports into structured engineering tickets.",
   },
   {
     icon: FileStack,
-    title: "Screenshot & Log Context",
-    description:
-      "Keep visual evidence, logs, and environment details connected to every issue.",
+    title: "Screenshot and Log Context",
+    description: "Keep visual proof, logs, and environment details attached.",
   },
   {
     icon: FolderKanban,
     title: "Triage Workflow",
-    description:
-      "Move tickets through New, Triaged, In Review, Fixed, and Closed without losing context.",
+    description: "Move bugs through New, Triaged, In Review, Fixed, and Closed.",
   },
   {
     icon: ShieldCheck,
-    title: "Secure Full-Stack App",
+    title: "Secure Full-Stack Workflow",
     description:
-      "Built with protected routes, user-scoped data, validation, private uploads, and production-style architecture.",
+      "Protected routes, user-scoped data, validation, and private uploads.",
   },
 ];
 
-export const previewChips = [
-  "Safari",
-  "iOS",
+export const workflowSteps: WorkflowStep[] = [
+  {
+    title: "Submit report",
+    description: "Capture the complaint, device details, screenshots, and logs.",
+  },
+  {
+    title: "AI structures context",
+    description: "Generate severity, category, reproduction steps, and likely cause.",
+  },
+  {
+    title: "Team reviews and resolves",
+    description: "Move a cleaner ticket through the engineering workflow.",
+  },
+];
+
+export const securityItems: SecurityItem[] = [
+  { icon: Route, label: "Protected workspace routes" },
+  { icon: LockKeyhole, label: "Private file handling" },
+  { icon: CheckCircle2, label: "Validated AI output" },
+  { icon: UserCheck, label: "User-scoped data" },
+];
+
+export const inputChips = [
+  "iPhone Safari",
   "Checkout",
-  "Payment",
   "Screenshot attached",
-  "Console log",
+  "Console log attached",
 ] as const;
 
-export const previewMeta: PreviewMetaItem[] = [
-  { label: "Severity", value: "Critical", tone: "critical" },
-  { label: "Category", value: "Payment / Checkout", tone: "default" },
-  { label: "Status", value: "Triaged", tone: "success" },
-  { label: "Confidence", value: "High", tone: "default" },
-];
+export const outputMeta = [
+  { label: "Severity", value: "Critical", tone: "rose" },
+  { label: "Category", value: "Payment", tone: "cyan" },
+  { label: "Status", value: "Triaged", tone: "emerald" },
+] as const;
 
-export const previewSteps = [
+export const outputSteps = [
   "Open checkout on iPhone Safari.",
-  "Enter card details and continue to payment.",
-  "Watch the payment form stop responding before submission completes.",
+  "Enter card details and continue.",
+  "Payment form freezes before submission.",
 ] as const;
 
-export const previewStructuredSections = [
+export const pipelineCards = [
   {
-    title: "Likely cause",
-    body: "Safari-specific form state or payment token handling is failing after card validation.",
+    icon: Bug,
+    title: "Raw report",
+    detail: "Checkout freezes on iPhone Safari",
   },
   {
-    title: "Suggested fix",
-    body: "Reproduce on iPhone Safari, inspect post-validation state transitions, and harden the payment submit flow.",
+    icon: FileSearch,
+    title: "AI triage",
+    detail: "Critical payment issue with high confidence",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Ready ticket",
+    detail: "Triaged with next fix path",
   },
 ] as const;
