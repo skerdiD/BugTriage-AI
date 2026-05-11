@@ -12,6 +12,7 @@ import { getSupabaseStorageBucket } from "@/lib/supabase/env";
 export type TicketAttachmentKind = "SCREENSHOT" | "LOG" | "OTHER";
 export const MAX_UPLOAD_FILES_PER_TYPE = 3;
 export const MAX_TICKET_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+export const MAX_TOTAL_TICKET_UPLOAD_BYTES = 20 * 1024 * 1024;
 export const MIN_SIGNED_URL_TTL_SECONDS = 60;
 export const MAX_SIGNED_URL_TTL_SECONDS = 60 * 15;
 const FILE_SIGNATURE_BYTES = 16;

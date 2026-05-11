@@ -77,6 +77,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/supabase/storage", () => ({
   MAX_UPLOAD_FILES_PER_TYPE: 3,
+  MAX_TOTAL_TICKET_UPLOAD_BYTES: 20 * 1024 * 1024,
   deleteUploadedTicketFiles: deleteUploadedTicketFilesMock,
   uploadLogFile: uploadLogFileMock,
   uploadScreenshotFile: uploadScreenshotFileMock,
@@ -217,6 +218,32 @@ describe("analyzeAndCreateTicketAction", () => {
       ok: false,
       error: "You can upload up to 3 log files per ticket.",
     });
+    expect(uploadLogFileMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects uploads whose combined payload exceeds the safe ticket limit", async () => {
+    const formData = buildValidFormData();
+
+    formData.append(
+      "screenshots",
+      new File([new Uint8Array(10 * 1024 * 1024)], "shot-1.png", {
+        type: "image/png",
+      })
+    );
+    formData.append(
+      "logs",
+      new File([new Uint8Array(10 * 1024 * 1024 + 1)], "trace.log", {
+        type: "text/plain",
+      })
+    );
+
+    const result = await analyzeAndCreateTicketAction(formData);
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Combined uploads must be 20MB or smaller per ticket.",
+    });
+    expect(uploadScreenshotFileMock).not.toHaveBeenCalled();
     expect(uploadLogFileMock).not.toHaveBeenCalled();
   });
 

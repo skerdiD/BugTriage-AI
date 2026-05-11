@@ -38,5 +38,13 @@ describe("proxy matcher", () => {
         url: "/next.svg",
       })
     ).toBe(false);
+
+    expect(
+      unstable_doesMiddlewareMatch({
+        config,
+        nextConfig: {},
+        url: "/robots.txt",
+      })
+    ).toBe(false);
   });
 });

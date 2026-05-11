@@ -31,6 +31,7 @@ import {
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   deleteUploadedTicketFiles,
+  MAX_TOTAL_TICKET_UPLOAD_BYTES,
   MAX_UPLOAD_FILES_PER_TYPE,
   type UploadedTicketFile,
   uploadLogFile,
@@ -64,6 +65,10 @@ function getFiles(formData: FormData, key: string) {
     .filter((value): value is File => {
       return typeof value !== "string" && value.size > 0;
     });
+}
+
+function getTotalUploadBytes(files: File[]) {
+  return files.reduce((sum, file) => sum + file.size, 0);
 }
 
 function mapAiSeverityToDbSeverity(severity?: BugTriageAiOutput["severity"]) {
@@ -180,6 +185,7 @@ export async function analyzeAndCreateTicketAction(
 
     const screenshotFiles = getFiles(formData, "screenshots");
     const logFiles = getFiles(formData, "logs");
+    const allFiles = [...screenshotFiles, ...logFiles];
 
     if (screenshotFiles.length > MAX_UPLOAD_FILES_PER_TYPE) {
       return {
@@ -192,6 +198,13 @@ export async function analyzeAndCreateTicketAction(
       return {
         ok: false,
         error: `You can upload up to ${MAX_UPLOAD_FILES_PER_TYPE} log files per ticket.`,
+      };
+    }
+
+    if (getTotalUploadBytes(allFiles) > MAX_TOTAL_TICKET_UPLOAD_BYTES) {
+      return {
+        ok: false,
+        error: "Combined uploads must be 20MB or smaller per ticket.",
       };
     }
 
