@@ -42,8 +42,8 @@ export function HeroSection() {
             variant="outline"
             className="h-11 w-full rounded-full border-white/12 bg-white/[0.035] px-6 text-sm text-white transition active:scale-[0.98] hover:bg-white/[0.08] sm:w-auto"
           >
-            <Link href="/dashboard" aria-label="Open BugTriage AI dashboard">
-              Open dashboard
+            <Link href="/dashboard">
+              View dashboard
             </Link>
           </Button>
         </div>
