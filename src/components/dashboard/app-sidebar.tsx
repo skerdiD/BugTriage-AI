@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
   LogOut,
+  UserRound,
   Settings,
   Ticket,
   UploadCloud,
@@ -20,6 +22,14 @@ import { SidebarNavItem } from "@/components/dashboard/sidebar-nav-item";
 import type { DashboardUser } from "@/components/dashboard/dashboard-shell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -80,6 +90,7 @@ export function AppSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   const isDesktopCollapsed = !isMobile && collapsed;
 
@@ -95,36 +106,6 @@ export function AppSidebar({
       setIsLoggingOut(false);
     }
   }
-
-  const logoutButton = (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={handleLogout}
-      disabled={isLoggingOut}
-      aria-label={isDesktopCollapsed ? "Logout" : undefined}
-      className={cn(
-        "rounded-2xl border-white/10 bg-white/[0.035] text-muted-foreground transition-all duration-200 hover:bg-red-500/10 hover:text-red-200",
-        isDesktopCollapsed
-          ? "h-11 w-11 px-0"
-          : "h-11 w-full justify-start px-4"
-      )}
-    >
-      <LogOut
-        className={cn("size-4 shrink-0", isDesktopCollapsed ? "" : "mr-2")}
-      />
-      <span
-        className={cn(
-          "truncate transition-all duration-200 ease-out",
-          isDesktopCollapsed
-            ? "max-w-0 -translate-x-1 opacity-0"
-            : "max-w-[120px] translate-x-0 opacity-100"
-        )}
-      >
-        {isLoggingOut ? "Logging out..." : "Logout"}
-      </span>
-    </Button>
-  );
 
   return (
     <TooltipProvider delayDuration={120}>
@@ -238,64 +219,102 @@ export function AppSidebar({
 
         <div
           className={cn(
-            "space-y-3 border-t border-white/10",
+            "border-t border-white/10",
             isDesktopCollapsed ? "px-3 py-4" : "p-5"
           )}
         >
-          {isDesktopCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex justify-center">
-                  <Avatar
-                    size="lg"
-                    className="bg-gradient-to-br from-sky-400 to-blue-600 text-sm font-bold text-white shadow-lg shadow-sky-500/20"
-                  >
-                    <AvatarFallback className="bg-transparent font-bold text-white">
-                      {user.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={12}>
-                <div className="space-y-0.5">
-                  <p className="font-medium">{user.name}</p>
-                  <p className="text-[11px] opacity-80">{user.email}</p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-              <Avatar
-                size="lg"
-                className="bg-gradient-to-br from-sky-400 to-blue-600 text-sm font-bold text-white shadow-lg shadow-sky-500/20"
+          <DropdownMenu
+            open={isAccountMenuOpen}
+            onOpenChange={setIsAccountMenuOpen}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                aria-label="Open account menu"
+                aria-expanded={isAccountMenuOpen}
+                className={cn(
+                  "group/account w-full rounded-2xl border-white/10 bg-white/[0.035] text-left text-white shadow-sm shadow-black/10 transition-all duration-200 hover:border-violet-400/35 hover:bg-white/[0.06] hover:text-white aria-expanded:border-violet-400/40 aria-expanded:bg-violet-500/10",
+                  isDesktopCollapsed
+                    ? "h-11 justify-center px-0"
+                    : "h-14 justify-start gap-3 px-3"
+                )}
               >
-                <AvatarFallback className="bg-transparent font-bold text-white">
-                  {user.initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">
-                  {user.name}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {user.email}
-                </p>
-              </div>
-            </div>
-          )}
+                <Avatar
+                  size={isDesktopCollapsed ? "default" : "lg"}
+                  className="shrink-0 bg-gradient-to-br from-sky-400 to-blue-600 text-sm font-bold text-white shadow-lg shadow-sky-500/20"
+                >
+                  <AvatarFallback className="bg-transparent font-bold text-white">
+                    {user.initials}
+                  </AvatarFallback>
+                </Avatar>
 
-          {isDesktopCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex justify-center">{logoutButton}</div>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={12}>
-                Logout
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            logoutButton
-          )}
+                <span
+                  className={cn(
+                    "min-w-0 flex-1 overflow-hidden transition-all duration-200 ease-out",
+                    isDesktopCollapsed
+                      ? "max-w-0 -translate-x-2 opacity-0"
+                      : "max-w-[150px] translate-x-0 opacity-100"
+                  )}
+                >
+                  <span className="block truncate text-sm font-semibold leading-5">
+                    {user.name}
+                  </span>
+                  <span className="block truncate text-xs leading-4 text-muted-foreground">
+                    {user.email}
+                  </span>
+                </span>
+
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover/account:text-violet-200",
+                    isAccountMenuOpen ? "rotate-180 text-violet-200" : "",
+                    isDesktopCollapsed ? "hidden" : ""
+                  )}
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="top"
+              align={isDesktopCollapsed ? "center" : "start"}
+              sideOffset={10}
+              className="w-64 border border-white/10 bg-[#171724]/95 p-2 text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
+            >
+              <DropdownMenuLabel className="px-2 py-2">
+                <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
+                  My Account
+                </span>
+                <span className="mt-1 block truncate text-sm font-semibold text-white">
+                  {user.name}
+                </span>
+                <span className="block truncate text-xs font-normal text-muted-foreground">
+                  {user.email}
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem
+                asChild
+                className="cursor-pointer gap-2 rounded-xl px-2.5 py-2.5 text-sm text-muted-foreground focus:bg-white/[0.06] focus:text-white"
+              >
+                <Link href="/profile">
+                  <UserRound className="size-4 text-violet-200" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={isLoggingOut}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  void handleLogout();
+                }}
+                className="cursor-pointer gap-2 rounded-xl px-2.5 py-2.5 text-sm text-red-200 focus:bg-red-500/10 focus:text-red-100"
+              >
+                <LogOut className="size-4 text-red-300" />
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
     </TooltipProvider>
