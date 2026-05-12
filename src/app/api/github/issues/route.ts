@@ -9,9 +9,78 @@ import {
   githubIssueExportSchema,
 } from "@/lib/integrations/github-issues";
 import { captureServerException } from "@/lib/observability/server-monitoring";
+import {
+  getArcjetDeniedMessage,
+  githubIssueExportProtection,
+  logArcjetError,
+} from "@/lib/security/arcjet";
 
 export async function POST(request: Request) {
+  let context: Awaited<ReturnType<typeof getCurrentWorkspaceContextOrThrow>>;
   let body: unknown;
+
+  try {
+    context = await getCurrentWorkspaceContextOrThrow();
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return Response.json(
+        { ok: false, error: "You must be signed in before exporting tickets." },
+        { status: 401 }
+      );
+    }
+
+    captureServerException(error, {
+      area: "integrations",
+      action: "github-issue-export-auth",
+      message: "[github-export] failed to resolve workspace context",
+    });
+
+    return Response.json(
+      { ok: false, error: "We couldn't export this ticket right now." },
+      { status: 500 }
+    );
+  }
+
+  const arcjetDecision = await githubIssueExportProtection
+    .protect(request.clone(), {
+      userId: context.user.id,
+    })
+    .catch((error) => {
+      captureServerException(error, {
+        area: "integrations",
+        action: "github-issue-export-protection",
+        message: "[github-export] request protection failed",
+        context: {
+          userId: context.user.id,
+        },
+      });
+
+      return null;
+    });
+
+  if (!arcjetDecision) {
+    return Response.json(
+      { ok: false, error: "We couldn't export this ticket right now." },
+      { status: 500 }
+    );
+  }
+
+  logArcjetError("github-issue-export", arcjetDecision);
+
+  if (arcjetDecision.isDenied()) {
+    return Response.json(
+      {
+        ok: false,
+        error: getArcjetDeniedMessage(
+          arcjetDecision,
+          "GitHub issue export blocked by application security."
+        ),
+      },
+      {
+        status: arcjetDecision.reason.isRateLimit() ? 429 : 403,
+      }
+    );
+  }
 
   try {
     body = await request.json();
@@ -37,7 +106,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    const context = await getCurrentWorkspaceContextOrThrow();
     const ticket = await getTicketByCode(
       parsed.data.ticketCode,
       context.workspace.id
@@ -58,13 +126,6 @@ export async function POST(request: Request) {
       issueNumber: result.issueNumber,
     });
   } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return Response.json(
-        { ok: false, error: "You must be signed in before exporting tickets." },
-        { status: 401 }
-      );
-    }
-
     if (error instanceof AuthorizationError) {
       return Response.json({ ok: false, error: error.message }, { status: 403 });
     }

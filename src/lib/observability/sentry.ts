@@ -89,6 +89,27 @@ function sanitizeBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb {
   };
 }
 
+function sanitizeExceptionValues(exception: Event["exception"]) {
+  if (!exception?.values) {
+    return exception;
+  }
+
+  return {
+    ...exception,
+    values: exception.values.map((value) => ({
+      ...value,
+      type:
+        typeof value.type === "string"
+          ? sanitizeString(value.type)
+          : value.type,
+      value:
+        typeof value.value === "string"
+          ? sanitizeString(value.value)
+          : value.value,
+    })),
+  };
+}
+
 export function getSentryEnvironment() {
   return process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "development";
 }
@@ -193,6 +214,11 @@ export function getSharedSentryOptions(runtime: "client" | "server" | "edge" = "
 export function sanitizeSentryEvent<T extends Event>(event: T): T {
   return {
     ...event,
+    message:
+      typeof event.message === "string"
+        ? sanitizeString(event.message)
+        : event.message,
+    exception: sanitizeExceptionValues(event.exception),
     user: event.user
       ? {
           ...event.user,
@@ -202,6 +228,10 @@ export function sanitizeSentryEvent<T extends Event>(event: T): T {
     request: event.request
       ? {
           ...event.request,
+          url:
+            typeof event.request.url === "string"
+              ? sanitizeString(event.request.url)
+              : event.request.url,
           data: undefined,
           cookies: undefined,
           headers: sanitizeHeaders(event.request.headers),

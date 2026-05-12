@@ -69,4 +69,30 @@ describe("sanitizeSentryEvent", () => {
       consoleLogs: "[REDACTED]",
     });
   });
+
+  it("redacts exception messages and request URLs before Sentry transport", () => {
+    const event = sanitizeSentryEvent({
+      message: "Export failed for token=ghp_1234567890SECRET1234567890SECRET",
+      exception: {
+        values: [
+          {
+            type: "Error",
+            value:
+              "GitHub request failed with Authorization: Bearer abcdef1234567890TOKEN0987654321",
+          },
+        ],
+      },
+      request: {
+        url: "https://app.example/api/github/issues?token=ghp_1234567890SECRET",
+      },
+    });
+
+    expect(event.message).toBe("Export failed for token=[REDACTED]");
+    expect(event.exception?.values?.[0]?.value).toBe(
+      "GitHub request failed with Authorization: Bearer [REDACTED]"
+    );
+    expect(event.request?.url).toBe(
+      "https://app.example/api/github/issues?token=[REDACTED]"
+    );
+  });
 });

@@ -31,7 +31,11 @@ export const githubIssueExportSchema = z.object({
     .string()
     .trim()
     .min(8, "GitHub token is required.")
-    .max(300, "GitHub token is too long."),
+    .max(300, "GitHub token is too long.")
+    .regex(
+      /^[A-Za-z0-9_]+$/,
+      "GitHub token can only contain letters, numbers, and underscores."
+    ),
 });
 
 export type GitHubIssueExportInput = z.infer<typeof githubIssueExportSchema>;

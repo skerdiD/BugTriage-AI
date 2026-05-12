@@ -145,6 +145,23 @@ const arcjetBugSubmissionProtection = arcjetKey
     })
   : null;
 
+const arcjetGitHubIssueExportProtection = arcjetKey
+  ? arcjet({
+      key: arcjetKey,
+      characteristics: ["userId"],
+      rules: [
+        shield({
+          mode: arcjetMode,
+        }),
+        fixedWindow({
+          mode: arcjetMode,
+          window: "10m",
+          max: 12,
+        }),
+      ],
+    })
+  : null;
+
 export const authCallbackProtection = {
   protect: async (request: ProtectInput): Promise<ProtectionDecision> => {
     if (arcjetAuthCallbackProtection) {
@@ -169,6 +186,24 @@ export const bugSubmissionProtection = {
       getRequestKey(request, details.userId),
       10 * 60 * 1000,
       6
+    );
+  },
+};
+
+export const githubIssueExportProtection = {
+  protect: async (
+    request: ProtectInput,
+    details: { userId: string }
+  ): Promise<ProtectionDecision> => {
+    if (arcjetGitHubIssueExportProtection) {
+      return arcjetGitHubIssueExportProtection.protect(request as Request, details);
+    }
+
+    return protectWithLocalFixedWindow(
+      request,
+      getRequestKey(request, details.userId),
+      10 * 60 * 1000,
+      12
     );
   },
 };
