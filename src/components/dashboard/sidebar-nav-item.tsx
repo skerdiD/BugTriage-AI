@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
@@ -21,11 +22,21 @@ export function SidebarNavItem({
   isActive,
   collapsed,
 }: SidebarNavItemProps) {
+  const [shouldPrefetch, setShouldPrefetch] = useState(isActive);
+
+  function enablePrefetch() {
+    setShouldPrefetch(true);
+  }
+
   const link = (
     <Link
       href={href}
+      prefetch={shouldPrefetch ? null : false}
       aria-current={isActive ? "page" : undefined}
       aria-label={collapsed ? label : undefined}
+      onFocus={enablePrefetch}
+      onMouseEnter={enablePrefetch}
+      onTouchStart={enablePrefetch}
       className={cn(
         "group relative flex h-12 items-center overflow-hidden rounded-2xl border text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70",
         collapsed ? "justify-center px-0" : "gap-3 px-4",
