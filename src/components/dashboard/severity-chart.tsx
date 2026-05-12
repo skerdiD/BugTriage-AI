@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import {
   Cell,
   Pie,
@@ -16,27 +17,46 @@ type SeverityChartProps = {
 };
 
 export function SeverityChart({ data }: SeverityChartProps) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const nonEmptyData = data.filter((item) => item.value > 0);
+  const chartData =
+    nonEmptyData.length > 0
+      ? nonEmptyData
+      : [{ name: "Low", value: 1, color: "rgba(255,255,255,0.12)" }];
+
   return (
     <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-      <CardHeader className="pb-0">
-        <CardTitle className="text-lg">Severity Distribution</CardTitle>
+      <CardHeader className="pb-2">
+        <div>
+          <CardTitle className="text-lg">Severity Distribution</CardTitle>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Current ticket volume by impact level.
+          </p>
+        </div>
       </CardHeader>
 
-      <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_0.75fr] lg:items-center">
-        <div className="h-[280px]">
+      <CardContent className="grid gap-6 p-6 pt-3 xl:grid-cols-[minmax(220px,0.85fr)_minmax(190px,0.75fr)] xl:items-center">
+        <div
+          role="img"
+          aria-label={`Severity distribution across ${total} tickets`}
+          className="relative mx-auto h-[240px] w-full min-w-0 max-w-[300px]"
+        >
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
               <Pie
-                data={data}
+                data={chartData}
                 dataKey="value"
                 nameKey="name"
-                innerRadius={72}
-                outerRadius={112}
-                paddingAngle={4}
+                cx="50%"
+                cy="50%"
+                innerRadius={62}
+                outerRadius={92}
+                paddingAngle={3}
                 stroke="rgba(8,8,13,0.9)"
-                strokeWidth={5}
+                strokeWidth={4}
+                isAnimationActive={false}
               >
-                {data.map((item) => (
+                {chartData.map((item) => (
                   <Cell key={item.name} fill={item.color} />
                 ))}
               </Pie>
@@ -56,24 +76,55 @@ export function SeverityChart({ data }: SeverityChartProps) {
               />
             </PieChart>
           </ResponsiveContainer>
+
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="rounded-full border border-white/10 bg-[#101017]/90 px-5 py-4 text-center shadow-xl shadow-black/30">
+              <p className="text-3xl font-bold leading-none text-white">{total}</p>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Tickets
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {data.map((item) => (
             <div
               key={item.name}
-              className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3"
+              className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 transition hover:border-white/15 hover:bg-white/[0.05]"
             >
-              <div className="flex items-center gap-3">
-                <span
-                  className="size-3 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-sm font-medium text-white">{item.name}</span>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className="size-3 rounded-full shadow-[0_0_18px_var(--severity-color)]"
+                    style={{
+                      backgroundColor: item.color,
+                      "--severity-color": item.color,
+                    } as CSSProperties}
+                  />
+                  <span className="truncate text-sm font-medium text-white">
+                    {item.name}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-white">
+                    {item.value}
+                  </span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {total > 0 ? `${Math.round((item.value / total) * 100)}%` : "0%"}
+                  </span>
+                </div>
               </div>
-              <span className="text-sm font-semibold text-muted-foreground">
-                {item.value}
-              </span>
+
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${total > 0 ? (item.value / total) * 100 : 0}%`,
+                    backgroundColor: item.color,
+                  }}
+                />
+              </div>
             </div>
           ))}
         </div>
