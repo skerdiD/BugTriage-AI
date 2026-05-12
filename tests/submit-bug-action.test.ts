@@ -47,6 +47,15 @@ vi.mock("@arcjet/next", () => ({
   request: getArcjetRequestMock,
 }));
 
+vi.mock("@sentry/nextjs", () => ({
+  addBreadcrumb: vi.fn(),
+  captureException: vi.fn(),
+  startSpan: vi.fn((_context, callback) => callback()),
+  metrics: {
+    count: vi.fn(),
+  },
+}));
+
 vi.mock("@/lib/auth/session", () => ({
   AuthenticationError: AuthenticationErrorMock,
   getCurrentWorkspaceContextOrThrow: getCurrentWorkspaceContextOrThrowMock,

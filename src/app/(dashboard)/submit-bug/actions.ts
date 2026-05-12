@@ -2,6 +2,7 @@
 
 import { request as getArcjetRequest } from "@arcjet/next";
 import { AttachmentType, TicketSeverity, TicketStatus } from "@prisma/client";
+import * as Sentry from "@sentry/nextjs";
 
 import {
   AuthenticationError,
@@ -120,6 +121,18 @@ function isTicketStorageFailure(
   );
 }
 
+function recordBugSubmissionMetric(
+  result: "validation_error" | "blocked" | "created" | "failed",
+  attributes: Record<string, string | number | boolean | undefined> = {}
+) {
+  Sentry.metrics.count("bug_submission", 1, {
+    attributes: {
+      result,
+      ...attributes,
+    },
+  });
+}
+
 export async function analyzeAndCreateTicketAction(
   formData: FormData
 ): Promise<CreateBugTicketActionResult> {
@@ -137,6 +150,10 @@ export async function analyzeAndCreateTicketAction(
   });
 
   if (!parsed.success) {
+    recordBugSubmissionMetric("validation_error", {
+      reason: "invalid_form",
+    });
+
     return {
       ok: false,
       error:
@@ -148,6 +165,11 @@ export async function analyzeAndCreateTicketAction(
   try {
     const workspaceContext = await getCurrentWorkspaceContextOrThrow();
     if (!workspaceContext.project) {
+      recordBugSubmissionMetric("validation_error", {
+        reason: "missing_project",
+        workspaceId: workspaceContext.workspace.id,
+      });
+
       return {
         ok: false,
         error:
@@ -174,6 +196,12 @@ export async function analyzeAndCreateTicketAction(
     logArcjetError("submit-bug", arcjetDecision);
 
     if (arcjetDecision.isDenied()) {
+      recordBugSubmissionMetric("blocked", {
+        reason: "arcjet",
+        workspaceId: workspaceContext.workspace.id,
+        projectId: project.id,
+      });
+
       return {
         ok: false,
         error: getArcjetDeniedMessage(
@@ -188,6 +216,12 @@ export async function analyzeAndCreateTicketAction(
     const allFiles = [...screenshotFiles, ...logFiles];
 
     if (screenshotFiles.length > MAX_UPLOAD_FILES_PER_TYPE) {
+      recordBugSubmissionMetric("validation_error", {
+        reason: "too_many_screenshots",
+        workspaceId: workspaceContext.workspace.id,
+        projectId: project.id,
+      });
+
       return {
         ok: false,
         error: `You can upload up to ${MAX_UPLOAD_FILES_PER_TYPE} screenshots per ticket.`,
@@ -195,6 +229,12 @@ export async function analyzeAndCreateTicketAction(
     }
 
     if (logFiles.length > MAX_UPLOAD_FILES_PER_TYPE) {
+      recordBugSubmissionMetric("validation_error", {
+        reason: "too_many_logs",
+        workspaceId: workspaceContext.workspace.id,
+        projectId: project.id,
+      });
+
       return {
         ok: false,
         error: `You can upload up to ${MAX_UPLOAD_FILES_PER_TYPE} log files per ticket.`,
@@ -202,6 +242,12 @@ export async function analyzeAndCreateTicketAction(
     }
 
     if (getTotalUploadBytes(allFiles) > MAX_TOTAL_TICKET_UPLOAD_BYTES) {
+      recordBugSubmissionMetric("validation_error", {
+        reason: "upload_too_large",
+        workspaceId: workspaceContext.workspace.id,
+        projectId: project.id,
+      });
+
       return {
         ok: false,
         error: "Combined uploads must be 20MB or smaller per ticket.",
@@ -367,6 +413,14 @@ export async function analyzeAndCreateTicketAction(
       throw error;
     }
 
+    recordBugSubmissionMetric("created", {
+      aiFailed: !aiOutput,
+      workspaceId: workspaceContext.workspace.id,
+      projectId: project.id,
+      screenshotCount: screenshotFiles.length,
+      logFileCount: logFiles.length,
+    });
+
     return {
       ok: true,
       ticketCode,
@@ -378,6 +432,10 @@ export async function analyzeAndCreateTicketAction(
     };
   } catch (error) {
     if (error instanceof AuthenticationError) {
+      recordBugSubmissionMetric("failed", {
+        reason: "authentication",
+      });
+
       return {
         ok: false,
         error: "You must be signed in before creating a bug ticket.",
@@ -385,6 +443,10 @@ export async function analyzeAndCreateTicketAction(
     }
 
     if (isTicketStorageFailure(error)) {
+      recordBugSubmissionMetric("failed", {
+        reason: "storage",
+      });
+
       return {
         ok: false,
         error: error.userMessage,
@@ -395,6 +457,10 @@ export async function analyzeAndCreateTicketAction(
       area: "tickets",
       action: "submit-bug",
       message: "[submit-bug] failed to create ticket",
+    });
+
+    recordBugSubmissionMetric("failed", {
+      reason: "unexpected",
     });
 
     return {

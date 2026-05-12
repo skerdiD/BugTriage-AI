@@ -288,6 +288,10 @@ ARCJET_KEY="your_arcjet_key"
 
 SENTRY_DSN="your_server_sentry_dsn"
 NEXT_PUBLIC_SENTRY_DSN="your_public_sentry_dsn"
+SENTRY_LOGS_ENABLED="true"
+NEXT_PUBLIC_SENTRY_LOGS_ENABLED="true"
+NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE="1"
+NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE="1"
 SENTRY_AUTH_TOKEN="your_sentry_auth_token_for_source_maps"
 SENTRY_ORG="your_sentry_org_slug"
 SENTRY_PROJECT="your_sentry_project_slug"
@@ -408,10 +412,20 @@ Production observability is wired through Sentry with redacted event payloads.
 ```env
 SENTRY_DSN=
 NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_LOGS_ENABLED=true
+NEXT_PUBLIC_SENTRY_LOGS_ENABLED=true
+NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=
+NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE=
 SENTRY_AUTH_TOKEN=
 SENTRY_ORG=
 SENTRY_PROJECT=
 ```
+
+Replay is enabled in the browser with Sentry's privacy defaults reinforced
+(`maskAllText`, `maskAllInputs`, and `blockAllMedia`). Logs are enabled for
+Sentry structured logs and console warnings/errors. Metrics include Sentry's
+server runtime metrics plus a `bug_submission` counter emitted by the submit
+bug workflow.
 
 For production URLs, use:
 

@@ -11,6 +11,8 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://generativelanguage.googleapis.com https://*.sentry.io",
+  "worker-src 'self' blob:",
+  "child-src 'self' blob:",
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",

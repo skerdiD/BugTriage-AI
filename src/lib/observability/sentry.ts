@@ -1,4 +1,4 @@
-import type { Breadcrumb, ErrorEvent, Event } from "@sentry/nextjs";
+import type { Breadcrumb, ErrorEvent, Event, Log, Metric } from "@sentry/nextjs";
 
 import { redactSensitiveText } from "@/lib/security/redaction";
 
@@ -105,12 +105,69 @@ export function getSentryTracesSampleRate() {
   return process.env.NODE_ENV === "production" ? 0.1 : 1;
 }
 
+function parseSampleRate(value: string | undefined, fallback: number) {
+  if (!value) return fallback;
+
+  const sampleRate = Number(value);
+
+  if (!Number.isFinite(sampleRate)) return fallback;
+
+  return Math.min(Math.max(sampleRate, 0), 1);
+}
+
+function envFlag(value: string | undefined, fallback: boolean) {
+  if (!value) return fallback;
+
+  return !["0", "false", "off", "no"].includes(value.toLowerCase());
+}
+
+export function getSentryLogsEnabled(runtime: "client" | "server" | "edge" = "server") {
+  if (runtime === "client") {
+    return envFlag(process.env.NEXT_PUBLIC_SENTRY_LOGS_ENABLED, true);
+  }
+
+  return envFlag(process.env.SENTRY_LOGS_ENABLED, true);
+}
+
+export function getSentryReplayConfig() {
+  const defaultSessionSampleRate = process.env.NODE_ENV === "production" ? 0.1 : 1;
+
+  return {
+    replaysSessionSampleRate: parseSampleRate(
+      process.env.NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE,
+      defaultSessionSampleRate
+    ),
+    replaysOnErrorSampleRate: parseSampleRate(
+      process.env.NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE,
+      1
+    ),
+  };
+}
+
+function sanitizeSentryLog(log: Log): Log | null {
+  return {
+    ...log,
+    message:
+      typeof log.message === "string" ? sanitizeString(log.message) : log.message,
+    attributes: sanitizeRecord(log.attributes),
+  };
+}
+
+function sanitizeSentryMetric(metric: Metric): Metric | null {
+  return {
+    ...metric,
+    attributes: sanitizeRecord(metric.attributes) as Metric["attributes"],
+  };
+}
+
 export function getSharedSentryOptions(runtime: "client" | "server" | "edge" = "server") {
   const dsn = getSentryDsn(runtime);
 
   return {
     dsn,
     enabled: Boolean(dsn),
+    enableLogs: getSentryLogsEnabled(runtime),
+    enableMetrics: true,
     environment: getSentryEnvironment(),
     sendDefaultPii: false,
     attachStacktrace: true,
@@ -123,6 +180,12 @@ export function getSharedSentryOptions(runtime: "client" | "server" | "edge" = "
     },
     beforeSend(event: ErrorEvent) {
       return sanitizeSentryEvent(event);
+    },
+    beforeSendLog(log: Log) {
+      return sanitizeSentryLog(log);
+    },
+    beforeSendMetric(metric: Metric) {
+      return sanitizeSentryMetric(metric);
     },
   };
 }
