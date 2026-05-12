@@ -77,6 +77,12 @@ The goal of this project was to build more than an AI wrapper. It demonstrates f
 * Open detailed ticket pages
 * Add comments and follow ticket activity
 
+### GitHub Issues Export
+
+* Export AI-generated bug tickets into GitHub Issues from the ticket detail page
+* Create clean Markdown issue bodies with severity, reproduction steps, likely cause, and suggested fix
+* Use GitHub personal access tokens only for the export request; tokens are never stored
+
 ### Workspaces and Teams
 
 * Supabase authentication

@@ -33,6 +33,7 @@ import {
   addTicketCommentAction,
   updateTicketStatusAction,
 } from "@/app/(dashboard)/tickets/[ticketId]/actions";
+import { GitHubIssueExportDialog } from "@/components/dashboard/github-issue-export-dialog";
 import { SeverityBadge } from "@/components/dashboard/severity-badge";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -149,16 +150,20 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
     <div className="space-y-8">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-5">
-          <Button
-            asChild
-            variant="outline"
-            className="w-fit rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
-          >
-            <Link href="/tickets">
-              <ArrowLeft className="mr-2 size-4" />
-              Back to tickets
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              asChild
+              variant="outline"
+              className="w-fit rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
+            >
+              <Link href="/tickets">
+                <ArrowLeft className="mr-2 size-4" />
+                Back to tickets
+              </Link>
+            </Button>
+
+            <GitHubIssueExportDialog ticketCode={ticket.id} />
+          </div>
 
           <div>
             <div className="flex flex-wrap items-center gap-2">
