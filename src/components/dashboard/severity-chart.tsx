@@ -35,11 +35,11 @@ export function SeverityChart({ data }: SeverityChartProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="grid gap-6 p-6 pt-3 xl:grid-cols-[minmax(220px,0.85fr)_minmax(190px,0.75fr)] xl:items-center">
+      <CardContent className="space-y-5 p-6 pt-3">
         <div
           role="img"
           aria-label={`Severity distribution across ${total} tickets`}
-          className="relative mx-auto h-[240px] w-full min-w-0 max-w-[300px]"
+          className="relative mx-auto h-[250px] w-full min-w-0 max-w-[320px]"
         >
           <ResponsiveContainer width="100%" height="100%">
             <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
@@ -87,16 +87,16 @@ export function SeverityChart({ data }: SeverityChartProps) {
           </div>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           {data.map((item) => (
             <div
               key={item.name}
-              className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 transition hover:border-white/15 hover:bg-white/[0.05]"
+              className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] px-3.5 py-3 transition hover:border-white/15 hover:bg-white/[0.05]"
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className="size-3 rounded-full shadow-[0_0_18px_var(--severity-color)]"
+                    className="size-2.5 shrink-0 rounded-full shadow-[0_0_18px_var(--severity-color)]"
                     style={{
                       backgroundColor: item.color,
                       "--severity-color": item.color,
@@ -106,7 +106,7 @@ export function SeverityChart({ data }: SeverityChartProps) {
                     {item.name}
                   </span>
                 </div>
-                <div className="text-right">
+                <div className="shrink-0 text-right">
                   <span className="text-sm font-semibold text-white">
                     {item.value}
                   </span>
