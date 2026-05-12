@@ -258,10 +258,7 @@ export function AppSidebar({
                   )}
                 >
                   <span className="block truncate text-sm font-semibold leading-5">
-                    {user.name}
-                  </span>
-                  <span className="block truncate text-xs leading-4 text-muted-foreground">
-                    {user.email}
+                    My Account
                   </span>
                 </span>
 
@@ -284,11 +281,8 @@ export function AppSidebar({
                 <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
                   My Account
                 </span>
-                <span className="mt-1 block truncate text-sm font-semibold text-white">
-                  {user.name}
-                </span>
-                <span className="block truncate text-xs font-normal text-muted-foreground">
-                  {user.email}
+                <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                  Profile and session controls
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/10" />

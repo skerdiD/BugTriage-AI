@@ -1,6 +1,7 @@
 import { Mail, ShieldCheck, UserRound, Users } from "lucide-react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
+import { ProfileNameForm } from "@/components/dashboard/profile-name-form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,10 +39,10 @@ export default async function ProfilePage() {
 
               <div className="min-w-0">
                 <p className="truncate text-xl font-semibold text-white">
-                  {user.name}
+                  My Account
                 </p>
                 <p className="mt-1 truncate text-sm text-muted-foreground">
-                  {user.email}
+                  Manage your profile name and workspace access.
                 </p>
               </div>
             </div>
@@ -53,6 +54,10 @@ export default async function ProfilePage() {
               <Badge className="border-violet-500/25 bg-violet-500/10 text-violet-200">
                 {context.role}
               </Badge>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <ProfileNameForm currentName={user.name} />
             </div>
           </CardContent>
         </Card>
