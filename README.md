@@ -10,29 +10,33 @@ It helps teams submit bug reports with reproduction steps, screenshots, logs, br
 
 ## Preview
 
-### Landing Page
+### Landing Page Hero
 
-![BugTriage AI landing hero](./public/screenshots/landing-hero.png)
+![BugTriage AI landing page hero](./public/landing-page-hero.png)
 
-### Dashboard Overview
+### AI Workflow Overview
 
-![BugTriage AI dashboard overview](./public/screenshots/dashboard-overview.png)
+![BugTriage AI workflow overview](./public/ai-workflow-overview.png)
 
-### Submit Bug Flow
+### Engineering Dashboard
 
-![BugTriage AI submit bug flow](./public/screenshots/submit-bug-flow.png)
+![BugTriage AI engineering dashboard](./public/engineering-dashboard.png)
 
-### Tickets List
+### Submit Bug Report
 
-![BugTriage AI tickets list](./public/screenshots/tickets-list.png)
+![BugTriage AI submit bug report form](./public/submit-bug-report.png)
 
-### Ticket Detail and AI Analysis
+### Tickets Management
 
-![BugTriage AI ticket detail](./public/screenshots/ticket-detail-ai-analysis.png)
+![BugTriage AI tickets management view](./public/tickets-management.png)
 
 ### Analytics Dashboard
 
-![BugTriage AI analytics dashboard](./public/screenshots/analytics-dashboard.png)
+![BugTriage AI analytics dashboard](./public/analytics-dashboard.png)
+
+### Team Workspace
+
+![BugTriage AI team workspace](./public/team-workspace.png)
 
 ---
 
