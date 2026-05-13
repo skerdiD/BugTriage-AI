@@ -4,7 +4,7 @@ import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { TicketDetailClient } from "@/components/dashboard/ticket-detail-client";
 import { getTicketByCode } from "@/lib/data/tickets";
 import { mapTicketDetailToUiTicket } from "@/lib/data/ticket-mappers";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSignedTicketFileUrl } from "@/lib/supabase/storage";
 
 type TicketDetailPageProps = {
@@ -26,13 +26,13 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
     notFound();
   }
 
-  const supabase = await createServerSupabaseClient();
+  const storageSupabase = createSupabaseAdminClient();
   const attachmentDownloadUrls = Object.fromEntries(
     await Promise.all(
       dbTicket.attachments.map(async (attachment) => {
         try {
           const signedUrl = await createSignedTicketFileUrl(
-            supabase,
+            storageSupabase,
             attachment.storagePath,
             dbTicket.workspaceId,
             undefined,

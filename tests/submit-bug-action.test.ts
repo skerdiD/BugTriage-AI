@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   AuthenticationErrorMock,
   analyzeBugReportWithGeminiMock,
-  createServerSupabaseClientMock,
+  createSupabaseAdminClientMock,
   createTicketMock,
   generateUniqueTicketCodeMock,
   getArcjetDeniedMessageMock,
@@ -26,7 +26,7 @@ const {
   return {
     AuthenticationErrorMock,
     analyzeBugReportWithGeminiMock: vi.fn(),
-    createServerSupabaseClientMock: vi.fn(),
+    createSupabaseAdminClientMock: vi.fn(),
     createTicketMock: vi.fn(),
     generateUniqueTicketCodeMock: vi.fn(),
     getArcjetDeniedMessageMock: vi.fn(),
@@ -80,8 +80,8 @@ vi.mock("@/lib/security/arcjet", () => ({
   logArcjetError: logArcjetErrorMock,
 }));
 
-vi.mock("@/lib/supabase/server", () => ({
-  createServerSupabaseClient: createServerSupabaseClientMock,
+vi.mock("@/lib/supabase/admin", () => ({
+  createSupabaseAdminClient: createSupabaseAdminClientMock,
 }));
 
 vi.mock("@/lib/supabase/storage", () => ({
@@ -149,7 +149,7 @@ describe("analyzeAndCreateTicketAction", () => {
       workspace: { id: "workspace-1" },
       project: { id: "project-1" },
     });
-    createServerSupabaseClientMock.mockResolvedValue({
+    createSupabaseAdminClientMock.mockReturnValue({
       storage: {},
     });
     getArcjetRequestMock.mockResolvedValue({
@@ -228,6 +228,7 @@ describe("analyzeAndCreateTicketAction", () => {
       error: "You can upload up to 3 log files per ticket.",
     });
     expect(uploadLogFileMock).not.toHaveBeenCalled();
+    expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
   });
 
   it("rejects uploads whose combined payload exceeds the safe ticket limit", async () => {
@@ -254,6 +255,7 @@ describe("analyzeAndCreateTicketAction", () => {
     });
     expect(uploadScreenshotFileMock).not.toHaveBeenCalled();
     expect(uploadLogFileMock).not.toHaveBeenCalled();
+    expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
   });
 
   it("returns a safe upload validation error when storage rejects an unsupported file", async () => {
@@ -278,6 +280,20 @@ describe("analyzeAndCreateTicketAction", () => {
         "Screenshot content did not match a valid PNG, JPG, JPEG, or WEBP file.",
     });
     expect(createTicketMock).not.toHaveBeenCalled();
+  });
+
+  it("does not create a Supabase admin storage client when no files are attached", async () => {
+    analyzeBugReportWithGeminiMock.mockResolvedValue(validAiResponse);
+
+    const result = await analyzeAndCreateTicketAction(buildValidFormData());
+
+    expect(result).toMatchObject({
+      ok: true,
+      ticketCode: "BUG-4242",
+    });
+    expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
+    expect(uploadScreenshotFileMock).not.toHaveBeenCalled();
+    expect(uploadLogFileMock).not.toHaveBeenCalled();
   });
 
   it("creates a ticket with AI-enriched fields when analysis succeeds", async () => {

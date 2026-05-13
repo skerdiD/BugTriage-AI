@@ -29,11 +29,12 @@ import {
   captureServerException,
   withServerSpan,
 } from "@/lib/observability/server-monitoring";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   deleteUploadedTicketFiles,
   MAX_TOTAL_TICKET_UPLOAD_BYTES,
   MAX_UPLOAD_FILES_PER_TYPE,
+  TicketStorageError,
   type UploadedTicketFile,
   uploadLogFile,
   uploadScreenshotFile,
@@ -177,7 +178,6 @@ export async function analyzeAndCreateTicketAction(
       };
     }
     const project = workspaceContext.project;
-    const supabase = await createServerSupabaseClient();
     addServerBreadcrumb({
       category: "ticket",
       message: "Starting bug submission action.",
@@ -254,6 +254,25 @@ export async function analyzeAndCreateTicketAction(
       };
     }
 
+    let storageSupabase: ReturnType<typeof createSupabaseAdminClient> | null = null;
+
+    if (allFiles.length > 0) {
+      try {
+        storageSupabase = createSupabaseAdminClient();
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("[submit-bug] Supabase storage admin client failed", {
+            message: getSafeErrorMessage(error),
+          });
+        }
+
+        throw new TicketStorageError(
+          "Supabase Storage admin client could not be created.",
+          "Attachment storage is not configured. Check the server Supabase environment variables and try again."
+        );
+      }
+    }
+
     const ticketCode = await withServerSpan(
       {
         name: "ticket.generate-code",
@@ -266,57 +285,61 @@ export async function analyzeAndCreateTicketAction(
       () => generateUniqueTicketCode()
     );
 
-    const uploadedScreenshots = await withServerSpan(
-      {
-        name: "ticket.upload-screenshots",
-        op: "storage.batch-upload",
-        context: {
-          workspaceId: workspaceContext.workspace.id,
-          projectId: project.id,
-          ticketCode,
-          fileCount: screenshotFiles.length,
-          attachmentType: "SCREENSHOT",
-        },
-      },
-      () =>
-        Promise.all(
-          screenshotFiles.map((file) =>
-            uploadScreenshotFile({
-              supabase,
-              file,
-              userId: workspaceContext.user.id,
+    const uploadedScreenshots = storageSupabase
+      ? await withServerSpan(
+          {
+            name: "ticket.upload-screenshots",
+            op: "storage.batch-upload",
+            context: {
               workspaceId: workspaceContext.workspace.id,
+              projectId: project.id,
               ticketCode,
-            })
-          )
+              fileCount: screenshotFiles.length,
+              attachmentType: "SCREENSHOT",
+            },
+          },
+          () =>
+            Promise.all(
+              screenshotFiles.map((file) =>
+                uploadScreenshotFile({
+                  supabase: storageSupabase,
+                  file,
+                  userId: workspaceContext.user.id,
+                  workspaceId: workspaceContext.workspace.id,
+                  ticketCode,
+                })
+              )
+            )
         )
-    );
+      : [];
 
-    const uploadedLogs = await withServerSpan(
-      {
-        name: "ticket.upload-logs",
-        op: "storage.batch-upload",
-        context: {
-          workspaceId: workspaceContext.workspace.id,
-          projectId: project.id,
-          ticketCode,
-          fileCount: logFiles.length,
-          attachmentType: "LOG",
-        },
-      },
-      () =>
-        Promise.all(
-          logFiles.map((file) =>
-            uploadLogFile({
-              supabase,
-              file,
-              userId: workspaceContext.user.id,
+    const uploadedLogs = storageSupabase
+      ? await withServerSpan(
+          {
+            name: "ticket.upload-logs",
+            op: "storage.batch-upload",
+            context: {
               workspaceId: workspaceContext.workspace.id,
+              projectId: project.id,
               ticketCode,
-            })
-          )
+              fileCount: logFiles.length,
+              attachmentType: "LOG",
+            },
+          },
+          () =>
+            Promise.all(
+              logFiles.map((file) =>
+                uploadLogFile({
+                  supabase: storageSupabase,
+                  file,
+                  userId: workspaceContext.user.id,
+                  workspaceId: workspaceContext.workspace.id,
+                  ticketCode,
+                })
+              )
+            )
         )
-    );
+      : [];
 
     const uploadedFiles = [...uploadedScreenshots, ...uploadedLogs];
 
@@ -409,7 +432,9 @@ export async function analyzeAndCreateTicketAction(
           })
       );
     } catch (error) {
-      await deleteUploadedTicketFiles(supabase, uploadedFiles);
+      if (storageSupabase) {
+        await deleteUploadedTicketFiles(storageSupabase, uploadedFiles);
+      }
       throw error;
     }
 

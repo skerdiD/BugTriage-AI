@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
@@ -44,13 +45,28 @@ type UploadTicketFileInput = {
   attachmentType: TicketAttachmentKind;
 };
 
+type SupabaseStorageErrorLike = {
+  message?: string;
+  name?: string;
+  status?: number;
+  statusCode?: string | number;
+  error?: string;
+  code?: string;
+};
+
 export class TicketStorageError extends Error {
   userMessage: string;
+  storageError?: SupabaseStorageErrorLike;
 
-  constructor(message: string, userMessage = "We couldn't process that file upload.") {
+  constructor(
+    message: string,
+    userMessage = "We couldn't process that file upload.",
+    storageError?: SupabaseStorageErrorLike
+  ) {
     super(message);
     this.name = "TicketStorageError";
     this.userMessage = userMessage;
+    this.storageError = storageError;
   }
 }
 
@@ -67,6 +83,76 @@ const logExtensions = [".txt", ".log", ".json"];
 
 export function getTicketStorageBucket() {
   return getSupabaseStorageBucket();
+}
+
+function getStorageErrorDetails(error: unknown): SupabaseStorageErrorLike {
+  if (!error || typeof error !== "object") {
+    return {};
+  }
+
+  const candidate = error as SupabaseStorageErrorLike;
+
+  return {
+    message: candidate.message,
+    name: candidate.name,
+    status: candidate.status,
+    statusCode: candidate.statusCode,
+    error: candidate.error,
+    code: candidate.code,
+  };
+}
+
+function getUploadFailureUserMessage(error: SupabaseStorageErrorLike) {
+  const status = String(error.status ?? error.statusCode ?? "");
+  const message = `${error.message ?? ""} ${error.error ?? ""}`.toLowerCase();
+
+  if (
+    status === "404" ||
+    message.includes("bucket not found") ||
+    message.includes("bucket does not exist") ||
+    message.includes("resource not found")
+  ) {
+    return "Attachment storage is not configured yet. Create the private Supabase Storage bucket and try again.";
+  }
+
+  if (
+    status === "401" ||
+    status === "403" ||
+    message.includes("row-level security") ||
+    message.includes("permission") ||
+    message.includes("unauthorized") ||
+    message.includes("not authorized")
+  ) {
+    return "Attachment storage rejected the upload. Check the server Supabase service role configuration.";
+  }
+
+  return "We couldn't upload one of the selected files. Please try again.";
+}
+
+function logStorageFailureInDevelopment(input: {
+  action: string;
+  bucket: string;
+  workspaceId?: string;
+  ticketCode?: string;
+  attachmentType?: TicketAttachmentKind;
+  fileType?: string;
+  fileSize?: number;
+  error: SupabaseStorageErrorLike;
+}) {
+  if (process.env.NODE_ENV !== "development") {
+    return;
+  }
+
+  console.error("[storage] Supabase Storage failure", {
+    action: input.action,
+    bucket: input.bucket,
+    workspaceId: input.workspaceId,
+    ticketCode: input.ticketCode,
+    attachmentType: input.attachmentType,
+    fileType: input.fileType,
+    fileSize: input.fileSize,
+    error: input.error,
+  });
 }
 
 export function sanitizeFileName(fileName: string) {
@@ -233,7 +319,7 @@ export function buildTicketStoragePath({
         ? "logs"
         : "other";
 
-  return `private/${workspaceId}/${userId}/tickets/${ticketCode}/${folder}/${Date.now()}-${safeFileName}`;
+  return `private/${workspaceId}/${userId}/tickets/${ticketCode}/${folder}/${Date.now()}-${randomUUID()}-${safeFileName}`;
 }
 
 export function isTicketStoragePathInWorkspace(
@@ -318,23 +404,45 @@ export async function uploadTicketFile({
       });
 
       if (error) {
+        const storageError = getStorageErrorDetails(error);
+        logStorageFailureInDevelopment({
+          action: "upload-ticket-file",
+          bucket,
+          workspaceId,
+          ticketCode,
+          attachmentType,
+          fileType: file.type || "application/octet-stream",
+          fileSize: file.size,
+          error: storageError,
+        });
+
         throw new TicketStorageError(
           "Supabase Storage upload failed.",
-          "We couldn't upload one of the selected files."
+          getUploadFailureUserMessage(storageError),
+          storageError
         );
       }
     }
   ).catch((error) => {
+    const storageError =
+      error instanceof TicketStorageError && error.storageError
+        ? error.storageError
+        : getStorageErrorDetails(error);
+
     captureServerException(error, {
       area: "storage",
       action: "upload-ticket-file",
       message: "[storage] ticket file upload failed",
       context: {
+        bucket,
         workspaceId,
         ticketCode,
         attachmentType,
         fileType: file.type || "application/octet-stream",
         fileSize: file.size,
+        storageErrorMessage: storageError.message,
+        storageErrorStatus: storageError.status ?? storageError.statusCode,
+        storageErrorCode: storageError.code ?? storageError.error,
       },
     });
     throw error;
@@ -410,21 +518,39 @@ export async function createSignedTicketFileUrl(
     );
 
     if (error) {
+      const storageError = getStorageErrorDetails(error);
+      logStorageFailureInDevelopment({
+        action: "create-signed-ticket-file-url",
+        bucket,
+        workspaceId,
+        error: storageError,
+      });
+
       throw new TicketStorageError(
         "Supabase Storage signed URL creation failed.",
-        "We couldn't prepare that file for download."
+        "We couldn't prepare that file for download.",
+        storageError
       );
     }
 
     return data.signedUrl;
   } catch (error) {
+    const storageError =
+      error instanceof TicketStorageError && error.storageError
+        ? error.storageError
+        : getStorageErrorDetails(error);
+
     captureServerException(error, {
       area: "storage",
       action: "create-signed-ticket-file-url",
       message: "[storage] signed url creation failed",
       context: {
+        bucket,
         workspaceId,
         expiresInSeconds: safeExpiresInSeconds,
+        storageErrorMessage: storageError.message,
+        storageErrorStatus: storageError.status ?? storageError.statusCode,
+        storageErrorCode: storageError.code ?? storageError.error,
       },
     });
     throw error;
@@ -456,13 +582,27 @@ export async function deleteUploadedTicketFiles(
         const { error } = await supabase.storage.from(bucket).remove(storagePaths);
 
         if (error) {
+          const storageError = getStorageErrorDetails(error);
+          logStorageFailureInDevelopment({
+            action: "delete-uploaded-ticket-files",
+            bucket,
+            error: storageError,
+          });
+
           throw new TicketStorageError(
-            "Supabase Storage cleanup failed after a ticket write error."
+            "Supabase Storage cleanup failed after a ticket write error.",
+            "We couldn't finish cleaning up uploaded files.",
+            storageError
           );
         }
       }
     );
   } catch (error) {
+    const storageError =
+      error instanceof TicketStorageError && error.storageError
+        ? error.storageError
+        : getStorageErrorDetails(error);
+
     captureServerException(error, {
       area: "storage",
       action: "delete-uploaded-ticket-files",
@@ -470,6 +610,9 @@ export async function deleteUploadedTicketFiles(
       context: {
         bucket,
         fileCount: storagePaths.length,
+        storageErrorMessage: storageError.message,
+        storageErrorStatus: storageError.status ?? storageError.statusCode,
+        storageErrorCode: storageError.code ?? storageError.error,
       },
     });
   }

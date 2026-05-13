@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   TicketDetailClientMock,
-  createServerSupabaseClientMock,
+  createSupabaseAdminClientMock,
   createSignedTicketFileUrlMock,
   getCurrentWorkspaceContextOrRedirectMock,
   getTicketByCodeMock,
@@ -10,7 +10,7 @@ const {
   notFoundMock,
 } = vi.hoisted(() => ({
   TicketDetailClientMock: vi.fn(() => null),
-  createServerSupabaseClientMock: vi.fn(),
+  createSupabaseAdminClientMock: vi.fn(),
   createSignedTicketFileUrlMock: vi.fn(),
   getCurrentWorkspaceContextOrRedirectMock: vi.fn(),
   getTicketByCodeMock: vi.fn(),
@@ -40,8 +40,8 @@ vi.mock("@/lib/data/tickets", () => ({
   getTicketByCode: getTicketByCodeMock,
 }));
 
-vi.mock("@/lib/supabase/server", () => ({
-  createServerSupabaseClient: createServerSupabaseClientMock,
+vi.mock("@/lib/supabase/admin", () => ({
+  createSupabaseAdminClient: createSupabaseAdminClientMock,
 }));
 
 vi.mock("@/lib/supabase/storage", () => ({
@@ -59,7 +59,7 @@ describe("ticket detail page", () => {
         id: "workspace-1",
       },
     });
-    createServerSupabaseClientMock.mockResolvedValue({
+    createSupabaseAdminClientMock.mockReturnValue({
       storage: {},
     });
     mapTicketDetailToUiTicketMock.mockReturnValue({
@@ -92,7 +92,9 @@ describe("ticket detail page", () => {
       }),
     });
 
-    expect(getTicketByCodeMock).toHaveBeenCalledWith("BUG-4242", "workspace-1");
+    expect(getTicketByCodeMock).toHaveBeenCalledWith("BUG-4242", "workspace-1", {
+      skipAccessCheck: true,
+    });
     expect(createSignedTicketFileUrlMock).toHaveBeenCalledWith(
       {
         storage: {},

@@ -208,3 +208,33 @@ Testing and CI Layer
   |-- Lint
   |-- Typecheck
   |-- Production Build
+```
+
+---
+
+## Supabase Storage Setup
+
+BugTriage AI stores ticket screenshots and log files in Supabase Storage as private attachments. Uploads are performed only from server actions using the Supabase service role key; the service role key must never be exposed to the browser.
+
+Create one Storage bucket in the Supabase dashboard:
+
+- Bucket name: `bugtriage-private`
+- Public bucket: `Off`
+- File size limit: at least `10 MB`
+- Allowed MIME types are optional in Supabase because the app validates files server-side:
+  `image/png`, `image/jpeg`, `image/webp`, `text/plain`, `application/json`
+
+The bucket name can be overridden with `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET`, but the value in Vercel and Supabase must match exactly. If this variable is omitted, the app uses `bugtriage-private`.
+
+Required Vercel environment variables:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=bugtriage-private
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` is server-only and is used for private Storage uploads, cleanup after failed ticket saves, and short-lived signed download URLs. Do not prefix it with `NEXT_PUBLIC_`.
+
+Storage RLS policies are not required for ticket attachments because browser clients do not upload or read files directly. If you later move uploads to the browser, add authenticated Storage RLS policies before doing so.
