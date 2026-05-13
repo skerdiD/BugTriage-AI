@@ -9,8 +9,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const dashboardUser = await getCurrentDashboardUser();
-  const workspaceContext = await getCurrentWorkspaceContextOrRedirect();
+  const [dashboardUser, workspaceContext] = await Promise.all([
+    getCurrentDashboardUser(),
+    getCurrentWorkspaceContextOrRedirect(),
+  ]);
 
   return (
     <DashboardShell

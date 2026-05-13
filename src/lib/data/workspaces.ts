@@ -296,21 +296,38 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
     where: {
       OR: [{ id: input.authUserId }, { email }],
     },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+    },
   });
 
   const user = existingUser
-    ? await prisma.user.update({
-        where: { id: existingUser.id },
-        data: {
-          email,
-          name,
-        },
-      })
+    ? existingUser.email === email && existingUser.name === name
+      ? existingUser
+      : await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            email,
+            name,
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        })
     : await prisma.user.create({
         data: {
           id: input.authUserId,
           email,
           name,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
         },
       });
 
@@ -320,6 +337,15 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
     },
     orderBy: {
       createdAt: "asc",
+    },
+    select: {
+      id: true,
+      ownerId: true,
+      _count: {
+        select: {
+          projects: true,
+        },
+      },
     },
   });
 
@@ -332,11 +358,30 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
         slug: `${baseSlug}-workspace-${user.id.slice(0, 8)}`,
         ownerId: user.id,
       },
+      select: {
+        id: true,
+        ownerId: true,
+        _count: {
+          select: {
+            projects: true,
+          },
+        },
+      },
     });
   }
 
   await ensureWorkspaceOwnerMembership(workspace.id, user.id);
-  const project = await ensureDefaultProjectForWorkspace(workspace.id);
+  const project =
+    workspace._count.projects > 0
+      ? await prisma.project.findFirst({
+          where: {
+            workspaceId: workspace.id,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        })
+      : await ensureDefaultProjectForWorkspace(workspace.id);
 
   return {
     user,
@@ -433,8 +478,16 @@ export async function listUserWorkspaces(userId: string) {
     });
 }
 
-export async function listWorkspaceProjects(workspaceId: string, userId?: string) {
-  await assertWorkspaceMember(workspaceId, userId);
+export async function listWorkspaceProjects(
+  workspaceId: string,
+  userId?: string,
+  options?: {
+    skipAccessCheck?: boolean;
+  }
+) {
+  if (!options?.skipAccessCheck) {
+    await assertWorkspaceMember(workspaceId, userId);
+  }
 
   const projects = await prisma.project.findMany({
     where: {

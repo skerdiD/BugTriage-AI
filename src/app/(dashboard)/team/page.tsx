@@ -60,13 +60,15 @@ function getAssignableRoleOptions(
 
 export default async function TeamPage() {
   const context = await getCurrentWorkspaceContextOrRedirect();
-  const members = await getWorkspaceMembers(context.workspace.id, context.user.id);
   const invitableRoles = getInvitableWorkspaceRoles(context.role);
   const canManageInvites = invitableRoles.length > 0;
-  const pendingInvites = canManageInvites
-    ? await listPendingWorkspaceInvites(context.workspace.id, context.user.id)
-    : [];
-  const appBaseUrl = canManageInvites ? await getAppBaseUrl() : "";
+  const [members, pendingInvites, appBaseUrl] = await Promise.all([
+    getWorkspaceMembers(context.workspace.id, context.user.id),
+    canManageInvites
+      ? listPendingWorkspaceInvites(context.workspace.id, context.user.id)
+      : Promise.resolve([]),
+    canManageInvites ? getAppBaseUrl() : Promise.resolve(""),
+  ]);
   const totalOpenAssignments = members.reduce(
     (sum, member) => sum + member.openAssignedTicketCount,
     0

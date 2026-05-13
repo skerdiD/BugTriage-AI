@@ -115,6 +115,7 @@ export type GetTicketsInput = {
   search?: string;
   take?: number;
   skip?: number;
+  skipAccessCheck?: boolean;
 };
 
 export type CreateTicketInput = {
@@ -248,17 +249,20 @@ export async function getTickets(input: GetTicketsInput) {
     search,
     take = 50,
     skip = 0,
+    skipAccessCheck = false,
   } = input;
 
-  await assertWorkspaceMember(workspaceId);
+  if (!skipAccessCheck) {
+    await assertWorkspaceMember(workspaceId);
 
-  if (projectId) {
-    const projectAccess = await assertCanAccessProject(projectId);
+    if (projectId) {
+      const projectAccess = await assertCanAccessProject(projectId);
 
-    if (projectAccess.project.workspaceId !== workspaceId) {
-      throw new AuthorizationError(
-        "Project does not belong to the selected workspace."
-      );
+      if (projectAccess.project.workspaceId !== workspaceId) {
+        throw new AuthorizationError(
+          "Project does not belong to the selected workspace."
+        );
+      }
     }
   }
 
@@ -325,13 +329,29 @@ export async function getTickets(input: GetTicketsInput) {
   }
 }
 
-export async function getTicketByCode(code: string, workspaceId: string) {
-  const access = await assertCanAccessTicket({
-    ticketCode: code,
-    workspaceId,
-  });
-
+export async function getTicketByCode(
+  code: string,
+  workspaceId: string,
+  options?: {
+    skipAccessCheck?: boolean;
+  }
+) {
   try {
+    if (options?.skipAccessCheck) {
+      return await prisma.ticket.findFirst({
+        where: {
+          code,
+          workspaceId,
+        },
+        include: ticketDetailInclude,
+      });
+    }
+
+    const access = await assertCanAccessTicket({
+      ticketCode: code,
+      workspaceId,
+    });
+
     return await prisma.ticket.findFirst({
       where: {
         id: access.ticket.id,

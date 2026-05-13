@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -22,21 +21,11 @@ export function SidebarNavItem({
   isActive,
   collapsed,
 }: SidebarNavItemProps) {
-  const [shouldPrefetch, setShouldPrefetch] = useState(isActive);
-
-  function enablePrefetch() {
-    setShouldPrefetch(true);
-  }
-
   const link = (
     <Link
       href={href}
-      prefetch={shouldPrefetch ? null : false}
       aria-current={isActive ? "page" : undefined}
       aria-label={collapsed ? label : undefined}
-      onFocus={enablePrefetch}
-      onMouseEnter={enablePrefetch}
-      onTouchStart={enablePrefetch}
       className={cn(
         "group relative flex h-12 items-center overflow-hidden rounded-2xl border text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70",
         collapsed ? "justify-center px-0" : "gap-3 px-4",
@@ -72,6 +61,7 @@ export function SidebarNavItem({
       >
         {label}
       </span>
+      <SidebarLinkPendingIndicator />
     </Link>
   );
 
@@ -86,5 +76,19 @@ export function SidebarNavItem({
         {label}
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+function SidebarLinkPendingIndicator() {
+  const { pending } = useLinkStatus();
+
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute right-2 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-violet-200 opacity-0 transition-opacity duration-150",
+        pending && "animate-pulse opacity-80"
+      )}
+    />
   );
 }

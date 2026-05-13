@@ -14,9 +14,13 @@ type TicketDetailPageProps = {
 };
 
 export default async function TicketDetailPage({ params }: TicketDetailPageProps) {
-  const { ticketId } = await params;
-  const context = await getCurrentWorkspaceContextOrRedirect();
-  const dbTicket = await getTicketByCode(ticketId, context.workspace.id);
+  const [{ ticketId }, context] = await Promise.all([
+    params,
+    getCurrentWorkspaceContextOrRedirect(),
+  ]);
+  const dbTicket = await getTicketByCode(ticketId, context.workspace.id, {
+    skipAccessCheck: true,
+  });
 
   if (!dbTicket) {
     notFound();

@@ -170,7 +170,11 @@ export const getCurrentWorkspaceContextOrThrow = cache(async () => {
       },
     });
 
-    const availableProjects = await listWorkspaceProjects(selectedWorkspace.id, user.id);
+    const availableProjects = await listWorkspaceProjects(
+      selectedWorkspace.id,
+      user.id,
+      { skipAccessCheck: true }
+    );
     const selectedProject = pickCurrentProject(
       availableProjects,
       cookieStore.get(PROJECT_COOKIE_NAME)?.value

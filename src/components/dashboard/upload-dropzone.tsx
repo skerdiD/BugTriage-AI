@@ -9,7 +9,7 @@ import { AlertCircle, CheckCircle2, File, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type UploadDropzoneProps = {
+export type UploadDropzoneProps = {
   title: string;
   description: string;
   helperText: string;

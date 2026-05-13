@@ -89,6 +89,7 @@ export type ReportingScopeInput = {
   workspaceId: string;
   projectId?: string | null;
   userId?: string;
+  skipAuthorization?: boolean;
 };
 
 export type DashboardPageData = {
@@ -157,6 +158,10 @@ function ensureScopeWhere(input: ReportingScopeInput): Prisma.TicketWhereInput {
 }
 
 async function assertReportingScope(input: ReportingScopeInput) {
+  if (input.skipAuthorization) {
+    return;
+  }
+
   await assertWorkspaceMember(input.workspaceId, input.userId);
 
   if (input.projectId) {

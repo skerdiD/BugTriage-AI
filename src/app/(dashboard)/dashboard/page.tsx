@@ -6,13 +6,15 @@ import {
 } from "lucide-react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
+import {
+  LazySeverityChart,
+  LazyTrendChart,
+} from "@/components/dashboard/lazy-dashboard-charts";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PriorityQueue } from "@/components/dashboard/priority-queue";
 import { RecentActivityFeed } from "@/components/dashboard/recent-activity-feed";
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
-import { SeverityChart } from "@/components/dashboard/severity-chart";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { TrendChart } from "@/components/dashboard/trend-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { getDashboardPageData } from "@/lib/data/dashboard";
@@ -38,6 +40,7 @@ export default async function DashboardPage() {
     workspaceId: context.workspace.id,
     projectId: context.project?.id,
     userId: context.user.id,
+    skipAuthorization: true,
   });
 
   return (
@@ -62,8 +65,8 @@ export default async function DashboardPage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.55fr]">
-        <SeverityChart data={data.severity} />
-        <TrendChart data={data.trend} />
+        <LazySeverityChart data={data.severity} />
+        <LazyTrendChart data={data.trend} />
       </section>
 
       <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">

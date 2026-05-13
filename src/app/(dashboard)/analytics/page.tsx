@@ -8,6 +8,7 @@ export default async function AnalyticsPage() {
     workspaceId: context.workspace.id,
     projectId: context.project?.id,
     userId: context.user.id,
+    skipAuthorization: true,
   });
 
   return <AnalyticsClient {...data} />;

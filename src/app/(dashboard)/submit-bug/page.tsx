@@ -13,12 +13,13 @@ import {
   UploadCloud,
   WandSparkles,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 import { analyzeAndCreateTicketAction } from "@/app/(dashboard)/submit-bug/actions";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { UploadDropzone } from "@/components/dashboard/upload-dropzone";
+import type { UploadDropzoneProps } from "@/components/dashboard/upload-dropzone";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   bugReportFormSchema,
@@ -63,6 +65,17 @@ const aiPreviewItems = [
   "Priority Score",
   "Confidence Score",
 ];
+
+const UploadDropzone = dynamic<UploadDropzoneProps>(
+  () =>
+    import("@/components/dashboard/upload-dropzone").then(
+      (mod) => mod.UploadDropzone
+    ),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[190px] rounded-2xl bg-white/10" />,
+  }
+);
 
 export default function SubmitBugPage() {
   const router = useRouter();

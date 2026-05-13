@@ -7,9 +7,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { AnalyticsCharts } from "@/components/dashboard/analytics-charts";
 import { AnalyticsMetricCard } from "@/components/dashboard/analytics-metric-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { LazyAnalyticsCharts } from "@/components/dashboard/lazy-dashboard-charts";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { RepeatedPatterns } from "@/components/dashboard/repeated-patterns";
 import { TopAffectedPages } from "@/components/dashboard/top-affected-pages";
@@ -81,7 +81,7 @@ export function AnalyticsClient({
         ))}
       </section>
 
-      <AnalyticsCharts
+      <LazyAnalyticsCharts
         bugReportsOverTime={bugReportsOverTime}
         bugsByCategory={bugsByCategory}
         averageResolutionTime={averageResolutionTime}
