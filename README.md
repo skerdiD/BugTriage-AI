@@ -4,7 +4,7 @@
 
 It helps teams submit bug reports with reproduction steps, screenshots, logs, browser/device details, and context. AI then generates a clean summary, likely cause, suggested fix, severity, priority, tags, and confidence score inside a SaaS-style workspace.
 
-[Live Demo](https://bug-triage-m6ht6jboe-skerdids-projects.vercel.app/) · [Repository](https://github.com/skerdiD/BugTriage-AI)
+[Live Demo](https://bug-triage-ai.vercel.app/) · [Repository](https://github.com/skerdiD/BugTriage-AI)
 
 ---
 
@@ -33,6 +33,14 @@ It helps teams submit bug reports with reproduction steps, screenshots, logs, br
 ### Analytics Dashboard
 
 ![BugTriage AI analytics dashboard](./public/analytics-dashboard.png)
+
+### Severity And Trend Charts
+
+![BugTriage AI severity and trend charts](./public/severity-and-trend-charts.png)
+
+### Analytics Deep Dive
+
+![BugTriage AI analytics deep dive](./public/analytics-deep-dive.png)
 
 ### Team Workspace
 
