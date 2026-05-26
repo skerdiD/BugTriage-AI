@@ -14,6 +14,10 @@ It helps teams submit bug details, upload supporting files, use AI to generate s
 
 ![BugTriage AI landing page hero](./public/landing-page-hero.png)
 
+### AI Workflow Overview
+
+![BugTriage AI workflow overview](./public/ai-workflow-overview.png)
+
 ### Engineering Dashboard
 
 ![BugTriage AI engineering dashboard](./public/engineering-dashboard.png)
@@ -25,6 +29,22 @@ It helps teams submit bug details, upload supporting files, use AI to generate s
 ### Tickets Management
 
 ![BugTriage AI tickets management view](./public/tickets-management.png)
+
+### Analytics Dashboard
+
+![BugTriage AI analytics dashboard](./public/analytics-dashboard.png)
+
+### Severity and Trend Charts
+
+![BugTriage AI severity and trend charts](./public/severity-and-trend-charts.png)
+
+### Analytics Deep Dive
+
+![BugTriage AI analytics deep dive](./public/analytics-deep-dive.png)
+
+### Team Workspace
+
+![BugTriage AI team workspace](./public/team-workspace.png)
 
 ---
 
