@@ -81,7 +81,22 @@ describe("similar issues", () => {
   });
 
   it("returns an empty list when the current ticket has no embedding", async () => {
-    prismaMock.$queryRaw.mockResolvedValueOnce([]);
+    prismaMock.$queryRaw
+      .mockResolvedValueOnce([{ tableName: 'public."TicketEmbedding"' }])
+      .mockResolvedValueOnce([]);
+
+    const result = await findSimilarIssuesForTicket({
+      ticketId: "ticket-1",
+      workspaceId: "workspace-1",
+      projectId: "project-1",
+    });
+
+    expect(result).toEqual([]);
+    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns an empty list without logging when the embedding table is missing", async () => {
+    prismaMock.$queryRaw.mockResolvedValueOnce([{ tableName: null }]);
 
     const result = await findSimilarIssuesForTicket({
       ticketId: "ticket-1",
@@ -91,6 +106,7 @@ describe("similar issues", () => {
 
     expect(result).toEqual([]);
     expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(captureServerExceptionMock).not.toHaveBeenCalled();
   });
 
   it("rejects embedding upserts when the ticket is outside the workspace project", async () => {
@@ -114,8 +130,31 @@ describe("similar issues", () => {
     expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
   });
 
+  it("skips embedding generation when the embedding table has not been migrated", async () => {
+    prismaMock.ticket.findFirst.mockResolvedValue({ id: "ticket-1" });
+    prismaMock.$queryRaw.mockResolvedValueOnce([{ tableName: null }]);
+
+    await expect(
+      createAndStoreTicketEmbedding({
+        ticketId: "ticket-1",
+        workspaceId: "workspace-1",
+        projectId: "project-1",
+        source: {
+          title: "Checkout fails",
+          description: "Checkout submit button remains disabled.",
+        },
+      })
+    ).rejects.toThrow(
+      "Ticket embeddings table is not available. Run the latest Prisma migration."
+    );
+
+    expect(generateTicketEmbeddingMock).not.toHaveBeenCalled();
+    expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
+  });
+
   it("searches only from the current ticket embedding and excludes self matches", async () => {
     prismaMock.$queryRaw
+      .mockResolvedValueOnce([{ tableName: 'public."TicketEmbedding"' }])
       .mockResolvedValueOnce([{ embedding: `[${"0.01,".repeat(767)}0.01]` }])
       .mockResolvedValueOnce([
         {
@@ -153,6 +192,6 @@ describe("similar issues", () => {
         similarityScore: 0.84,
       }),
     ]);
-    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(3);
   });
 });

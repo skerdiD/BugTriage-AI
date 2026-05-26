@@ -2,11 +2,12 @@
 
 **BugTriage AI** is a modern full-stack AI-powered issue triage platform that turns messy bug reports, screenshots, logs, and user complaints into structured, developer-ready tickets.
 
-It helps teams submit bug details, upload supporting files, and use AI to generate summaries, likely causes, suggested fixes, severity, priority, tags, and confidence scores inside a protected SaaS-style workspace.
+It helps teams submit bug details, upload supporting files, use AI to generate structured bug analysis, and find semantically similar previous issues inside a protected SaaS-style workspace.
 
 [Live Demo](https://bug-triage-ai.vercel.app/) | [Repository](https://github.com/skerdiD/BugTriage-AI)
 
 ---
+
 ## Preview
 
 ### Landing Page Hero
@@ -26,19 +27,23 @@ It helps teams submit bug details, upload supporting files, and use AI to genera
 ![BugTriage AI tickets management view](./public/tickets-management.png)
 
 ---
+
 ## Overview
 
 Bug reports are often unclear, incomplete, and scattered across screenshots, logs, support messages, and user complaints.
 
 Developers lose time understanding what happened, how serious the issue is, and what should be fixed first.
 
-BugTriage AI solves this by converting raw reports into structured engineering tickets.
+BugTriage AI solves this by converting raw bug reports into structured engineering tickets.
 
 Users can submit bug details, add reproduction steps, upload attachments, manage tickets by workspace and project, and export triaged issues to GitHub.
 
-This project demonstrates full-stack SaaS development, practical AI integration, authentication, authorization, file storage, analytics, testing, monitoring, and production-minded engineering.
+The app also uses embeddings and vector search to surface similar previous tickets, helping teams connect new bugs with related historical issues.
+
+This project demonstrates full-stack SaaS development, practical AI integration, semantic search, authentication, authorization, file storage, analytics, testing, monitoring, and production-minded engineering.
 
 ---
+
 ## Key Features
 
 ### AI Bug Triage
@@ -52,7 +57,19 @@ This project demonstrates full-stack SaaS development, practical AI integration,
 - Return confidence scores
 - Validate AI output with Zod
 - Handle AI failures safely
-- Redact sensitive text
+- Redact sensitive text before AI processing
+
+### Similar Issues
+
+- Generate Gemini embeddings for submitted tickets
+- Store semantic vectors with pgvector
+- Find similar previous tickets by meaning, not only keywords
+- Search only inside the same workspace
+- Prefer similar tickets from the same project
+- Exclude the current ticket from results
+- Show top matching issues with similarity percentage
+- Handle missing embeddings without crashing the app
+- Keep embedding and vector search logic server-side
 
 ### Bug Submission
 
@@ -71,6 +88,7 @@ This project demonstrates full-stack SaaS development, practical AI integration,
 - Track status, severity, priority, and category
 - Open ticket detail pages
 - Review original reports and AI analysis
+- View semantically similar previous issues
 - Add comments
 - Follow activity history
 
@@ -106,14 +124,17 @@ This project demonstrates full-stack SaaS development, practical AI integration,
 
 - Protected app routes
 - User-scoped ticket access
+- Workspace-scoped similar issue search
 - Private attachment storage
 - Signed download URLs
 - AI timeout and retry handling
+- Embedding failure fallback
 - Arcjet protection and rate limiting
 - Sentry monitoring
 - CI quality checks
 
 ---
+
 ## Tech Stack
 
 ### Frontend
@@ -138,13 +159,17 @@ This project demonstrates full-stack SaaS development, practical AI integration,
 - Supabase Postgres
 - Supabase Auth
 - Supabase Storage
+- pgvector
 
 ### AI Layer
 
 - Vercel AI SDK
 - Google Gemini
+- Gemini embeddings
 - `@ai-sdk/google`
 - Structured AI output
+- Semantic ticket matching
+- Vector similarity search
 - Zod validation
 - Prompt redaction
 - Timeout and retry handling
@@ -162,9 +187,10 @@ This project demonstrates full-stack SaaS development, practical AI integration,
 - Vercel
 
 ---
+
 ## Architecture Overview
 
-BugTriage AI uses a full-stack Next.js architecture with Supabase for auth, database, and storage, Prisma for typed database access, Gemini for AI analysis, and GitHub Issues for export.
+BugTriage AI uses a full-stack Next.js architecture with Supabase for auth, database, and storage, Prisma for typed database access, Gemini for AI analysis, pgvector for semantic similar-issue search, and GitHub Issues for export.
 
 ```txt
 Next.js App
@@ -206,6 +232,15 @@ AI Layer
   |-- Priority
   |-- Confidence Score
 
+Embeddings and Search Layer
+  |-- Gemini Embeddings
+  |-- TicketEmbedding Records
+  |-- pgvector
+  |-- Vector Similarity Search
+  |-- Similar Previous Issues
+  |-- Workspace-Scoped Results
+  |-- Same-Project Preference
+
 Integration and Security Layer
   |-- GitHub Issues Export
   |-- Supabase Storage
@@ -216,6 +251,7 @@ Integration and Security Layer
 ```
 
 ---
+
 ## Getting Started
 
 ### 1. Clone the repository
@@ -249,19 +285,25 @@ NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_AUTH_TOKEN=
 ```
 
-### 4. Push the database schema
+### 4. Run database migrations
 
 ```bash
-npx prisma db push
+npx prisma migrate dev
 ```
 
-### 5. Seed demo data, optional
+### 5. Generate Prisma client
+
+```bash
+npx prisma generate
+```
+
+### 6. Seed demo data, optional
 
 ```bash
 npx prisma db seed
 ```
 
-### 6. Start the development server
+### 7. Start the development server
 
 ```bash
 npm run dev
@@ -274,6 +316,7 @@ http://localhost:3000
 ```
 
 ---
+
 ## Available Scripts
 
 ```bash
@@ -284,13 +327,33 @@ npm run lint
 npm run typecheck
 npm run test
 npm run test:e2e
-npx prisma db push
+npx prisma migrate dev
+npx prisma migrate deploy
 npx prisma studio
 npx prisma generate
 ```
 
 ---
+
+## Project Highlights
+
+BugTriage AI demonstrates:
+
+- Full-stack SaaS application development
+- AI-powered bug triage with structured output
+- Semantic similar-issue detection using Gemini embeddings and pgvector
+- Workspace-based authorization
+- Project-based ticket organization
+- Private file upload handling
+- GitHub Issues export
+- Dashboard analytics and activity tracking
+- Server-side validation and error handling
+- Testing, monitoring, and deployment preparation
+
+---
+
 ## Author
+
 Built by **skerdiD**.
 
 GitHub: [@skerdiD](https://github.com/skerdiD)

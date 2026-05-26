@@ -47,6 +47,14 @@ function assertEmbeddingVector(embedding: number[]) {
   }
 }
 
+async function hasTicketEmbeddingTable() {
+  const result = await prisma.$queryRaw<Array<{ tableName: string | null }>>`
+    SELECT to_regclass('public."TicketEmbedding"')::text AS "tableName"
+  `;
+
+  return Boolean(result[0]?.tableName);
+}
+
 export function toPgVectorLiteral(embedding: number[]) {
   assertEmbeddingVector(embedding);
   return `[${embedding.map((value) => value.toFixed(8)).join(",")}]`;
@@ -89,6 +97,12 @@ export async function createAndStoreTicketEmbedding(input: {
   if (!ticket) {
     throw new Error(
       "Ticket embedding target was not found in the selected workspace project."
+    );
+  }
+
+  if (!(await hasTicketEmbeddingTable())) {
+    throw new Error(
+      "Ticket embeddings table is not available. Run the latest Prisma migration."
     );
   }
 
@@ -155,6 +169,10 @@ export async function findSimilarIssuesForTicket(input: {
   minScore?: number;
 }): Promise<SimilarIssue[]> {
   try {
+    if (!(await hasTicketEmbeddingTable())) {
+      return [];
+    }
+
     const currentEmbedding = await prisma.$queryRaw<Array<{ embedding: string }>>`
       SELECT te."embedding"::text AS "embedding"
       FROM "public"."TicketEmbedding" te
