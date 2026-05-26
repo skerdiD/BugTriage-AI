@@ -4,6 +4,7 @@ const {
   TicketDetailClientMock,
   createSupabaseAdminClientMock,
   createSignedTicketFileUrlMock,
+  findSimilarIssuesForTicketMock,
   getCurrentWorkspaceContextOrRedirectMock,
   getTicketByCodeMock,
   mapTicketDetailToUiTicketMock,
@@ -12,6 +13,7 @@ const {
   TicketDetailClientMock: vi.fn(() => null),
   createSupabaseAdminClientMock: vi.fn(),
   createSignedTicketFileUrlMock: vi.fn(),
+  findSimilarIssuesForTicketMock: vi.fn(),
   getCurrentWorkspaceContextOrRedirectMock: vi.fn(),
   getTicketByCodeMock: vi.fn(),
   mapTicketDetailToUiTicketMock: vi.fn(),
@@ -34,6 +36,10 @@ vi.mock("@/lib/auth/session", () => ({
 
 vi.mock("@/lib/data/ticket-mappers", () => ({
   mapTicketDetailToUiTicket: mapTicketDetailToUiTicketMock,
+}));
+
+vi.mock("@/lib/data/similar-issues", () => ({
+  findSimilarIssuesForTicket: findSimilarIssuesForTicketMock,
 }));
 
 vi.mock("@/lib/data/tickets", () => ({
@@ -62,6 +68,7 @@ describe("ticket detail page", () => {
     createSupabaseAdminClientMock.mockReturnValue({
       storage: {},
     });
+    findSimilarIssuesForTicketMock.mockResolvedValue([]);
     mapTicketDetailToUiTicketMock.mockReturnValue({
       id: "BUG-4242",
       title: "Mapped ticket",
@@ -71,7 +78,9 @@ describe("ticket detail page", () => {
   it("generates signed attachment URLs only after a workspace-safe ticket lookup", async () => {
     const dbTicket = {
       code: "BUG-4242",
+      id: "ticket-1",
       workspaceId: "workspace-1",
+      projectId: "project-1",
       attachments: [
         {
           id: "attachment-1",
@@ -107,9 +116,14 @@ describe("ticket detail page", () => {
     expect(createSignedTicketFileUrlMock.mock.invocationCallOrder[0]).toBeGreaterThan(
       getTicketByCodeMock.mock.invocationCallOrder[0]
     );
+    expect(findSimilarIssuesForTicketMock).toHaveBeenCalledWith({
+      ticketId: "ticket-1",
+      workspaceId: "workspace-1",
+      projectId: "project-1",
+    });
     expect(mapTicketDetailToUiTicketMock).toHaveBeenCalledWith(dbTicket, {
       "attachment-1": "https://download.example/checkout.png",
-    });
+    }, []);
     expect(result.props.ticket).toEqual({
       id: "BUG-4242",
       title: "Mapped ticket",
@@ -129,5 +143,6 @@ describe("ticket detail page", () => {
 
     expect(notFoundMock).toHaveBeenCalled();
     expect(createSignedTicketFileUrlMock).not.toHaveBeenCalled();
+    expect(findSimilarIssuesForTicketMock).not.toHaveBeenCalled();
   });
 });

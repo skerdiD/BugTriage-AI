@@ -70,6 +70,15 @@ export type UiTicketActivity = {
   time: string;
 };
 
+export type UiSimilarIssue = {
+  id: string;
+  title: string;
+  severity: UiTicketSeverity;
+  status: UiTicketStatus;
+  priorityScore: number | null;
+  matchPercent: number;
+};
+
 export type UiTicket = {
   id: string;
   title: string;
@@ -97,6 +106,7 @@ export type UiTicket = {
   updatedDate: string;
   comments: UiTicketComment[];
   activity: UiTicketActivity[];
+  similarIssues: UiSimilarIssue[];
 };
 
 export type AnalyticsMetric = {

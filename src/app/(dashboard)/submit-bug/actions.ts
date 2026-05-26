@@ -18,6 +18,7 @@ import {
   createTicket,
   generateUniqueTicketCode,
 } from "@/lib/data/tickets";
+import { createAndStoreTicketEmbedding } from "@/lib/data/similar-issues";
 import {
   bugSubmissionProtection,
   getArcjetDeniedMessage,
@@ -374,8 +375,10 @@ export async function analyzeAndCreateTicketAction(
       console.warn("[submit-bug] AI triage fallback", getSafeErrorMessage(error));
     }
 
+    let createdTicket: Awaited<ReturnType<typeof createTicket>>;
+
     try {
-      await withServerSpan(
+      createdTicket = await withServerSpan(
         {
           name: "ticket.create",
           op: "db.ticket.create",
@@ -436,6 +439,55 @@ export async function analyzeAndCreateTicketAction(
         await deleteUploadedTicketFiles(storageSupabase, uploadedFiles);
       }
       throw error;
+    }
+
+    try {
+      await withServerSpan(
+        {
+          name: "ticket.embedding.create",
+          op: "ai.embedding",
+          context: {
+            workspaceId: workspaceContext.workspace.id,
+            projectId: project.id,
+            ticketCode,
+          },
+        },
+        () =>
+          createAndStoreTicketEmbedding({
+            ticketId: createdTicket.id,
+            workspaceId: workspaceContext.workspace.id,
+            projectId: project.id,
+            source: {
+              title: aiOutput?.improvedTitle ?? parsed.data.title,
+              description: parsed.data.description,
+              expectedBehavior: parsed.data.expectedBehavior,
+              actualBehavior: parsed.data.actualBehavior,
+              stepsToReproduce: parsed.data.stepsToReproduce,
+              browser: parsed.data.browser,
+              device: parsed.data.device,
+              environment: parsed.data.environment,
+              affectedPage: parsed.data.affectedPage,
+              aiSummary: aiOutput?.summary,
+            },
+          })
+      );
+    } catch (error) {
+      addServerBreadcrumb({
+        category: "ai",
+        level: "warning",
+        message: "Ticket embedding generation failed after ticket creation.",
+        data: {
+          action: "ticket-embedding-fallback",
+          provider: AI_PROVIDER_NAME,
+          ticketCode,
+          workspaceId: workspaceContext.workspace.id,
+          projectId: project.id,
+        },
+      });
+      console.warn(
+        "[submit-bug] ticket embedding fallback",
+        getSafeErrorMessage(error)
+      );
     }
 
     recordBugSubmissionMetric("created", {

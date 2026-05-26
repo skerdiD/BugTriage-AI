@@ -9,6 +9,7 @@ const {
   AuthenticationErrorMock,
   analyzeBugReportWithGeminiMock,
   createSupabaseAdminClientMock,
+  createAndStoreTicketEmbeddingMock,
   createTicketMock,
   generateUniqueTicketCodeMock,
   getArcjetDeniedMessageMock,
@@ -26,6 +27,7 @@ const {
   return {
     AuthenticationErrorMock,
     analyzeBugReportWithGeminiMock: vi.fn(),
+    createAndStoreTicketEmbeddingMock: vi.fn(),
     createSupabaseAdminClientMock: vi.fn(),
     createTicketMock: vi.fn(),
     generateUniqueTicketCodeMock: vi.fn(),
@@ -70,6 +72,10 @@ vi.mock("@/lib/ai/bug-triage", () => ({
 vi.mock("@/lib/data/tickets", () => ({
   createTicket: createTicketMock,
   generateUniqueTicketCode: generateUniqueTicketCodeMock,
+}));
+
+vi.mock("@/lib/data/similar-issues", () => ({
+  createAndStoreTicketEmbedding: createAndStoreTicketEmbeddingMock,
 }));
 
 vi.mock("@/lib/security/arcjet", () => ({
@@ -190,6 +196,10 @@ describe("analyzeAndCreateTicketAction", () => {
       attachmentType: "LOG",
     });
     deleteUploadedTicketFilesMock.mockResolvedValue(undefined);
+    createAndStoreTicketEmbeddingMock.mockResolvedValue({
+      stored: true,
+      contentHash: "hash-1",
+    });
     createTicketMock.mockResolvedValue({
       id: "ticket-1",
       code: "BUG-4242",
@@ -347,6 +357,16 @@ describe("analyzeAndCreateTicketAction", () => {
         ],
       })
     );
+    expect(createAndStoreTicketEmbeddingMock).toHaveBeenCalledWith({
+      ticketId: "ticket-1",
+      workspaceId: "workspace-1",
+      projectId: "project-1",
+      source: expect.objectContaining({
+        title: validAiResponse.improvedTitle,
+        description: defaultBugReportValues.description,
+        aiSummary: validAiResponse.summary,
+      }),
+    });
   });
 
   it("falls back to a manual ticket when AI analysis fails", async () => {
@@ -373,6 +393,29 @@ describe("analyzeAndCreateTicketAction", () => {
         severity: TicketSeverity.MEDIUM,
         category: "Manual Review",
         aiAnalysis: undefined,
+      })
+    );
+  });
+
+  it("still returns success when ticket embedding generation fails", async () => {
+    analyzeBugReportWithGeminiMock.mockResolvedValue(validAiResponse);
+    createAndStoreTicketEmbeddingMock.mockRejectedValue(
+      new Error("embedding service unavailable")
+    );
+
+    const result = await analyzeAndCreateTicketAction(buildValidFormData());
+
+    expect(result).toMatchObject({
+      ok: true,
+      ticketCode: "BUG-4242",
+      aiFailed: false,
+    });
+    expect(createTicketMock).toHaveBeenCalled();
+    expect(createAndStoreTicketEmbeddingMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ticketId: "ticket-1",
+        workspaceId: "workspace-1",
+        projectId: "project-1",
       })
     );
   });

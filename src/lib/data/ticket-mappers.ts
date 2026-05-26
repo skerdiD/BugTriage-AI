@@ -12,6 +12,7 @@ import type {
   UiTicketSeverity,
   UiTicketStatus,
 } from "@/lib/dashboard/types";
+import type { SimilarIssue } from "@/lib/data/similar-issues";
 import type { TicketDetail, TicketListItem } from "@/lib/data/tickets";
 
 function initialsFromName(name?: string | null) {
@@ -42,6 +43,17 @@ function stringArrayFromJson(value: unknown) {
   if (!Array.isArray(value)) return [];
 
   return value.filter((item): item is string => typeof item === "string");
+}
+
+function mapSimilarIssueToUiIssue(issue: SimilarIssue) {
+  return {
+    id: issue.code,
+    title: issue.title,
+    severity: mapDbSeverityToUiSeverity(issue.severity),
+    status: mapDbStatusToUiStatus(issue.status),
+    priorityScore: issue.priorityScore,
+    matchPercent: Math.round(issue.similarityScore * 100),
+  };
 }
 
 export function mapDbSeverityToUiSeverity(
@@ -99,12 +111,14 @@ export function mapTicketListItemToUiTicket(ticket: TicketListItem): UiTicket {
     updatedDate: format(ticket.updatedAt, "MMM d, yyyy, HH:mm"),
     comments: [],
     activity: [],
+    similarIssues: [],
   };
 }
 
 export function mapTicketDetailToUiTicket(
   ticket: TicketDetail,
-  attachmentDownloadUrls: Record<string, string | null> = {}
+  attachmentDownloadUrls: Record<string, string | null> = {},
+  similarIssues: SimilarIssue[] = []
 ): UiTicket {
   const assigneeName = ticket.assignee?.name ?? "Unassigned";
   const analysisSteps = stringArrayFromJson(ticket.aiAnalysis?.reproductionSteps);
@@ -169,6 +183,7 @@ export function mapTicketDetailToUiTicket(
       description: activity.description ?? "Ticket activity recorded.",
       time: relativeDate(activity.createdAt),
     })),
+    similarIssues: similarIssues.map(mapSimilarIssueToUiIssue),
   };
 }
 

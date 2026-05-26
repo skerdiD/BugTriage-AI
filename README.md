@@ -84,6 +84,7 @@ This project is built to demonstrate full-stack SaaS product thinking, AI integr
 - Open detailed ticket pages
 - Add comments and follow activity history
 - Organize tickets by workspace and project
+- Semantic similar-issue detection using Gemini embeddings and pgvector
 
 ### Workspaces and Teams
 

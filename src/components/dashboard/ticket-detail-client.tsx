@@ -22,6 +22,7 @@ import {
   MonitorSmartphone,
   PackageCheck,
   Send,
+  SearchCheck,
   ShieldAlert,
   Sparkles,
   Tags,
@@ -653,6 +654,51 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
               </div>
             </CardContent>
           </Card>
+
+          {ticket.similarIssues.length > 0 ? (
+            <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <SearchCheck className="size-5 text-emerald-300" />
+                  <CardTitle>Similar Issues</CardTitle>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-3">
+                {ticket.similarIssues.map((issue) => (
+                  <Link
+                    key={issue.id}
+                    href={`/tickets/${issue.id}`}
+                    className="block rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-emerald-500/30 hover:bg-emerald-500/[0.04]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {issue.id}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-6 text-white">
+                          {issue.title}
+                        </p>
+                      </div>
+                      <Badge className="shrink-0 rounded-full border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
+                        {issue.matchPercent}% match
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <StatusBadge status={issue.status} />
+                      <SeverityBadge severity={issue.severity} />
+                      {issue.priorityScore !== null ? (
+                        <Badge className="rounded-full border-white/10 bg-white/[0.06] text-slate-200">
+                          P{issue.priorityScore}
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </Link>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
             <CardHeader>
