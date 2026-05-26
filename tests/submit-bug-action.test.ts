@@ -464,4 +464,40 @@ describe("analyzeAndCreateTicketAction", () => {
       ]
     );
   });
+
+  it("cleans up earlier uploads when a later attachment upload fails", async () => {
+    uploadLogFileMock.mockRejectedValue(
+      Object.assign(new Error("storage unavailable"), {
+        name: "TicketStorageError",
+        userMessage: "We couldn't upload one of the selected files. Please try again.",
+      })
+    );
+
+    const formData = buildValidFormData();
+    formData.append(
+      "screenshots",
+      new File(["image"], "checkout.png", { type: "image/png" })
+    );
+    formData.append(
+      "logs",
+      new File(["console stack trace"], "console.log", { type: "text/plain" })
+    );
+
+    const result = await analyzeAndCreateTicketAction(formData);
+
+    expect(result).toEqual({
+      ok: false,
+      error: "We couldn't upload one of the selected files. Please try again.",
+    });
+    expect(createTicketMock).not.toHaveBeenCalled();
+    expect(deleteUploadedTicketFilesMock).toHaveBeenCalledWith(
+      expect.anything(),
+      [
+        expect.objectContaining({
+          storagePath:
+            "private/workspace-1/user-1/tickets/BUG-4242/screenshots/checkout.png",
+        }),
+      ]
+    );
+  });
 });

@@ -4,9 +4,13 @@ import {
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { captureServerExceptionMock, prismaMock } = vi.hoisted(() => ({
+const { captureServerExceptionMock, generateTicketEmbeddingMock, prismaMock } = vi.hoisted(() => ({
   captureServerExceptionMock: vi.fn(),
+  generateTicketEmbeddingMock: vi.fn(),
   prismaMock: {
+    ticket: {
+      findFirst: vi.fn(),
+    },
     $queryRaw: vi.fn(),
     $executeRaw: vi.fn(),
   },
@@ -15,7 +19,7 @@ const { captureServerExceptionMock, prismaMock } = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/ai/ticket-embeddings", () => ({
-  generateTicketEmbedding: vi.fn(),
+  generateTicketEmbedding: generateTicketEmbeddingMock,
   TICKET_EMBEDDING_DIMENSIONS: 768,
 }));
 
@@ -28,6 +32,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import {
+  createAndStoreTicketEmbedding,
   findSimilarIssuesForTicket,
   mapSimilarIssueRows,
 } from "@/lib/data/similar-issues";
@@ -86,6 +91,27 @@ describe("similar issues", () => {
 
     expect(result).toEqual([]);
     expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects embedding upserts when the ticket is outside the workspace project", async () => {
+    prismaMock.ticket.findFirst.mockResolvedValue(null);
+
+    await expect(
+      createAndStoreTicketEmbedding({
+        ticketId: "ticket-1",
+        workspaceId: "workspace-1",
+        projectId: "project-1",
+        source: {
+          title: "Checkout fails",
+          description: "Checkout submit button remains disabled.",
+        },
+      })
+    ).rejects.toThrow(
+      "Ticket embedding target was not found in the selected workspace project."
+    );
+
+    expect(generateTicketEmbeddingMock).not.toHaveBeenCalled();
+    expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
   });
 
   it("searches only from the current ticket embedding and excludes self matches", async () => {

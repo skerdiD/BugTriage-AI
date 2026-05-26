@@ -27,26 +27,38 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
     notFound();
   }
 
-  const storageSupabase = createSupabaseAdminClient();
-  const attachmentDownloadUrls = Object.fromEntries(
-    await Promise.all(
-      dbTicket.attachments.map(async (attachment) => {
-        try {
-          const signedUrl = await createSignedTicketFileUrl(
-            storageSupabase,
-            attachment.storagePath,
-            dbTicket.workspaceId,
-            undefined,
-            dbTicket.code
-          );
+  let attachmentDownloadUrls: Record<string, string | null> = {};
 
-          return [attachment.id, signedUrl] as const;
-        } catch {
-          return [attachment.id, null] as const;
-        }
-      })
-    )
-  );
+  if (dbTicket.attachments.length > 0) {
+    try {
+      const storageSupabase = createSupabaseAdminClient();
+
+      attachmentDownloadUrls = Object.fromEntries(
+        await Promise.all(
+          dbTicket.attachments.map(async (attachment) => {
+            try {
+              const signedUrl = await createSignedTicketFileUrl(
+                storageSupabase,
+                attachment.storagePath,
+                dbTicket.workspaceId,
+                undefined,
+                dbTicket.code
+              );
+
+              return [attachment.id, signedUrl] as const;
+            } catch {
+              return [attachment.id, null] as const;
+            }
+          })
+        )
+      );
+    } catch {
+      attachmentDownloadUrls = Object.fromEntries(
+        dbTicket.attachments.map((attachment) => [attachment.id, null] as const)
+      );
+    }
+  }
+
   const similarIssues = await findSimilarIssuesForTicket({
     ticketId: dbTicket.id,
     workspaceId: dbTicket.workspaceId,

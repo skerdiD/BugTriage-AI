@@ -75,6 +75,23 @@ export async function createAndStoreTicketEmbedding(input: {
   projectId: string;
   source: TicketEmbeddingSource;
 }) {
+  const ticket = await prisma.ticket.findFirst({
+    where: {
+      id: input.ticketId,
+      workspaceId: input.workspaceId,
+      projectId: input.projectId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!ticket) {
+    throw new Error(
+      "Ticket embedding target was not found in the selected workspace project."
+    );
+  }
+
   const generated = await generateTicketEmbedding(input.source);
   const vectorLiteral = toPgVectorLiteral(generated.embedding);
   const existing = await prisma.$queryRaw<Array<{ contentHash: string }>>`
@@ -139,10 +156,12 @@ export async function findSimilarIssuesForTicket(input: {
 }): Promise<SimilarIssue[]> {
   try {
     const currentEmbedding = await prisma.$queryRaw<Array<{ embedding: string }>>`
-      SELECT "embedding"::text AS "embedding"
-      FROM "public"."TicketEmbedding"
-      WHERE "ticketId" = ${input.ticketId}
-        AND "workspaceId" = ${input.workspaceId}
+      SELECT te."embedding"::text AS "embedding"
+      FROM "public"."TicketEmbedding" te
+      INNER JOIN "public"."Ticket" t ON t."id" = te."ticketId"
+      WHERE te."ticketId" = ${input.ticketId}
+        AND te."workspaceId" = ${input.workspaceId}
+        AND t."workspaceId" = ${input.workspaceId}
       LIMIT 1
     `;
 
@@ -170,6 +189,7 @@ export async function findSimilarIssuesForTicket(input: {
       INNER JOIN "public"."Ticket" t ON t."id" = te."ticketId"
       CROSS JOIN current_embedding
       WHERE te."workspaceId" = ${input.workspaceId}
+        AND t."workspaceId" = ${input.workspaceId}
         AND te."ticketId" <> ${input.ticketId}
         AND (1 - (te."embedding" <=> current_embedding.embedding)) >= ${minScore}
       ORDER BY

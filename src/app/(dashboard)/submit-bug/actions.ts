@@ -112,6 +112,42 @@ ${text.slice(0, 12_000)}
   return chunks.join("\n\n").slice(0, 20_000);
 }
 
+async function uploadTicketFilesSequentially(input: {
+  storageSupabase: ReturnType<typeof createSupabaseAdminClient>;
+  files: File[];
+  userId: string;
+  workspaceId: string;
+  ticketCode: string;
+  upload: (input: {
+    supabase: ReturnType<typeof createSupabaseAdminClient>;
+    file: File;
+    userId: string;
+    workspaceId: string;
+    ticketCode: string;
+  }) => Promise<UploadedTicketFile>;
+}) {
+  const uploadedFiles: UploadedTicketFile[] = [];
+
+  try {
+    for (const file of input.files) {
+      uploadedFiles.push(
+        await input.upload({
+          supabase: input.storageSupabase,
+          file,
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          ticketCode: input.ticketCode,
+        })
+      );
+    }
+
+    return uploadedFiles;
+  } catch (error) {
+    await deleteUploadedTicketFiles(input.storageSupabase, uploadedFiles);
+    throw error;
+  }
+}
+
 function isTicketStorageFailure(
   error: unknown
 ): error is Error & { userMessage: string } {
@@ -286,63 +322,64 @@ export async function analyzeAndCreateTicketAction(
       () => generateUniqueTicketCode()
     );
 
-    const uploadedScreenshots = storageSupabase
-      ? await withServerSpan(
-          {
-            name: "ticket.upload-screenshots",
-            op: "storage.batch-upload",
-            context: {
-              workspaceId: workspaceContext.workspace.id,
-              projectId: project.id,
-              ticketCode,
-              fileCount: screenshotFiles.length,
-              attachmentType: "SCREENSHOT",
-            },
-          },
-          () =>
-            Promise.all(
-              screenshotFiles.map((file) =>
-                uploadScreenshotFile({
-                  supabase: storageSupabase,
-                  file,
-                  userId: workspaceContext.user.id,
-                  workspaceId: workspaceContext.workspace.id,
-                  ticketCode,
-                })
-              )
-            )
-        )
-      : [];
+    const uploadedFiles: UploadedTicketFile[] = [];
 
-    const uploadedLogs = storageSupabase
-      ? await withServerSpan(
-          {
-            name: "ticket.upload-logs",
-            op: "storage.batch-upload",
-            context: {
-              workspaceId: workspaceContext.workspace.id,
-              projectId: project.id,
-              ticketCode,
-              fileCount: logFiles.length,
-              attachmentType: "LOG",
+    if (storageSupabase) {
+      try {
+        uploadedFiles.push(
+          ...(await withServerSpan(
+            {
+              name: "ticket.upload-screenshots",
+              op: "storage.batch-upload",
+              context: {
+                workspaceId: workspaceContext.workspace.id,
+                projectId: project.id,
+                ticketCode,
+                fileCount: screenshotFiles.length,
+                attachmentType: "SCREENSHOT",
+              },
             },
-          },
-          () =>
-            Promise.all(
-              logFiles.map((file) =>
-                uploadLogFile({
-                  supabase: storageSupabase,
-                  file,
-                  userId: workspaceContext.user.id,
-                  workspaceId: workspaceContext.workspace.id,
-                  ticketCode,
-                })
-              )
-            )
-        )
-      : [];
+            () =>
+              uploadTicketFilesSequentially({
+                storageSupabase,
+                files: screenshotFiles,
+                userId: workspaceContext.user.id,
+                workspaceId: workspaceContext.workspace.id,
+                ticketCode,
+                upload: uploadScreenshotFile,
+              })
+          ))
+        );
 
-    const uploadedFiles = [...uploadedScreenshots, ...uploadedLogs];
+        uploadedFiles.push(
+          ...(await withServerSpan(
+            {
+              name: "ticket.upload-logs",
+              op: "storage.batch-upload",
+              context: {
+                workspaceId: workspaceContext.workspace.id,
+                projectId: project.id,
+                ticketCode,
+                fileCount: logFiles.length,
+                attachmentType: "LOG",
+              },
+            },
+            () =>
+              uploadTicketFilesSequentially({
+                storageSupabase,
+                files: logFiles,
+                userId: workspaceContext.user.id,
+                workspaceId: workspaceContext.workspace.id,
+                ticketCode,
+                upload: uploadLogFile,
+              })
+          ))
+        );
+      } catch (error) {
+        await deleteUploadedTicketFiles(storageSupabase, uploadedFiles);
+        throw error;
+      }
+    }
 
     let aiOutput: BugTriageAiOutput | null = null;
     let aiErrorMessage = "";
@@ -372,7 +409,9 @@ export async function analyzeAndCreateTicketAction(
           hasConsoleLogs: Boolean(parsed.data.consoleLogs),
         },
       });
-      console.warn("[submit-bug] AI triage fallback", getSafeErrorMessage(error));
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[submit-bug] AI triage fallback", getSafeErrorMessage(error));
+      }
     }
 
     let createdTicket: Awaited<ReturnType<typeof createTicket>>;
@@ -484,10 +523,12 @@ export async function analyzeAndCreateTicketAction(
           projectId: project.id,
         },
       });
-      console.warn(
-        "[submit-bug] ticket embedding fallback",
-        getSafeErrorMessage(error)
-      );
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "[submit-bug] ticket embedding fallback",
+          getSafeErrorMessage(error)
+        );
+      }
     }
 
     recordBugSubmissionMetric("created", {

@@ -145,4 +145,62 @@ describe("ticket detail page", () => {
     expect(createSignedTicketFileUrlMock).not.toHaveBeenCalled();
     expect(findSimilarIssuesForTicketMock).not.toHaveBeenCalled();
   });
+
+  it("does not require the Supabase admin client when a ticket has no attachments", async () => {
+    const dbTicket = {
+      code: "BUG-4242",
+      id: "ticket-1",
+      workspaceId: "workspace-1",
+      projectId: "project-1",
+      attachments: [],
+    };
+
+    getTicketByCodeMock.mockResolvedValue(dbTicket);
+
+    await TicketDetailPage({
+      params: Promise.resolve({
+        ticketId: "BUG-4242",
+      }),
+    });
+
+    expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
+    expect(createSignedTicketFileUrlMock).not.toHaveBeenCalled();
+    expect(mapTicketDetailToUiTicketMock).toHaveBeenCalledWith(dbTicket, {}, []);
+  });
+
+  it("keeps rendering when attachment signing is not configured", async () => {
+    const dbTicket = {
+      code: "BUG-4242",
+      id: "ticket-1",
+      workspaceId: "workspace-1",
+      projectId: "project-1",
+      attachments: [
+        {
+          id: "attachment-1",
+          storagePath:
+            "private/workspace-1/user-1/tickets/BUG-4242/screenshots/checkout.png",
+        },
+      ],
+    };
+
+    getTicketByCodeMock.mockResolvedValue(dbTicket);
+    createSupabaseAdminClientMock.mockImplementation(() => {
+      throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY.");
+    });
+
+    await TicketDetailPage({
+      params: Promise.resolve({
+        ticketId: "BUG-4242",
+      }),
+    });
+
+    expect(createSignedTicketFileUrlMock).not.toHaveBeenCalled();
+    expect(mapTicketDetailToUiTicketMock).toHaveBeenCalledWith(
+      dbTicket,
+      {
+        "attachment-1": null,
+      },
+      []
+    );
+  });
 });

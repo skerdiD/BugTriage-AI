@@ -110,10 +110,12 @@ export async function withServerSpan<T>(
       try {
         return await callback();
       } finally {
-        console.info(
-          `[perf] ${redactSensitiveText(input.name)} ${Date.now() - startedAt}ms`,
-          safeContext ?? {}
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.info(
+            `[perf] ${redactSensitiveText(input.name)} ${Date.now() - startedAt}ms`,
+            safeContext ?? {}
+          );
+        }
       }
     }
   );
