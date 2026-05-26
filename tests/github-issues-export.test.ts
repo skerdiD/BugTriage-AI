@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   exportTicketToGitHubIssue,
   formatTicketAsGitHubIssueBody,
+  getSafeGitHubErrorMessage,
   githubIssueExportSchema,
+  parseGitHubRepository,
 } from "@/lib/integrations/github-issues";
 import type { TicketDetail } from "@/lib/data/tickets";
 
@@ -90,6 +92,24 @@ describe("GitHub Issues export", () => {
     expect(result.success).toBe(false);
   });
 
+  it("parses GitHub repository slugs and URLs", () => {
+    expect(parseGitHubRepository("skerdiD/BugTriage-AI")).toEqual({
+      ok: true,
+      owner: "skerdiD",
+      repo: "BugTriage-AI",
+    });
+    expect(parseGitHubRepository("https://github.com/skerdiD/BugTriage-AI.git")).toEqual({
+      ok: true,
+      owner: "skerdiD",
+      repo: "BugTriage-AI",
+    });
+    expect(parseGitHubRepository("skerdiD/Bug Triage")).toEqual({
+      ok: false,
+      error:
+        "Repository name can only contain letters, numbers, dots, underscores, and hyphens.",
+    });
+  });
+
   it("creates a GitHub issue and ignores best-effort label failures", async () => {
     fetchMock
       .mockResolvedValueOnce({
@@ -129,7 +149,14 @@ describe("GitHub Issues export", () => {
       body: expect.stringContaining("## Suggested Fix"),
     });
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
-      labels: ["bug", "severity: high"],
+      labels: [
+        "bug",
+        "severity: high",
+        "category: payment",
+        "priority: high",
+        "ai: checkout",
+        "ai: safari",
+      ],
     });
   });
 
@@ -157,13 +184,67 @@ describe("GitHub Issues export", () => {
     );
   });
 
+  it("maps rate limit and network failures to safe human messages", async () => {
+    expect(
+      getSafeGitHubErrorMessage(
+        403,
+        new Response("{}", {
+          status: 403,
+          headers: {
+            "x-ratelimit-remaining": "0",
+          },
+        })
+      )
+    ).toBe("GitHub rate limit reached. Wait a few minutes, then try again.");
+
+    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+
+    await expect(
+      exportTicketToGitHubIssue(
+        {
+          ticketCode: "BUG-4242",
+          owner: "skerdiD",
+          repo: "BugTriage-AI",
+          token: "ghp_valid_test_token",
+        },
+        createTicket()
+      )
+    ).rejects.toThrow(
+      "GitHub export failed because GitHub could not be reached."
+    );
+  });
+
   it("formats ticket AI analysis as clean Markdown", () => {
     const body = formatTicketAsGitHubIssueBody(createTicket());
 
-    expect(body).toContain("# Bug Summary");
+    expect(body).toContain("# BUG-4242: Checkout payment form fails on Safari");
+    expect(body).toContain("## AI Summary");
+    expect(body).toContain("## Original Bug Report");
+    expect(body).toContain("| Priority score | 88 |");
+    expect(body).toContain("| AI confidence | 91 |");
+    expect(body).toContain("| Affected page | /checkout |");
     expect(body).toContain("## Steps to Reproduce");
     expect(body).toContain("1. Open checkout on Safari.");
+    expect(body).toContain("## Likely Cause");
+    expect(body).toContain("## Suggested Fix");
     expect(body).toContain("## Additional Context");
-    expect(body).toContain("Generated from BugTriage AI.");
+    expect(body).toContain("Generated from BugTriage AI ticket `BUG-4242`.");
+  });
+
+  it("formats missing optional ticket fields without empty sections", () => {
+    const body = formatTicketAsGitHubIssueBody(
+      createTicket({
+        expectedBehavior: null,
+        actualBehavior: null,
+        stepsToReproduce: null,
+        category: null,
+        priorityScore: null,
+        aiConfidence: null,
+        aiAnalysis: null,
+      })
+    );
+
+    expect(body).toContain("Not provided.");
+    expect(body).toContain("## Steps to Reproduce\nNot provided.");
   });
 });

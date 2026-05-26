@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { CheckCircle2, ExternalLink, GitPullRequest, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ export function GitHubIssueExportDialog({
     url: string;
     number: number;
   } | null>(null);
+  const exportInFlightRef = useRef(false);
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -51,21 +52,55 @@ export function GitHubIssueExportDialog({
     if (nextOpen) {
       setError("");
       setExportedIssue(null);
+      return;
     }
+
+    setToken("");
+    setError("");
+    setExportedIssue(null);
+  }
+
+  function normalizeRepositoryFields() {
+    const trimmedOwner = owner.trim();
+    const trimmedRepo = repo.trim();
+
+    if (trimmedOwner.includes("/") && !trimmedRepo) {
+      const [nextOwner, nextRepo, ...extra] = trimmedOwner
+        .replace(/^https:\/\/github\.com\//i, "")
+        .replace(/\.git$/i, "")
+        .split("/")
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+      if (nextOwner && nextRepo && extra.length === 0) {
+        return {
+          owner: nextOwner,
+          repo: nextRepo,
+        };
+      }
+    }
+
+    return {
+      owner: trimmedOwner,
+      repo: trimmedRepo,
+    };
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isExporting) {
+    if (isExporting || exportInFlightRef.current) {
       return;
     }
 
+    exportInFlightRef.current = true;
     setIsExporting(true);
     setError("");
     setExportedIssue(null);
 
     try {
+      const repository = normalizeRepositoryFields();
+
       const response = await fetch("/api/github/issues", {
         method: "POST",
         headers: {
@@ -73,9 +108,9 @@ export function GitHubIssueExportDialog({
         },
         body: JSON.stringify({
           ticketCode,
-          owner,
-          repo,
-          token,
+          owner: repository.owner,
+          repo: repository.repo,
+          token: token.trim(),
         }),
       });
 
@@ -98,6 +133,7 @@ export function GitHubIssueExportDialog({
     } catch {
       setError("GitHub export failed. Check your connection and try again.");
     } finally {
+      exportInFlightRef.current = false;
       setIsExporting(false);
     }
   }
@@ -158,10 +194,11 @@ export function GitHubIssueExportDialog({
                   id="github-owner"
                   value={owner}
                   onChange={(event) => setOwner(event.target.value)}
-                  placeholder="skerdiD"
+                  placeholder="skerdiD or skerdiD/BugTriage-AI"
                   autoComplete="off"
                   className="h-11 rounded-xl border-white/10 bg-white/[0.04]"
                   disabled={isExporting}
+                  required
                 />
               </div>
 
@@ -175,6 +212,7 @@ export function GitHubIssueExportDialog({
                   autoComplete="off"
                   className="h-11 rounded-xl border-white/10 bg-white/[0.04]"
                   disabled={isExporting}
+                  required={!owner.includes("/")}
                 />
               </div>
             </div>
@@ -190,6 +228,7 @@ export function GitHubIssueExportDialog({
                 autoComplete="off"
                 className="h-11 rounded-xl border-white/10 bg-white/[0.04]"
                 disabled={isExporting}
+                required
               />
             </div>
 

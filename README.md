@@ -250,3 +250,11 @@ NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=bugtriage-private
 `SUPABASE_SERVICE_ROLE_KEY` is server-only and is used for private Storage uploads, cleanup after failed ticket saves, and short-lived signed download URLs. Do not prefix it with `NEXT_PUBLIC_`.
 
 Storage RLS policies are not required for ticket attachments because browser clients do not upload or read files directly. If you later move uploads to the browser, add authenticated Storage RLS policies before doing so.
+
+---
+
+## GitHub Issues Export
+
+Ticket detail pages can export a triaged bug report to GitHub Issues. The export request is sent to the app's server-side API route, which creates the issue, applies best-effort labels, and returns the created issue URL.
+
+Users provide a GitHub personal access token only for the export request. The token is not stored by the app. For fine-grained tokens, grant repository access to the target repository and enable Issues read/write access.

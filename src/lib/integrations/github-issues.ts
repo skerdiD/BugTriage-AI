@@ -2,6 +2,35 @@ import { z } from "zod";
 
 import type { TicketDetail } from "@/lib/data/tickets";
 
+const GITHUB_API_TIMEOUT_MS = 10_000;
+const GITHUB_API_VERSION = "2022-11-28";
+const GITHUB_USER_AGENT = "BugTriage-AI";
+const MAX_GITHUB_TITLE_LENGTH = 256;
+const MAX_GITHUB_BODY_LENGTH = 60_000;
+
+const githubOwnerSchema = z
+  .string()
+  .trim()
+  .min(1, "Repository owner is required.")
+  .max(39, "Repository owner is too long.")
+  .regex(
+    /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/,
+    "Repository owner can only contain letters, numbers, and hyphens."
+  );
+
+const githubRepoSchema = z
+  .string()
+  .trim()
+  .min(1, "Repository name is required.")
+  .max(100, "Repository name is too long.")
+  .regex(
+    /^[A-Za-z0-9._-]+$/,
+    "Repository name can only contain letters, numbers, dots, underscores, and hyphens."
+  )
+  .refine((value) => value !== "." && value !== "..", {
+    message: "Repository name is invalid.",
+  });
+
 export const githubIssueExportSchema = z.object({
   ticketCode: z
     .string()
@@ -9,24 +38,8 @@ export const githubIssueExportSchema = z.object({
     .min(1, "Ticket code is required.")
     .max(24, "Ticket code is invalid.")
     .regex(/^BUG-\d{4,12}$/, "Ticket code is invalid."),
-  owner: z
-    .string()
-    .trim()
-    .min(1, "Repository owner is required.")
-    .max(39, "Repository owner is too long.")
-    .regex(
-      /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/,
-      "Repository owner can only contain letters, numbers, and hyphens."
-    ),
-  repo: z
-    .string()
-    .trim()
-    .min(1, "Repository name is required.")
-    .max(100, "Repository name is too long.")
-    .regex(
-      /^[A-Za-z0-9._-]+$/,
-      "Repository name can only contain letters, numbers, dots, underscores, and hyphens."
-    ),
+  owner: githubOwnerSchema,
+  repo: githubRepoSchema,
   token: z
     .string()
     .trim()
@@ -50,14 +63,97 @@ type GitHubIssueResponse = {
   number?: unknown;
 };
 
+export function parseGitHubRepository(input: string) {
+  const normalizedInput = input.trim().replace(/^https:\/\/github\.com\//i, "");
+  const [owner, repo, ...extra] = normalizedInput
+    .replace(/\.git$/i, "")
+    .split("/")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (!owner || !repo || extra.length > 0) {
+    return {
+      ok: false as const,
+      error: "Enter the repository as owner/repo, for example skerdiD/BugTriage-AI.",
+    };
+  }
+
+  const parsedOwner = githubOwnerSchema.safeParse(owner);
+  if (!parsedOwner.success) {
+    return {
+      ok: false as const,
+      error: parsedOwner.error.issues[0]?.message ?? "Repository owner is invalid.",
+    };
+  }
+
+  const parsedRepo = githubRepoSchema.safeParse(repo);
+  if (!parsedRepo.success) {
+    return {
+      ok: false as const,
+      error: parsedRepo.error.issues[0]?.message ?? "Repository name is invalid.",
+    };
+  }
+
+  return {
+    ok: true as const,
+    owner: parsedOwner.data,
+    repo: parsedRepo.data,
+  };
+}
+
+function normalizeMarkdownValue(value?: string | null) {
+  const normalizedValue = value?.trim();
+
+  return normalizedValue || "Not provided.";
+}
+
 function section(title: string, value?: string | null) {
+  return `## ${title}\n${normalizeMarkdownValue(value)}`;
+}
+
+function metadataRow(label: string, value?: string | number | null) {
+  const normalizedValue =
+    typeof value === "number" ? value.toString() : normalizeMarkdownValue(value);
+
+  return `| ${label} | ${normalizedValue} |`;
+}
+
+function truncateForGitHub(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength - 28).trimEnd()}\n\n_Trimmed for GitHub export._`;
+}
+
+function buildIssueTitle(ticket: TicketDetail) {
+  const title = ticket.title.trim() || `${ticket.code} bug report`;
+
+  return truncateForGitHub(title, MAX_GITHUB_TITLE_LENGTH);
+}
+
+function formatOptionalTags(tags: unknown) {
+  const tagList = readStringArray(tags);
+
+  return tagList.length > 0 ? tagList.join(", ") : "Not provided.";
+}
+
+function formatReporter(ticket: TicketDetail) {
+  return ticket.reporter?.name ?? "Not provided.";
+}
+
+function formatAssignee(ticket: TicketDetail) {
+  return ticket.assignee?.name ?? "Unassigned.";
+}
+
+function sectionWithCodeFence(title: string, value?: string | null) {
   const normalizedValue = value?.trim();
 
   if (!normalizedValue) {
     return `## ${title}\nNot provided.`;
   }
 
-  return `## ${title}\n${normalizedValue}`;
+  return `## ${title}\n\n\`\`\`text\n${normalizedValue}\n\`\`\``;
 }
 
 function formatSteps(steps?: string | null) {
@@ -85,32 +181,81 @@ export function formatTicketAsGitHubIssueBody(ticket: TicketDetail) {
     aiSteps.length > 0
       ? aiSteps.map((step, index) => `${index + 1}. ${step}`).join("\n")
       : formatSteps(ticket.stepsToReproduce);
-
-  return [
-    "# Bug Summary",
-    ticket.aiAnalysis?.summary?.trim() || ticket.description,
-    section("Severity", ticket.severity.toLowerCase()),
-    section("Category", ticket.category),
+  const body = [
+    `# ${ticket.code}: ${buildIssueTitle(ticket)}`,
+    section("AI Summary", ticket.aiAnalysis?.summary ?? ticket.description),
+    section("Original Bug Report", ticket.description),
+    "## Triage Metadata",
+    [
+      "| Field | Value |",
+      "| --- | --- |",
+      metadataRow("Severity", ticket.severity.toLowerCase()),
+      metadataRow("Status", ticket.status.toLowerCase().replaceAll("_", " ")),
+      metadataRow("Priority score", ticket.priorityScore),
+      metadataRow(
+        "AI confidence",
+        ticket.aiAnalysis?.confidenceScore ?? ticket.aiConfidence
+      ),
+      metadataRow("Category", ticket.category),
+      metadataRow("Tags", formatOptionalTags(ticket.aiAnalysis?.tags)),
+      metadataRow("Workspace", ticket.workspace.name),
+      metadataRow("Project", ticket.project.name),
+      metadataRow("Reporter", formatReporter(ticket)),
+      metadataRow("Assignee", formatAssignee(ticket)),
+    ].join("\n"),
+    "## Environment",
+    [
+      "| Field | Value |",
+      "| --- | --- |",
+      metadataRow("Browser", ticket.browser),
+      metadataRow("Device", ticket.device),
+      metadataRow("Environment", ticket.environment),
+      metadataRow("Affected page", ticket.affectedPage),
+    ].join("\n"),
     section("Steps to Reproduce", steps),
     section("Expected Behavior", ticket.expectedBehavior),
     section("Actual Behavior", ticket.actualBehavior),
     section("Likely Cause", ticket.aiAnalysis?.likelyCause),
     section("Suggested Fix", ticket.aiAnalysis?.suggestedFix),
+    sectionWithCodeFence(
+      "Submitted Reproduction Notes",
+      ticket.stepsToReproduce
+    ),
     "## Additional Context",
-    "Generated from BugTriage AI.",
+    [
+      `Generated from BugTriage AI ticket \`${ticket.code}\`.`,
+      `Created: ${ticket.createdAt.toISOString()}`,
+      `Updated: ${ticket.updatedAt.toISOString()}`,
+    ].join("\n"),
   ].join("\n\n");
+
+  return truncateForGitHub(body, MAX_GITHUB_BODY_LENGTH);
 }
 
 export function getGitHubLabelsForTicket(ticket: TicketDetail) {
-  return ["bug", `severity: ${ticket.severity.toLowerCase()}`];
+  const labels = [
+    "bug",
+    `severity: ${ticket.severity.toLowerCase()}`,
+    ticket.category ? `category: ${ticket.category.toLowerCase()}` : null,
+    ticket.priorityScore && ticket.priorityScore >= 80 ? "priority: high" : null,
+    ...readStringArray(ticket.aiAnalysis?.tags).map((tag) => `ai: ${tag}`),
+  ];
+
+  return Array.from(new Set(labels.filter(Boolean))).slice(0, 10) as string[];
 }
 
-function getSafeGitHubErrorMessage(status: number) {
+export function getSafeGitHubErrorMessage(status: number, response?: Response) {
   if (status === 401) {
     return "GitHub rejected the token. Check that it is valid and has permission to create issues.";
   }
 
   if (status === 403) {
+    const remaining = response?.headers.get("x-ratelimit-remaining");
+
+    if (remaining === "0") {
+      return "GitHub rate limit reached. Wait a few minutes, then try again.";
+    }
+
     return "GitHub denied the request. Check token permissions or rate limits.";
   }
 
@@ -137,24 +282,55 @@ async function readGitHubJson(response: Response): Promise<GitHubIssueResponse> 
   }
 }
 
+async function githubFetch(url: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GITHUB_API_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("GitHub export timed out. Please try again.");
+    }
+
+    throw new Error("GitHub export failed because GitHub could not be reached.");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function githubHeaders(token: string) {
+  return {
+    Accept: "application/vnd.github+json",
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    "User-Agent": GITHUB_USER_AGENT,
+    "X-GitHub-Api-Version": GITHUB_API_VERSION,
+  };
+}
+
 export async function exportTicketToGitHubIssue(
   input: GitHubIssueExportInput,
   ticket: TicketDetail
 ): Promise<GitHubIssueExportResult> {
-  const issueResponse = await fetch(
+  const title = buildIssueTitle(ticket);
+  const body = formatTicketAsGitHubIssueBody(ticket);
+
+  if (!title.trim() || !body.trim()) {
+    throw new Error("GitHub issue payload is empty. Check the ticket details.");
+  }
+
+  const issueResponse = await githubFetch(
     `https://api.github.com/repos/${input.owner}/${input.repo}/issues`,
     {
       method: "POST",
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${input.token}`,
-        "Content-Type": "application/json",
-        "User-Agent": "BugTriage-AI",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
+      headers: githubHeaders(input.token),
       body: JSON.stringify({
-        title: ticket.title,
-        body: formatTicketAsGitHubIssueBody(ticket),
+        title,
+        body,
       }),
     }
   );
@@ -162,7 +338,7 @@ export async function exportTicketToGitHubIssue(
   const issuePayload = await readGitHubJson(issueResponse);
 
   if (!issueResponse.ok) {
-    throw new Error(getSafeGitHubErrorMessage(issueResponse.status));
+    throw new Error(getSafeGitHubErrorMessage(issueResponse.status, issueResponse));
   }
 
   if (
@@ -175,17 +351,11 @@ export async function exportTicketToGitHubIssue(
   const labels = getGitHubLabelsForTicket(ticket);
 
   try {
-    await fetch(
+    await githubFetch(
       `https://api.github.com/repos/${input.owner}/${input.repo}/issues/${issuePayload.number}/labels`,
       {
         method: "POST",
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${input.token}`,
-          "Content-Type": "application/json",
-          "User-Agent": "BugTriage-AI",
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
+        headers: githubHeaders(input.token),
         body: JSON.stringify({
           labels,
         }),
