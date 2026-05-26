@@ -43,6 +43,19 @@ export type UiTicketStatus =
   | "Fixed"
   | "Closed";
 
+export type UiTicketListItem = {
+  id: string;
+  title: string;
+  severity: UiTicketSeverity;
+  status: UiTicketStatus;
+  category: string;
+  assignee: string;
+  assigneeInitials: string;
+  assigneeRole: string;
+  createdAt: string;
+  confidence: number;
+};
+
 export type UiTicketAttachment = {
   id: string;
   type: "screenshot" | "console-log";

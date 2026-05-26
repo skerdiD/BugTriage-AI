@@ -60,6 +60,8 @@ import {
   createWorkspaceInvite,
 } from "@/lib/data/workspace-invites";
 
+const VALID_INVITE_TOKEN = "invite_token_1234567890";
+
 type InviteAcceptanceTransaction = {
   workspaceInvite: {
     findUnique: ReturnType<typeof vi.fn>;
@@ -170,7 +172,7 @@ describe("workspace invite acceptance", () => {
     workspaceInviteFindUniqueMock.mockResolvedValue(buildPendingInvite());
 
     const result = await acceptWorkspaceInvite({
-      token: "token-1",
+      token: VALID_INVITE_TOKEN,
       authUserId: "user-2",
       authUserEmail: "different@example.com",
     });
@@ -183,6 +185,21 @@ describe("workspace invite acceptance", () => {
     expect(prismaTransactionMock).not.toHaveBeenCalled();
   });
 
+  it("rejects malformed invite tokens before querying the database", async () => {
+    const result = await acceptWorkspaceInvite({
+      token: "../not-a-valid-token",
+      authUserId: "user-2",
+      authUserEmail: "invitee@example.com",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "This invite link is invalid.",
+    });
+    expect(workspaceInviteFindUniqueMock).not.toHaveBeenCalled();
+    expect(prismaTransactionMock).not.toHaveBeenCalled();
+  });
+
   it("blocks expired invites", async () => {
     workspaceInviteFindUniqueMock.mockResolvedValue(
       buildPendingInvite({
@@ -191,7 +208,7 @@ describe("workspace invite acceptance", () => {
     );
 
     const result = await acceptWorkspaceInvite({
-      token: "token-1",
+      token: VALID_INVITE_TOKEN,
       authUserId: "user-2",
       authUserEmail: "invitee@example.com",
     });
@@ -210,7 +227,7 @@ describe("workspace invite acceptance", () => {
     );
 
     const result = await acceptWorkspaceInvite({
-      token: "token-1",
+      token: VALID_INVITE_TOKEN,
       authUserId: "user-2",
       authUserEmail: "invitee@example.com",
     });
@@ -250,7 +267,7 @@ describe("workspace invite acceptance", () => {
     );
 
     const result = await acceptWorkspaceInvite({
-      token: "token-1",
+      token: VALID_INVITE_TOKEN,
       authUserId: "user-2",
       authUserEmail: "invitee@example.com",
     });
@@ -310,7 +327,7 @@ describe("workspace invite acceptance", () => {
     );
 
     const result = await acceptWorkspaceInvite({
-      token: "token-1",
+      token: VALID_INVITE_TOKEN,
       authUserId: "user-2",
       authUserEmail: "invitee@example.com",
     });

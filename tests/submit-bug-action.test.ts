@@ -326,6 +326,7 @@ describe("analyzeAndCreateTicketAction", () => {
       ticketCode: "BUG-4242",
       aiFailed: false,
     });
+    expect(result).not.toHaveProperty("uploadedFiles");
     expect(analyzeBugReportWithGeminiMock).toHaveBeenCalledWith(
       expect.objectContaining({
         attachmentNames: ["checkout.png", "console.log"],

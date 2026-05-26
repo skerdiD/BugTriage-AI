@@ -29,26 +29,24 @@ const minimalUserSelect = {
   name: true,
 } satisfies Prisma.UserSelect;
 
-const ticketListInclude = {
+const ticketListSelect = {
+  id: true,
+  code: true,
+  title: true,
+  severity: true,
+  status: true,
+  category: true,
+  aiConfidence: true,
+  createdAt: true,
   assignee: {
     select: minimalUserSelect,
   },
-  project: {
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-    },
-  },
   aiAnalysis: {
     select: {
-      id: true,
-      summary: true,
       confidenceScore: true,
-      tags: true,
     },
   },
-} satisfies Prisma.TicketInclude;
+} satisfies Prisma.TicketSelect;
 
 const ticketDetailInclude = {
   reporter: {
@@ -71,7 +69,20 @@ const ticketDetailInclude = {
       slug: true,
     },
   },
-  aiAnalysis: true,
+  aiAnalysis: {
+    select: {
+      id: true,
+      ticketId: true,
+      summary: true,
+      likelyCause: true,
+      suggestedFix: true,
+      reproductionSteps: true,
+      tags: true,
+      confidenceScore: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
   attachments: {
     orderBy: {
       createdAt: "desc",
@@ -100,7 +111,7 @@ const ticketDetailInclude = {
 } satisfies Prisma.TicketInclude;
 
 export type TicketListItem = Prisma.TicketGetPayload<{
-  include: typeof ticketListInclude;
+  select: typeof ticketListSelect;
 }>;
 
 export type TicketDetail = Prisma.TicketGetPayload<{
@@ -306,7 +317,7 @@ export async function getTickets(input: GetTicketsInput) {
   try {
     return await prisma.ticket.findMany({
       where,
-      include: ticketListInclude,
+      select: ticketListSelect,
       orderBy: {
         createdAt: "desc",
       },

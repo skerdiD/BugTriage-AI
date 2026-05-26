@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { UiTicket as Ticket } from "@/lib/dashboard/types";
+import type { UiTicketListItem as Ticket } from "@/lib/dashboard/types";
 
 type TicketTableProps = {
   tickets: Ticket[];

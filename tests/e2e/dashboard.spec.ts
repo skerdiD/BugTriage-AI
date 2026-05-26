@@ -21,6 +21,7 @@ for (const route of [
   "/tickets",
   "/analytics",
   "/team",
+  "/profile",
   "/settings",
 ]) {
   test(`@smoke protected route ${route} redirects unauthenticated users to login`, async ({

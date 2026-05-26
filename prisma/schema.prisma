@@ -181,6 +181,7 @@ model Ticket {
   @@index([createdAt])
   @@index([workspaceId, status, createdAt])
   @@index([workspaceId, severity, createdAt])
+  @@index([workspaceId, projectId, createdAt])
   @@index([workspaceId, category])
 }
 

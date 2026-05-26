@@ -76,11 +76,14 @@ export function captureServerException(
     extra: safeContext,
   });
 
-  console.error(
-    input.message ?? `[${input.area}:${input.action}] server error`,
-    getSafeErrorMessage(error),
-    safeContext ?? {}
-  );
+  const logMessage = input.message ?? `[${input.area}:${input.action}] server error`;
+
+  if (process.env.NODE_ENV === "development") {
+    console.error(logMessage, getSafeErrorMessage(error), safeContext ?? {});
+    return;
+  }
+
+  console.error(logMessage, safeContext ?? {});
 }
 
 export async function withServerSpan<T>(

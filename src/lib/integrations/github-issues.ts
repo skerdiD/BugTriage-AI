@@ -7,6 +7,7 @@ const GITHUB_API_VERSION = "2022-11-28";
 const GITHUB_USER_AGENT = "BugTriage-AI";
 const MAX_GITHUB_TITLE_LENGTH = 256;
 const MAX_GITHUB_BODY_LENGTH = 60_000;
+const MAX_GITHUB_LABEL_LENGTH = 50;
 
 const githubOwnerSchema = z
   .string()
@@ -107,6 +108,18 @@ function normalizeMarkdownValue(value?: string | null) {
   return normalizedValue || "Not provided.";
 }
 
+function normalizeSingleLineMarkdownValue(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function escapeMarkdownTableValue(value: string) {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/\r?\n/g, "<br />")
+    .trim();
+}
+
 function section(title: string, value?: string | null) {
   return `## ${title}\n${normalizeMarkdownValue(value)}`;
 }
@@ -115,7 +128,7 @@ function metadataRow(label: string, value?: string | number | null) {
   const normalizedValue =
     typeof value === "number" ? value.toString() : normalizeMarkdownValue(value);
 
-  return `| ${label} | ${normalizedValue} |`;
+  return `| ${escapeMarkdownTableValue(label)} | ${escapeMarkdownTableValue(normalizedValue)} |`;
 }
 
 function truncateForGitHub(value: string, maxLength: number) {
@@ -127,7 +140,8 @@ function truncateForGitHub(value: string, maxLength: number) {
 }
 
 function buildIssueTitle(ticket: TicketDetail) {
-  const title = ticket.title.trim() || `${ticket.code} bug report`;
+  const title =
+    normalizeSingleLineMarkdownValue(ticket.title) || `${ticket.code} bug report`;
 
   return truncateForGitHub(title, MAX_GITHUB_TITLE_LENGTH);
 }
@@ -153,7 +167,13 @@ function sectionWithCodeFence(title: string, value?: string | null) {
     return `## ${title}\nNot provided.`;
   }
 
-  return `## ${title}\n\n\`\`\`text\n${normalizedValue}\n\`\`\``;
+  let fence = "```";
+
+  while (normalizedValue.includes(fence)) {
+    fence += "`";
+  }
+
+  return `## ${title}\n\n${fence}text\n${normalizedValue}\n${fence}`;
 }
 
 function formatSteps(steps?: string | null) {
@@ -233,6 +253,10 @@ export function formatTicketAsGitHubIssueBody(ticket: TicketDetail) {
 }
 
 export function getGitHubLabelsForTicket(ticket: TicketDetail) {
+  function normalizeLabel(label: string) {
+    return normalizeSingleLineMarkdownValue(label).slice(0, MAX_GITHUB_LABEL_LENGTH);
+  }
+
   const labels = [
     "bug",
     `severity: ${ticket.severity.toLowerCase()}`,
@@ -241,7 +265,15 @@ export function getGitHubLabelsForTicket(ticket: TicketDetail) {
     ...readStringArray(ticket.aiAnalysis?.tags).map((tag) => `ai: ${tag}`),
   ];
 
-  return Array.from(new Set(labels.filter(Boolean))).slice(0, 10) as string[];
+  return Array.from(
+    new Set(
+      labels
+        .filter((label): label is string => Boolean(label))
+        .map((label) => normalizeLabel(label))
+    )
+  )
+    .filter(Boolean)
+    .slice(0, 10) as string[];
 }
 
 export function getSafeGitHubErrorMessage(status: number, response?: Response) {

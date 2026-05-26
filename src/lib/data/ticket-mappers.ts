@@ -9,6 +9,7 @@ import type {
   PriorityQueueItem,
   RecentTicket,
   UiTicket,
+  UiTicketListItem,
   UiTicketSeverity,
   UiTicketStatus,
 } from "@/lib/dashboard/types";
@@ -81,7 +82,9 @@ export function mapDbStatusToUiStatus(status: DbTicketStatus): UiTicketStatus {
   return map[status];
 }
 
-export function mapTicketListItemToUiTicket(ticket: TicketListItem): UiTicket {
+export function mapTicketListItemToUiTicket(
+  ticket: TicketListItem
+): UiTicketListItem {
   const assigneeName = ticket.assignee?.name ?? "Unassigned";
 
   return {
@@ -95,23 +98,6 @@ export function mapTicketListItemToUiTicket(ticket: TicketListItem): UiTicket {
     assigneeRole: "Team Member",
     createdAt: relativeDate(ticket.createdAt),
     confidence: ticket.aiConfidence ?? ticket.aiAnalysis?.confidenceScore ?? 0,
-    originalReport: ticket.description,
-    aiSummary: ticket.aiAnalysis?.summary ?? ticket.description,
-    reproductionSteps: splitSteps(ticket.stepsToReproduce),
-    possibleRootCause: "AI root cause analysis is not available for this ticket yet.",
-    suggestedFix: "Review the original report and add a suggested fix after investigation.",
-    priorityScore: ticket.priorityScore ?? 50,
-    tags: stringArrayFromJson(ticket.aiAnalysis?.tags),
-    attachments: [],
-    browser: ticket.browser ?? "Unknown",
-    device: ticket.device ?? "Unknown",
-    environment: ticket.environment ?? "Unknown",
-    affectedPage: ticket.affectedPage ?? "Unknown",
-    createdDate: format(ticket.createdAt, "MMM d, yyyy, HH:mm"),
-    updatedDate: format(ticket.updatedAt, "MMM d, yyyy, HH:mm"),
-    comments: [],
-    activity: [],
-    similarIssues: [],
   };
 }
 

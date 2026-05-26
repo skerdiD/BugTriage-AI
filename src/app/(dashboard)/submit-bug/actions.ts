@@ -48,7 +48,6 @@ type CreateBugTicketActionResult =
       ticketCode: string;
       aiFailed: boolean;
       warning?: string;
-      uploadedFiles: UploadedTicketFile[];
     }
   | {
       ok: false;
@@ -546,7 +545,6 @@ export async function analyzeAndCreateTicketAction(
       warning: aiOutput
         ? undefined
         : `Ticket was created, but ${aiErrorMessage}`,
-      uploadedFiles,
     };
   } catch (error) {
     if (error instanceof AuthenticationError) {

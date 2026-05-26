@@ -29,20 +29,9 @@ describe("ticket mappers", () => {
       status: TicketStatus.NEW,
       category: null,
       assignee: null,
-      project: {
-        id: "project-1",
-        name: "Core Platform",
-        slug: "core-platform",
-      },
       aiAnalysis: null,
       aiConfidence: null,
-      description: "Raw report from support.",
-      stepsToReproduce: "1. Open checkout\n2. Enter valid card details\n3. Click submit",
       priorityScore: null,
-      browser: null,
-      device: null,
-      environment: null,
-      affectedPage: null,
       createdAt: new Date("2026-05-08T09:30:00.000Z"),
       updatedAt: new Date("2026-05-08T09:45:00.000Z"),
     } as unknown as TicketListItem;
@@ -55,18 +44,10 @@ describe("ticket mappers", () => {
       status: "New",
       category: "Uncategorized",
       assignee: "Unassigned",
-      browser: "Unknown",
-      device: "Unknown",
-      environment: "Unknown",
-      affectedPage: "Unknown",
       confidence: 0,
-      tags: [],
     });
-    expect(result.reproductionSteps).toEqual([
-      "Open checkout",
-      "Enter valid card details",
-      "Click submit",
-    ]);
+    expect("originalReport" in result).toBe(false);
+    expect("reproductionSteps" in result).toBe(false);
   });
 
   it("prefers AI analysis data and maps ticket attachments for detail views", () => {
@@ -102,7 +83,6 @@ describe("ticket mappers", () => {
         reproductionSteps: ["Open checkout", "Validate card", "Observe crash"],
         tags: ["payments", "mobile"],
         confidenceScore: 88,
-        rawAiResponse: null,
         ticketId: "ticket-1",
         createdAt: new Date("2026-05-08T09:05:00.000Z"),
         updatedAt: new Date("2026-05-08T09:06:00.000Z"),

@@ -5,7 +5,10 @@ import { z } from "zod";
 
 import { getCurrentUserOrThrow } from "@/lib/auth/session";
 import { PROJECT_COOKIE_NAME, WORKSPACE_COOKIE_NAME } from "@/lib/data/workspaces";
-import { acceptWorkspaceInvite } from "@/lib/data/workspace-invites";
+import {
+  acceptWorkspaceInvite,
+  workspaceInviteTokenSchema,
+} from "@/lib/data/workspace-invites";
 import { ensureUserWorkspace } from "@/lib/data/workspaces";
 import { captureServerException } from "@/lib/observability/server-monitoring";
 
@@ -17,7 +20,7 @@ const cookieOptions = {
 };
 
 const acceptInviteInputSchema = z.object({
-  token: z.string().trim().min(1, "Invite token is required."),
+  token: workspaceInviteTokenSchema,
 });
 
 function normalizeNameFromUserMetadata(

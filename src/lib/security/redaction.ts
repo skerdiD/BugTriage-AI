@@ -10,6 +10,11 @@ const querySecretPatterns: Array<[RegExp, string]> = [
   [/([?&](?:token|access_token|refresh_token|api_key|apikey|password|secret)=)[^&\s]+/gi, "$1[REDACTED]"],
 ];
 
+const knownTokenPatterns: Array<[RegExp, string]> = [
+  [/\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{8,}\b/g, "[REDACTED_TOKEN]"],
+  [/\bgithub_pat_[A-Za-z0-9_]{8,}\b/g, "[REDACTED_TOKEN]"],
+];
+
 function redactTokenLikeMatch(value: string) {
   return value.replace(/[A-Za-z0-9._-]{32,}/g, (match) => {
     const hasLetter = /[A-Za-z]/.test(match);
@@ -31,6 +36,10 @@ export function redactSensitiveText(value: string) {
   }
 
   for (const [pattern, replacement] of querySecretPatterns) {
+    redacted = redacted.replace(pattern, replacement);
+  }
+
+  for (const [pattern, replacement] of knownTokenPatterns) {
     redacted = redacted.replace(pattern, replacement);
   }
 

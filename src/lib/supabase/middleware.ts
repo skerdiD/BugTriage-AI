@@ -12,6 +12,7 @@ const protectedRoutes = [
   "/tickets",
   "/analytics",
   "/team",
+  "/profile",
   "/settings",
 ];
 

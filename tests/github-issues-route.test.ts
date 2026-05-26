@@ -190,6 +190,25 @@ describe("POST /api/github/issues", () => {
     expect(getTicketByCodeMock).not.toHaveBeenCalled();
   });
 
+  it("rejects oversized export requests before ticket lookup", async () => {
+    const response = await POST(
+      createRequest({
+        ticketCode: "BUG-4242",
+        owner: "skerdiD",
+        repo: "BugTriage-AI",
+        token: "ghp_secret_token",
+        padding: "x".repeat(9 * 1024),
+      })
+    );
+    const text = await response.text();
+
+    expect(response.status).toBe(413);
+    expect(text).toContain("Export request is too large.");
+    expect(text).not.toContain("ghp_secret_token");
+    expect(getTicketByCodeMock).not.toHaveBeenCalled();
+    expect(exportTicketToGitHubIssueMock).not.toHaveBeenCalled();
+  });
+
   it("exports an authorized workspace ticket and never returns the token", async () => {
     const response = await POST(
       createRequest({

@@ -64,7 +64,6 @@ function createTicket(overrides: Partial<TicketDetail> = {}) {
       ],
       tags: ["checkout", "safari"],
       confidenceScore: 91,
-      rawAiResponse: {},
       createdAt: new Date("2026-05-12T10:00:00Z"),
       updatedAt: new Date("2026-05-12T10:00:00Z"),
     },
@@ -246,5 +245,22 @@ describe("GitHub Issues export", () => {
 
     expect(body).toContain("Not provided.");
     expect(body).toContain("## Steps to Reproduce\nNot provided.");
+  });
+
+  it("escapes table separators and preserves code fences around untrusted text", () => {
+    const body = formatTicketAsGitHubIssueBody(
+      createTicket({
+        category: "Payments | Checkout",
+        affectedPage: "/checkout\n/admin | hidden",
+        stepsToReproduce:
+          "1. Open checkout\n2. Paste ```malicious fence```\n3. Submit",
+        aiAnalysis: null,
+      })
+    );
+
+    expect(body).toContain("| Category | Payments \\| Checkout |");
+    expect(body).toContain("| Affected page | /checkout<br />/admin \\| hidden |");
+    expect(body).toContain("````text\n1. Open checkout");
+    expect(body).toContain("Paste ```malicious fence```");
   });
 });

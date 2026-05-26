@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomBytes } from "node:crypto";
 import { InviteStatus, WorkspaceRole } from "@prisma/client";
+import { z } from "zod";
 
 import {
   assertCanManageWorkspaceInvites,
@@ -11,6 +12,15 @@ import {
 import { prisma } from "@/lib/prisma";
 
 export const WORKSPACE_INVITE_EXPIRES_IN_DAYS = 7;
+export const WORKSPACE_INVITE_TOKEN_MIN_LENGTH = 20;
+export const WORKSPACE_INVITE_TOKEN_MAX_LENGTH = 128;
+
+export const workspaceInviteTokenSchema = z
+  .string()
+  .trim()
+  .min(WORKSPACE_INVITE_TOKEN_MIN_LENGTH, "This invite link is invalid.")
+  .max(WORKSPACE_INVITE_TOKEN_MAX_LENGTH, "This invite link is invalid.")
+  .regex(/^[A-Za-z0-9_-]+$/, "This invite link is invalid.");
 
 export class WorkspaceInviteError extends Error {
   constructor(message: string) {
@@ -52,6 +62,12 @@ export function normalizeInviteEmail(email: string) {
 
 export function createWorkspaceInviteToken() {
   return randomBytes(32).toString("base64url");
+}
+
+function parseWorkspaceInviteToken(token: string) {
+  const parsedToken = workspaceInviteTokenSchema.safeParse(token);
+
+  return parsedToken.success ? parsedToken.data : null;
 }
 
 export function getInviteLifecycleStatus(invite: {
@@ -361,7 +377,7 @@ export async function revokeWorkspaceInvite(input: {
 }
 
 export async function getWorkspaceInviteByToken(token: string) {
-  const normalizedToken = token.trim();
+  const normalizedToken = parseWorkspaceInviteToken(token);
 
   if (!normalizedToken) {
     return null;
@@ -416,7 +432,7 @@ export async function acceptWorkspaceInvite(input: {
   authUserId: string;
   authUserEmail: string;
 }) {
-  const normalizedToken = input.token.trim();
+  const normalizedToken = parseWorkspaceInviteToken(input.token);
   const normalizedEmail = normalizeInviteEmail(input.authUserEmail);
 
   if (!normalizedToken) {

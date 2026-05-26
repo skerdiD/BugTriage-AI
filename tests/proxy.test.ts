@@ -20,6 +20,14 @@ describe("proxy matcher", () => {
         url: "/submit-bug",
       })
     ).toBe(true);
+
+    expect(
+      unstable_doesMiddlewareMatch({
+        config,
+        nextConfig: {},
+        url: "/profile",
+      })
+    ).toBe(true);
   });
 
   it("skips static framework and asset requests", () => {

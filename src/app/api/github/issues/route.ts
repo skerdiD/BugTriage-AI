@@ -15,6 +15,78 @@ import {
   logArcjetError,
 } from "@/lib/security/arcjet";
 
+const MAX_GITHUB_EXPORT_REQUEST_BYTES = 8 * 1024;
+
+class RequestBodyError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "RequestBodyError";
+    this.status = status;
+  }
+}
+
+async function readJsonBodyWithLimit(request: Request) {
+  const contentLengthHeader = request.headers.get("content-length");
+
+  if (contentLengthHeader) {
+    const contentLength = Number(contentLengthHeader);
+
+    if (!Number.isFinite(contentLength) || contentLength < 0) {
+      throw new RequestBodyError("Invalid export request.", 400);
+    }
+
+    if (contentLength > MAX_GITHUB_EXPORT_REQUEST_BYTES) {
+      throw new RequestBodyError("Export request is too large.", 413);
+    }
+  }
+
+  if (!request.body) {
+    throw new RequestBodyError("Invalid export request.", 400);
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      break;
+    }
+
+    receivedBytes += value.byteLength;
+
+    if (receivedBytes > MAX_GITHUB_EXPORT_REQUEST_BYTES) {
+      throw new RequestBodyError("Export request is too large.", 413);
+    }
+
+    chunks.push(value);
+  }
+
+  const bodyBuffer = new Uint8Array(receivedBytes);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    bodyBuffer.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  const bodyText = new TextDecoder().decode(bodyBuffer);
+
+  if (!bodyText.trim()) {
+    throw new RequestBodyError("Invalid export request.", 400);
+  }
+
+  try {
+    return JSON.parse(bodyText) as unknown;
+  } catch {
+    throw new RequestBodyError("Invalid export request.", 400);
+  }
+}
+
 export async function POST(request: Request) {
   let context: Awaited<ReturnType<typeof getCurrentWorkspaceContextOrThrow>>;
   let body: unknown;
@@ -83,8 +155,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    body = await request.json();
-  } catch {
+    body = await readJsonBodyWithLimit(request);
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return Response.json(
+        { ok: false, error: error.message },
+        { status: error.status }
+      );
+    }
+
     return Response.json(
       { ok: false, error: "Invalid export request." },
       { status: 400 }

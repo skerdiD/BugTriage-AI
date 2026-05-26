@@ -9,7 +9,7 @@ import {
   type TicketStatusFilter,
 } from "@/components/dashboard/ticket-filters";
 import { TicketTable } from "@/components/dashboard/ticket-table";
-import type { UiTicket as Ticket } from "@/lib/dashboard/types";
+import type { UiTicketListItem as Ticket } from "@/lib/dashboard/types";
 
 type TicketsClientProps = {
   initialTickets: Ticket[];
