@@ -1,22 +1,17 @@
 # BugTriage AI
 
-**BugTriage AI** is an AI-powered issue triage platform that turns messy bug reports, screenshots, logs, and user complaints into structured, developer-ready tickets.
+**BugTriage AI** is a modern full-stack AI-powered issue triage platform that turns messy bug reports, screenshots, logs, and user complaints into structured, developer-ready tickets.
 
-It helps teams submit bug reports with reproduction steps, screenshots, logs, browser/device details, and context. AI then generates a clean summary, likely cause, suggested fix, severity, priority, tags, and confidence score inside a SaaS-style workspace.
+It helps teams submit bug details, upload supporting files, and use AI to generate summaries, likely causes, suggested fixes, severity, priority, tags, and confidence scores inside a protected SaaS-style workspace.
 
-[Live Demo](https://bug-triage-ai.vercel.app/) · [Repository](https://github.com/skerdiD/BugTriage-AI)
+[Live Demo](https://bug-triage-ai.vercel.app/) | [Repository](https://github.com/skerdiD/BugTriage-AI)
 
 ---
-
 ## Preview
 
 ### Landing Page Hero
 
 ![BugTriage AI landing page hero](./public/landing-page-hero.png)
-
-### AI Workflow Overview
-
-![BugTriage AI workflow overview](./public/ai-workflow-overview.png)
 
 ### Engineering Dashboard
 
@@ -30,90 +25,95 @@ It helps teams submit bug reports with reproduction steps, screenshots, logs, br
 
 ![BugTriage AI tickets management view](./public/tickets-management.png)
 
-### Analytics Dashboard
-
-![BugTriage AI analytics dashboard](./public/analytics-dashboard.png)
-
-### Severity And Trend Charts
-
-![BugTriage AI severity and trend charts](./public/severity-and-trend-charts.png)
-
-### Analytics Deep Dive
-
-![BugTriage AI analytics deep dive](./public/analytics-deep-dive.png)
-
-### Team Workspace
-
-![BugTriage AI team workspace](./public/team-workspace.png)
-
 ---
-
 ## Overview
 
-Bug reports are often unclear, incomplete, and scattered across messages, screenshots, support chats, and console logs. Developers then lose time trying to understand what happened, how serious the issue is, and what should be fixed first.
+Bug reports are often unclear, incomplete, and scattered across screenshots, logs, support messages, and user complaints.
 
-BugTriage AI solves this by turning raw bug reports into structured engineering tickets. Users can submit bug details, upload supporting files, and let AI generate a cleaner ticket with priority, severity, likely cause, suggested fix, and reproduction guidance.
+Developers lose time understanding what happened, how serious the issue is, and what should be fixed first.
 
-This project is built to demonstrate full-stack SaaS product thinking, AI integration, authenticated workspaces, database modeling, file storage, GitHub Issues export, validation, security, monitoring, testing, and production-style engineering.
+BugTriage AI solves this by converting raw reports into structured engineering tickets.
+
+Users can submit bug details, add reproduction steps, upload attachments, manage tickets by workspace and project, and export triaged issues to GitHub.
+
+This project demonstrates full-stack SaaS development, practical AI integration, authentication, authorization, file storage, analytics, testing, monitoring, and production-minded engineering.
 
 ---
-
 ## Key Features
 
 ### AI Bug Triage
 
-- Generate structured tickets from messy bug reports
-- Create AI summaries, likely causes, suggested fixes, and reproduction guidance
-- Assign severity, priority, category, tags, and confidence score
-- Validate AI output with schema-based checks
-- Handle AI failures gracefully without losing the submitted ticket
-- Protect prompts with size limits, redaction, and safer input handling
+- Generate structured tickets from messy reports
+- Create AI-powered summaries
+- Detect likely causes
+- Suggest possible fixes
+- Assign severity and priority
+- Categorize bug reports
+- Return confidence scores
+- Validate AI output with Zod
+- Handle AI failures safely
+- Redact sensitive text
 
 ### Bug Submission
 
-- Submit title, description, expected behavior, and actual behavior
+- Submit bug titles and descriptions
+- Add expected and actual behavior
 - Add steps to reproduce
-- Include browser, device, environment, and affected page
-- Paste console logs or diagnostic text
-- Upload screenshots, logs, or supporting files
+- Include browser, device, and environment details
+- Paste console logs
+- Upload screenshots, logs, and JSON files
+- Connect reports to projects and workspaces
 
 ### Ticket Management
 
-- View, search, and filter tickets
-- Track ticket status, severity, category, and priority
-- Open detailed ticket pages
-- Add comments and follow activity history
-- Organize tickets by workspace and project
-- Semantic similar-issue detection using Gemini embeddings and pgvector
+- View submitted tickets
+- Search and filter tickets
+- Track status, severity, priority, and category
+- Open ticket detail pages
+- Review original reports and AI analysis
+- Add comments
+- Follow activity history
 
 ### Workspaces and Teams
 
 - Supabase authentication
+- Protected dashboard routes
 - Workspace-based organization
-- Member roles for owners, admins, and members
-- Invite users into a workspace
-- Keep tickets separated by workspace and project
+- Project-based ticket grouping
+- Owner, admin, and member roles
+- Team invitations
+- Workspace-level authorization
 
 ### Analytics and Activity
 
-- Dashboard overview for ticket activity
+- Dashboard overview
+- Ticket activity summaries
 - Ticket counts by status and severity
-- Recent activity tracking
-- Activity events for ticket creation, AI analysis, comments, attachments, status changes, and team actions
+- Recent activity feed
+- Ticket trend insights
+- Activity events
+
+### GitHub Issues Export
+
+- Export tickets to GitHub Issues
+- Send structured ticket details
+- Include reproduction steps and AI analysis
+- Apply useful labels
+- Validate GitHub tokens
+- Keep export logic server-side
 
 ### Security and Reliability
 
-- Workspace-level authorization
+- Protected app routes
+- User-scoped ticket access
 - Private attachment storage
-- Sensitive text redaction
-- GitHub token validation
+- Signed download URLs
 - AI timeout and retry handling
 - Arcjet protection and rate limiting
-- Sentry monitoring with secret redaction
-- CI pipeline with linting, typechecking, tests, and production build checks
+- Sentry monitoring
+- CI quality checks
 
 ---
-
 ## Tech Stack
 
 ### Frontend
@@ -142,120 +142,155 @@ This project is built to demonstrate full-stack SaaS product thinking, AI integr
 ### AI Layer
 
 - Vercel AI SDK
-- Google Gemini through `@ai-sdk/google`
+- Google Gemini
+- `@ai-sdk/google`
 - Structured AI output
 - Zod validation
-- Prompt redaction and size control
+- Prompt redaction
+- Timeout and retry handling
 
-### Integrations, Security, and Deployment
+### Security, Testing, and Deployment
 
 - GitHub Issues REST API
-- Sentry
 - Arcjet
+- Sentry
 - Vitest
 - Playwright
-- GitHub Actions CI
+- GitHub Actions
+- ESLint
+- TypeScript
 - Vercel
 
 ---
-
 ## Architecture Overview
 
-BugTriage AI uses a full-stack Next.js architecture with Supabase for authentication, database, and storage, Prisma for typed database access, Gemini for structured AI ticket analysis, and a server-side GitHub Issues export flow.
+BugTriage AI uses a full-stack Next.js architecture with Supabase for auth, database, and storage, Prisma for typed database access, Gemini for AI analysis, and GitHub Issues for export.
 
 ```txt
 Next.js App
   |-- App Router
   |-- React
   |-- TypeScript
-  |-- Tailwind CSS
-  |-- Landing Page
   |-- Dashboard
   |-- Tickets
   |-- Submit Bug
   |-- Analytics
   |-- Team
   |-- Settings
-  |-- Profile / Account
+
+Auth and Workspace Layer
+  |-- Supabase Authentication
+  |-- Protected Routes
+  |-- Workspace Access Checks
+  |-- Member Roles
+  |-- Team Invitations
 
 Server and Data Layer
   |-- Server Components
   |-- Server Actions
   |-- API Routes
-  |-- Auth Guards
-  |-- Workspace Access Checks
   |-- Ticket Actions
-  |-- Dashboard Reporting
+  |-- Comment Actions
+  |-- Activity Logging
   |-- Prisma ORM
   |-- Supabase Postgres
 
 AI Layer
   |-- Vercel AI SDK
-  |-- Gemini
+  |-- Google Gemini
   |-- Structured Output
-  |-- Summary
+  |-- Summary Generation
   |-- Likely Cause
   |-- Suggested Fix
   |-- Severity
   |-- Priority
   |-- Confidence Score
 
-Integration Layer
+Integration and Security Layer
   |-- GitHub Issues Export
-  |-- Server-Side GitHub API Request
-  |-- Token Validation
-  |-- Rate Limiting
-  |-- Safe Error Handling
-
-Storage and Security Layer
   |-- Supabase Storage
   |-- Private Attachments
-  |-- Sentry Monitoring
+  |-- Signed Download URLs
   |-- Arcjet Protection
-  |-- Sensitive Data Redaction
-  |-- Prompt Safety Checks
-
-Testing and CI Layer
-  |-- Vitest
-  |-- Playwright
-  |-- Lint
-  |-- Typecheck
-  |-- Production Build
+  |-- Sentry Monitoring
 ```
 
 ---
+## Getting Started
 
-## Supabase Storage Setup
+### 1. Clone the repository
 
-BugTriage AI stores ticket screenshots and log files in Supabase Storage as private attachments. Uploads are performed only from server actions using the Supabase service role key; the service role key must never be exposed to the browser.
+```bash
+git clone https://github.com/skerdiD/BugTriage-AI.git
+cd BugTriage-AI
+```
 
-Create one Storage bucket in the Supabase dashboard:
+### 2. Install dependencies
 
-- Bucket name: `bugtriage-private`
-- Public bucket: `Off`
-- File size limit: at least `10 MB`
-- Allowed MIME types are optional in Supabase because the app validates files server-side:
-  `image/png`, `image/jpeg`, `image/webp`, `text/plain`, `application/json`
+```bash
+npm install
+```
 
-The bucket name can be overridden with `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET`, but the value in Vercel and Supabase must match exactly. If this variable is omitted, the app uses `bugtriage-private`.
+### 3. Create environment variables
 
-Required Vercel environment variables:
+Create a `.env.local` file:
 
-```txt
+```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=bugtriage-private
+DATABASE_URL=
+DIRECT_URL=
+GOOGLE_GENERATIVE_AI_API_KEY=
+GITHUB_TOKEN=
+ARCJET_KEY=
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_AUTH_TOKEN=
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is server-only and is used for private Storage uploads, cleanup after failed ticket saves, and short-lived signed download URLs. Do not prefix it with `NEXT_PUBLIC_`.
+### 4. Push the database schema
 
-Storage RLS policies are not required for ticket attachments because browser clients do not upload or read files directly. If you later move uploads to the browser, add authenticated Storage RLS policies before doing so.
+```bash
+npx prisma db push
+```
+
+### 5. Seed demo data, optional
+
+```bash
+npx prisma db seed
+```
+
+### 6. Start the development server
+
+```bash
+npm run dev
+```
+
+Open the app at:
+
+```txt
+http://localhost:3000
+```
 
 ---
+## Available Scripts
 
-## GitHub Issues Export
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+npm run typecheck
+npm run test
+npm run test:e2e
+npx prisma db push
+npx prisma studio
+npx prisma generate
+```
 
-Ticket detail pages can export a triaged bug report to GitHub Issues. The export request is sent to the app's server-side API route, which creates the issue, applies best-effort labels, and returns the created issue URL.
+---
+## Author
+Built by **skerdiD**.
 
-Users provide a GitHub personal access token only for the export request. The token is not stored by the app. For fine-grained tokens, grant repository access to the target repository and enable Issues read/write access.
+GitHub: [@skerdiD](https://github.com/skerdiD)

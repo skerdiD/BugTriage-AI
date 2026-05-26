@@ -5,9 +5,9 @@ import {
   LogIn,
   ShieldAlert,
   Users,
-  Zap,
 } from "lucide-react";
 
+import { AppLogoMark } from "@/components/brand/app-logo-mark";
 import { AcceptWorkspaceInviteButton } from "@/components/dashboard/accept-workspace-invite-button";
 import { InviteSignOutButton } from "@/components/dashboard/invite-sign-out-button";
 import { Badge } from "@/components/ui/badge";
@@ -168,9 +168,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
           <section className="grid w-full max-w-5xl gap-10 lg:grid-cols-[1fr_0.95fr] lg:items-center">
             <div className="hidden lg:block">
               <Link href="/" className="mb-10 flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
-                  <Zap className="size-6 text-white" />
-                </div>
+                <AppLogoMark className="size-12" iconClassName="size-8" />
                 <div>
                   <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                   <p className="text-sm text-muted-foreground">
@@ -266,9 +264,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
         <section className="grid w-full gap-10 lg:grid-cols-[1fr_0.95fr] lg:items-center">
           <div className="hidden lg:block">
             <Link href="/" className="mb-10 flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
-                <Zap className="size-6 text-white" />
-              </div>
+              <AppLogoMark className="size-12" iconClassName="size-8" />
               <div>
                 <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                 <p className="text-sm text-muted-foreground">Engineering Command</p>

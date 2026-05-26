@@ -15,9 +15,9 @@ import {
   Ticket,
   UploadCloud,
   Users,
-  Zap,
 } from "lucide-react";
 
+import { AppLogoMark } from "@/components/brand/app-logo-mark";
 import { SidebarNavItem } from "@/components/dashboard/sidebar-nav-item";
 import type { DashboardUser } from "@/components/dashboard/dashboard-shell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -141,9 +141,7 @@ export function AppSidebar({
                 isDesktopCollapsed ? "justify-center" : "gap-3"
               )}
             >
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
-                <Zap className="size-5 text-white" />
-              </div>
+              <AppLogoMark className="size-11" />
 
               <div
                 className={cn(

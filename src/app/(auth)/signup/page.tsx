@@ -12,9 +12,9 @@ import {
   LockKeyhole,
   ShieldCheck,
   Sparkles,
-  Zap,
 } from "lucide-react";
 
+import { AppLogoMark } from "@/components/brand/app-logo-mark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -107,9 +107,7 @@ function SignupContent() {
         <section className="grid w-full gap-10 lg:grid-cols-[1fr_0.86fr] lg:items-center">
           <div className="hidden lg:block">
             <Link href="/" className="mb-10 flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
-                <Zap className="size-6 text-white" />
-              </div>
+              <AppLogoMark className="size-12" iconClassName="size-8" />
               <div>
                 <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                 <p className="text-sm text-muted-foreground">
@@ -160,9 +158,7 @@ function SignupContent() {
 
           <Card className="mx-auto w-full max-w-md rounded-3xl border-white/10 bg-white/[0.045] shadow-2xl shadow-black/40 backdrop-blur-xl">
             <CardHeader className="space-y-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25 lg:hidden">
-                <Zap className="size-6 text-white" />
-              </div>
+              <AppLogoMark className="size-12 lg:hidden" iconClassName="size-8" />
 
               <div>
                 <CardTitle className="text-2xl">Create account</CardTitle>

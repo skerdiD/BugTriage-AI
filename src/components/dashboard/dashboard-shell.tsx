@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, Zap } from "lucide-react";
+import { Menu } from "lucide-react";
 
+import { AppLogoMark } from "@/components/brand/app-logo-mark";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { WorkspaceContextSwitcher } from "@/components/dashboard/workspace-context-switcher";
 import { Button } from "@/components/ui/button";
@@ -91,9 +92,7 @@ export function DashboardShell({
 
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#08080d]/90 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500">
-            <Zap className="size-4 text-white" />
-          </div>
+          <AppLogoMark className="size-9 rounded-xl" iconClassName="size-6" />
           <div>
             <p className="font-bold leading-none">BugTriage AI</p>
             <p className="mt-1 text-xs text-muted-foreground">

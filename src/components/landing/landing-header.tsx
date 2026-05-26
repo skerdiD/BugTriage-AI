@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
+import { AppLogoMark } from "@/components/brand/app-logo-mark";
 import { Button } from "@/components/ui/button";
 
 export function LandingHeader() {
@@ -11,9 +12,7 @@ export function LandingHeader() {
           href="/"
           className="flex min-w-0 items-center gap-3 rounded-2xl transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
         >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,#111827,#0891b2,#10b981)] shadow-[0_16px_40px_-24px_rgba(34,211,238,0.9)] sm:size-10">
-            <Sparkles className="size-4 text-white" />
-          </div>
+          <AppLogoMark className="size-9 sm:size-10" iconClassName="size-6" />
 
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-white/80 sm:tracking-[0.18em] sm:uppercase">
