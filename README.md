@@ -22,6 +22,10 @@ It helps teams submit bug details, upload supporting files, use AI to generate s
 
 ![BugTriage AI engineering dashboard](./public/engineering-dashboard.png)
 
+### Recent AI-Triaged Tickets
+
+![BugTriage AI recent AI-triaged tickets](./public/recent-ai-triaged-tickets.png)
+
 ### Submit Bug Report
 
 ![BugTriage AI submit bug report form](./public/submit-bug-report.png)
