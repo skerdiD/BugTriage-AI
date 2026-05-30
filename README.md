@@ -1,8 +1,8 @@
 # BugTriage AI
 
-**BugTriage AI** is a modern full-stack AI-powered issue triage platform that turns messy bug reports, screenshots, logs, and user complaints into structured, developer-ready tickets.
+**BugTriage AI** is a full-stack AI-powered issue triage platform built with **Next.js**, **React**, **TypeScript**, **Supabase**, **Prisma**, **PostgreSQL**, **pgvector**, and **Gemini AI**.
 
-It helps teams submit bug details, upload supporting files, use AI to generate structured bug analysis, and find semantically similar previous issues inside a protected SaaS-style workspace.
+It turns messy bug reports, screenshots, logs, and user complaints into structured developer-ready tickets with AI analysis, similar-issue search, workspace permissions, analytics, and GitHub Issues export.
 
 [Live Demo](https://bug-triage-ai.vercel.app/) | [Repository](https://github.com/skerdiD/BugTriage-AI)
 
@@ -10,61 +10,47 @@ It helps teams submit bug details, upload supporting files, use AI to generate s
 
 ## Preview
 
-### Landing Page Hero
+Explore the deployed app: [bug-triage-ai.vercel.app](https://bug-triage-ai.vercel.app/)
 
-![BugTriage AI landing page hero](./public/landing-page-hero.png)
+### Landing Page
 
-### AI Workflow Overview
-
-![BugTriage AI workflow overview](./public/ai-workflow-overview.png)
+<img src="./public/landing-page-hero.png" alt="BugTriage AI landing page hero" width="100%">
+<img src="./public/ai-workflow-overview.png" alt="BugTriage AI workflow overview" width="100%">
 
 ### Engineering Dashboard
 
-![BugTriage AI engineering dashboard](./public/engineering-dashboard.png)
+<img src="./public/engineering-dashboard.png" alt="BugTriage AI engineering dashboard" width="100%">
+<img src="./public/recent-ai-triaged-tickets.png" alt="BugTriage AI recent AI triaged tickets" width="100%">
 
-### Recent AI-Triaged Tickets
+### Ticket Workspace
 
-![BugTriage AI recent AI-triaged tickets](./public/recent-ai-triaged-tickets.png)
+<img src="./public/submit-bug-report.png" alt="BugTriage AI submit bug report form" width="100%">
+<img src="./public/tickets-management.png" alt="BugTriage AI tickets management view" width="100%">
 
-### Submit Bug Report
+### Analytics and Team
 
-![BugTriage AI submit bug report form](./public/submit-bug-report.png)
-
-### Tickets Management
-
-![BugTriage AI tickets management view](./public/tickets-management.png)
-
-### Analytics Dashboard
-
-![BugTriage AI analytics dashboard](./public/analytics-dashboard.png)
-
-### Severity and Trend Charts
-
-![BugTriage AI severity and trend charts](./public/severity-and-trend-charts.png)
-
-### Analytics Deep Dive
-
-![BugTriage AI analytics deep dive](./public/analytics-deep-dive.png)
-
-### Team Workspace
-
-![BugTriage AI team workspace](./public/team-workspace.png)
+<img src="./public/analytics-dashboard.png" alt="BugTriage AI analytics dashboard" width="100%">
+<img src="./public/severity-and-trend-charts.png" alt="BugTriage AI severity and trend charts" width="100%">
+<img src="./public/analytics-deep-dive.png" alt="BugTriage AI analytics deep dive" width="100%">
+<img src="./public/team-workspace.png" alt="BugTriage AI team workspace" width="100%">
 
 ---
 
 ## Overview
 
-Bug reports are often unclear, incomplete, and scattered across screenshots, logs, support messages, and user complaints.
+Most bug tracking demos stop at a basic ticket form. BugTriage AI was built to feel closer to a real SaaS engineering tool for teams that need to turn messy reports into clear, actionable tickets.
 
-Developers lose time understanding what happened, how serious the issue is, and what should be fixed first.
+Users can submit bug details, add reproduction steps, upload files, manage tickets by workspace and project, generate structured AI analysis, find similar previous issues, and export tickets to GitHub Issues.
 
-BugTriage AI solves this by converting raw bug reports into structured engineering tickets.
+The goal was to show more than CRUD: AI structured output, semantic search, workspace authorization, private file handling, analytics, GitHub integration, testing, monitoring, and production-minded engineering.
 
-Users can submit bug details, add reproduction steps, upload attachments, manage tickets by workspace and project, and export triaged issues to GitHub.
+---
 
-The app also uses embeddings and vector search to surface similar previous tickets, helping teams connect new bugs with related historical issues.
+## Business Value
 
-This project demonstrates full-stack SaaS development, practical AI integration, semantic search, authentication, authorization, file storage, analytics, testing, monitoring, and production-minded engineering.
+BugTriage AI helps engineering teams reduce time wasted on unclear bug reports by converting messy feedback, screenshots, logs, and complaints into structured tickets.
+
+For clients, it shows the foundation of a practical developer tool where teams can triage faster, detect duplicate issues, prioritize work, organize bug history, and send clean tickets into GitHub Issues.
 
 ---
 
@@ -72,90 +58,73 @@ This project demonstrates full-stack SaaS development, practical AI integration,
 
 ### AI Bug Triage
 
-- Generate structured tickets from messy reports
-- Create AI-powered summaries
-- Detect likely causes
-- Suggest possible fixes
-- Assign severity and priority
-- Categorize bug reports
-- Return confidence scores
-- Validate AI output with Zod
-- Handle AI failures safely
-- Redact sensitive text before AI processing
+* Generate structured tickets from messy reports
+* Create AI-powered summaries
+* Detect likely causes
+* Suggest possible fixes
+* Assign severity and priority
+* Return confidence scores
+* Validate AI output with Zod
+* Redact sensitive text before AI processing
 
 ### Similar Issues
 
-- Generate Gemini embeddings for submitted tickets
-- Store semantic vectors with pgvector
-- Find similar previous tickets by meaning, not only keywords
-- Search only inside the same workspace
-- Prefer similar tickets from the same project
-- Exclude the current ticket from results
-- Show top matching issues with similarity percentage
-- Handle missing embeddings without crashing the app
-- Keep embedding and vector search logic server-side
+* Generate Gemini embeddings
+* Store semantic vectors with pgvector
+* Find similar tickets by meaning
+* Scope search to the same workspace
+* Prefer matches from the same project
+* Show similarity percentage
+* Keep vector search server-side
 
 ### Bug Submission
 
-- Submit bug titles and descriptions
-- Add expected and actual behavior
-- Add steps to reproduce
-- Include browser, device, and environment details
-- Paste console logs
-- Upload screenshots, logs, and JSON files
-- Connect reports to projects and workspaces
+* Submit bug titles and descriptions
+* Add expected and actual behavior
+* Add reproduction steps
+* Include browser, device, and environment details
+* Paste console logs
+* Upload screenshots, logs, and JSON files
 
 ### Ticket Management
 
-- View submitted tickets
-- Search and filter tickets
-- Track status, severity, priority, and category
-- Open ticket detail pages
-- Review original reports and AI analysis
-- View semantically similar previous issues
-- Add comments
-- Follow activity history
+* View submitted tickets
+* Search and filter tickets
+* Track status, severity, priority, and category
+* Open ticket detail pages
+* Review original reports and AI analysis
+* Add comments
+* Follow activity history
 
 ### Workspaces and Teams
 
-- Supabase authentication
-- Protected dashboard routes
-- Workspace-based organization
-- Project-based ticket grouping
-- Owner, admin, and member roles
-- Team invitations
-- Workspace-level authorization
+* Supabase authentication
+* Protected dashboard routes
+* Workspace-based organization
+* Project-based ticket grouping
+* Owner, admin, and member roles
+* Team invitations
+* Workspace-level authorization
 
-### Analytics and Activity
+### Analytics and Export
 
-- Dashboard overview
-- Ticket activity summaries
-- Ticket counts by status and severity
-- Recent activity feed
-- Ticket trend insights
-- Activity events
+* Dashboard overview
+* Ticket counts by status and severity
+* Recent activity feed
+* Ticket trend insights
+* Export tickets to GitHub Issues
+* Include reproduction steps and AI analysis
+* Keep export logic server-side
 
-### GitHub Issues Export
+### Security and Quality
 
-- Export tickets to GitHub Issues
-- Send structured ticket details
-- Include reproduction steps and AI analysis
-- Apply useful labels
-- Validate GitHub tokens
-- Keep export logic server-side
-
-### Security and Reliability
-
-- Protected app routes
-- User-scoped ticket access
-- Workspace-scoped similar issue search
-- Private attachment storage
-- Signed download URLs
-- AI timeout and retry handling
-- Embedding failure fallback
-- Arcjet protection and rate limiting
-- Sentry monitoring
-- CI quality checks
+* Protected app routes
+* User-scoped ticket access
+* Private attachment storage
+* Signed download URLs
+* Arcjet protection and rate limiting
+* Sentry monitoring
+* CI quality checks
 
 ---
 
@@ -163,116 +132,67 @@ This project demonstrates full-stack SaaS development, practical AI integration,
 
 ### Frontend
 
-- Next.js App Router
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Radix UI
-- Lucide React
-- Recharts
-- React Hook Form
-- Zod
+* Next.js App Router
+* React
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+* Radix UI
+* Lucide React
+* Recharts
+* React Hook Form
+* Zod
 
 ### Backend and Database
 
-- Next.js Server Actions
-- Next.js Server Components
-- Next.js API Routes
-- Prisma ORM
-- Supabase Postgres
-- Supabase Auth
-- Supabase Storage
-- pgvector
+* Next.js Server Actions
+* Next.js API Routes
+* Prisma ORM
+* Supabase Postgres
+* Supabase Auth
+* Supabase Storage
+* pgvector
 
-### AI Layer
+### AI, Search, and Tooling
 
-- Vercel AI SDK
-- Google Gemini
-- Gemini embeddings
-- `@ai-sdk/google`
-- Structured AI output
-- Semantic ticket matching
-- Vector similarity search
-- Zod validation
-- Prompt redaction
-- Timeout and retry handling
-
-### Security, Testing, and Deployment
-
-- GitHub Issues REST API
-- Arcjet
-- Sentry
-- Vitest
-- Playwright
-- GitHub Actions
-- ESLint
-- TypeScript
-- Vercel
+* Vercel AI SDK
+* Google Gemini
+* Gemini embeddings
+* GitHub Issues REST API
+* Arcjet
+* Sentry
+* Vitest
+* Playwright
+* GitHub Actions
+* Vercel
 
 ---
 
-## Architecture Overview
-
-BugTriage AI uses a full-stack Next.js architecture with Supabase for auth, database, and storage, Prisma for typed database access, Gemini for AI analysis, pgvector for semantic similar-issue search, and GitHub Issues for export.
+## Architecture
 
 ```txt
-Next.js App
-  |-- App Router
-  |-- React
-  |-- TypeScript
-  |-- Dashboard
-  |-- Tickets
-  |-- Submit Bug
-  |-- Analytics
-  |-- Team
-  |-- Settings
+Client UI
+  |-- Next.js App Router / React / Tailwind / shadcn UI
+  |-- Dashboard / Tickets / Submit Bug / Analytics / Team
 
 Auth and Workspace Layer
-  |-- Supabase Authentication
-  |-- Protected Routes
-  |-- Workspace Access Checks
-  |-- Member Roles
-  |-- Team Invitations
+  |-- Supabase Authentication / Protected Routes
+  |-- Workspace Access Checks / Member Roles
 
 Server and Data Layer
-  |-- Server Components
-  |-- Server Actions
-  |-- API Routes
-  |-- Ticket Actions
-  |-- Comment Actions
-  |-- Activity Logging
-  |-- Prisma ORM
-  |-- Supabase Postgres
+  |-- Server Actions / API Routes / Prisma ORM
+  |-- Tickets / Comments / Activity / Supabase Postgres
 
-AI Layer
-  |-- Vercel AI SDK
-  |-- Google Gemini
-  |-- Structured Output
-  |-- Summary Generation
-  |-- Likely Cause
-  |-- Suggested Fix
-  |-- Severity
-  |-- Priority
-  |-- Confidence Score
-
-Embeddings and Search Layer
-  |-- Gemini Embeddings
-  |-- TicketEmbedding Records
-  |-- pgvector
-  |-- Vector Similarity Search
-  |-- Similar Previous Issues
-  |-- Workspace-Scoped Results
-  |-- Same-Project Preference
+AI and Search Layer
+  |-- Gemini AI / Structured Output
+  |-- Gemini Embeddings / pgvector / Similar Issues
 
 Integration and Security Layer
-  |-- GitHub Issues Export
-  |-- Supabase Storage
-  |-- Private Attachments
-  |-- Signed Download URLs
-  |-- Arcjet Protection
-  |-- Sentry Monitoring
+  |-- GitHub Issues Export / Supabase Storage
+  |-- Signed URLs / Arcjet / Sentry
 ```
+
+Bug reports stay workspace-scoped, attachments stay private, AI logic runs server-side, and semantic search connects new reports with related historical issues.
 
 ---
 
@@ -309,25 +229,15 @@ NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_AUTH_TOKEN=
 ```
 
-### 4. Run database migrations
+### 4. Run setup
 
 ```bash
 npx prisma migrate dev
-```
-
-### 5. Generate Prisma client
-
-```bash
 npx prisma generate
-```
-
-### 6. Seed demo data, optional
-
-```bash
 npx prisma db seed
 ```
 
-### 7. Start the development server
+### 5. Start the development server
 
 ```bash
 npm run dev
@@ -344,35 +254,43 @@ http://localhost:3000
 ## Available Scripts
 
 ```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm run typecheck
-npm run test
-npm run test:e2e
-npx prisma migrate dev
-npx prisma migrate deploy
-npx prisma studio
-npx prisma generate
+npm run dev               # Start development server
+npm run build             # Create production build
+npm run start             # Start production server
+npm run lint              # Run ESLint
+npm run typecheck         # Run TypeScript checks
+npm run test              # Run Vitest tests
+npm run test:e2e          # Run Playwright tests
+npx prisma migrate dev    # Run local migrations
+npx prisma migrate deploy # Apply production migrations
+npx prisma studio         # Open Prisma Studio
+npx prisma generate       # Generate Prisma client
 ```
 
 ---
 
-## Project Highlights
+## Testing and Quality
 
-BugTriage AI demonstrates:
+* Vitest validates utilities, validators, and server-side logic
+* Playwright validates core end-to-end behavior
+* TypeScript catches type-level regressions
+* ESLint keeps code quality consistent
+* Sentry supports production monitoring
+* GitHub Actions runs quality checks
 
-- Full-stack SaaS application development
-- AI-powered bug triage with structured output
-- Semantic similar-issue detection using Gemini embeddings and pgvector
-- Workspace-based authorization
-- Project-based ticket organization
-- Private file upload handling
-- GitHub Issues export
-- Dashboard analytics and activity tracking
-- Server-side validation and error handling
-- Testing, monitoring, and deployment preparation
+Run main checks:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+```
+
+Run browser tests:
+
+```bash
+npm run test:e2e
+```
 
 ---
 
