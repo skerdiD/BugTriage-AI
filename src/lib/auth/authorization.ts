@@ -309,6 +309,21 @@ export async function assertCanModifyTicket(
   return assertCanAccessTicket(lookup, userId);
 }
 
+export async function assertCanExportTicket(
+  lookup: TicketAccessLookup,
+  userId?: string
+) {
+  const access = await assertCanAccessTicket(lookup, userId);
+
+  if (!hasRequiredWorkspaceRole(access.workspaceAccess.role, WorkspaceRole.ADMIN)) {
+    throw new AuthorizationError(
+      "Only workspace owners and admins can export tickets to GitHub."
+    );
+  }
+
+  return access;
+}
+
 export async function assertCanCommentOnTicket(
   lookup: TicketAccessLookup,
   userId?: string

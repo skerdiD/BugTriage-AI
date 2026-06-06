@@ -3,10 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   AuthenticationErrorMock,
   AuthorizationErrorMock,
+  GitHubExportStateErrorMock,
   captureServerExceptionMock,
+  claimTicketGitHubExportMock,
+  completeTicketGitHubExportMock,
   exportTicketToGitHubIssueMock,
+  failTicketGitHubExportMock,
   getArcjetDeniedMessageMock,
   getCurrentWorkspaceContextOrThrowMock,
+  getGitHubIssueExportConfigMock,
   getTicketByCodeMock,
   logArcjetErrorMock,
   protectMock,
@@ -17,13 +22,27 @@ const {
     status = 403;
   }
 
+  class GitHubExportStateErrorMock extends Error {
+    status: number;
+
+    constructor(message: string, status = 409) {
+      super(message);
+      this.status = status;
+    }
+  }
+
   return {
     AuthenticationErrorMock,
     AuthorizationErrorMock,
+    GitHubExportStateErrorMock,
     captureServerExceptionMock: vi.fn(),
+    claimTicketGitHubExportMock: vi.fn(),
+    completeTicketGitHubExportMock: vi.fn(),
     exportTicketToGitHubIssueMock: vi.fn(),
+    failTicketGitHubExportMock: vi.fn(),
     getArcjetDeniedMessageMock: vi.fn(),
     getCurrentWorkspaceContextOrThrowMock: vi.fn(),
+    getGitHubIssueExportConfigMock: vi.fn(),
     getTicketByCodeMock: vi.fn(),
     logArcjetErrorMock: vi.fn(),
     protectMock: vi.fn(),
@@ -40,6 +59,10 @@ vi.mock("@/lib/auth/session", () => ({
 }));
 
 vi.mock("@/lib/data/tickets", () => ({
+  GitHubExportStateError: GitHubExportStateErrorMock,
+  claimTicketGitHubExport: claimTicketGitHubExportMock,
+  completeTicketGitHubExport: completeTicketGitHubExportMock,
+  failTicketGitHubExport: failTicketGitHubExportMock,
   getTicketByCode: getTicketByCodeMock,
 }));
 
@@ -50,6 +73,7 @@ vi.mock("@/lib/integrations/github-issues", async (importOriginal) => {
   return {
     ...actual,
     exportTicketToGitHubIssue: exportTicketToGitHubIssueMock,
+    getGitHubIssueExportConfig: getGitHubIssueExportConfigMock,
   };
 });
 
@@ -123,6 +147,14 @@ describe("POST /api/github/issues", () => {
       code: "BUG-4242",
       workspaceId: "workspace-1",
     });
+    getGitHubIssueExportConfigMock.mockReturnValue({
+      owner: "skerdiD",
+      repo: "BugTriage-AI",
+      token: "ghp_test_server_token",
+    });
+    claimTicketGitHubExportMock.mockResolvedValue(undefined);
+    completeTicketGitHubExportMock.mockResolvedValue(undefined);
+    failTicketGitHubExportMock.mockResolvedValue(undefined);
     exportTicketToGitHubIssueMock.mockResolvedValue({
       issueUrl: "https://github.com/skerdiD/BugTriage-AI/issues/42",
       issueNumber: 42,
@@ -135,12 +167,7 @@ describe("POST /api/github/issues", () => {
     );
 
     const response = await POST(
-      createRequest({
-        ticketCode: "BUG-4242",
-        owner: "skerdiD",
-        repo: "BugTriage-AI",
-        token: "ghp_secret_token",
-      })
+      createRequest({ ticketCode: "BUG-4242" })
     );
 
     expect(response.status).toBe(401);
@@ -164,12 +191,7 @@ describe("POST /api/github/issues", () => {
     });
 
     const response = await POST(
-      createRequest({
-        ticketCode: "DEMO-1001",
-        owner: "skerdiD",
-        repo: "BugTriage-AI",
-        token: "ghp_secret_token",
-      })
+      createRequest({ ticketCode: "DEMO-1001" })
     );
 
     expect(response.status).toBe(403);
@@ -181,12 +203,7 @@ describe("POST /api/github/issues", () => {
     protectMock.mockResolvedValue(createDeniedDecision());
 
     const response = await POST(
-      createRequest({
-        ticketCode: "BUG-4242",
-        owner: "skerdiD",
-        repo: "BugTriage-AI",
-        token: "ghp_secret_token",
-      })
+      createRequest({ ticketCode: "BUG-4242" })
     );
 
     expect(response.status).toBe(429);
@@ -198,20 +215,16 @@ describe("POST /api/github/issues", () => {
     expect(exportTicketToGitHubIssueMock).not.toHaveBeenCalled();
   });
 
-  it("rejects invalid GitHub input without echoing the token", async () => {
+  it("rejects invalid ticket input", async () => {
     const response = await POST(
       createRequest({
-        ticketCode: "BUG-4242",
-        owner: "skerdiD",
-        repo: "BugTriage-AI",
-        token: "bad token with spaces",
+        ticketCode: "bad-ticket",
       })
     );
     const text = await response.text();
 
     expect(response.status).toBe(400);
-    expect(text).toContain("GitHub token can only contain");
-    expect(text).not.toContain("bad token with spaces");
+    expect(text).toContain("Ticket code");
     expect(getTicketByCodeMock).not.toHaveBeenCalled();
   });
 
@@ -219,9 +232,6 @@ describe("POST /api/github/issues", () => {
     const response = await POST(
       createRequest({
         ticketCode: "BUG-4242",
-        owner: "skerdiD",
-        repo: "BugTriage-AI",
-        token: "ghp_secret_token",
         padding: "x".repeat(9 * 1024),
       })
     );
@@ -229,19 +239,13 @@ describe("POST /api/github/issues", () => {
 
     expect(response.status).toBe(413);
     expect(text).toContain("Export request is too large.");
-    expect(text).not.toContain("ghp_secret_token");
     expect(getTicketByCodeMock).not.toHaveBeenCalled();
     expect(exportTicketToGitHubIssueMock).not.toHaveBeenCalled();
   });
 
   it("exports an authorized workspace ticket and never returns the token", async () => {
     const response = await POST(
-      createRequest({
-        ticketCode: "BUG-4242",
-        owner: "skerdiD",
-        repo: "BugTriage-AI",
-        token: "ghp_secret_token",
-      })
+      createRequest({ ticketCode: "BUG-4242" })
     );
     const text = await response.text();
 
@@ -251,33 +255,38 @@ describe("POST /api/github/issues", () => {
       issueUrl: "https://github.com/skerdiD/BugTriage-AI/issues/42",
       issueNumber: 42,
     });
-    expect(text).not.toContain("ghp_secret_token");
+    expect(claimTicketGitHubExportMock).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+      ticketCode: "BUG-4242",
+      actorId: "user-1",
+    });
     expect(getTicketByCodeMock).toHaveBeenCalledWith("BUG-4242", "workspace-1");
     expect(exportTicketToGitHubIssueMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        ticketCode: "BUG-4242",
         owner: "skerdiD",
         repo: "BugTriage-AI",
-        token: "ghp_secret_token",
+        token: "ghp_test_server_token",
       }),
       expect.objectContaining({
         code: "BUG-4242",
       })
     );
+    expect(completeTicketGitHubExportMock).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+      ticketCode: "BUG-4242",
+      actorId: "user-1",
+      issueUrl: "https://github.com/skerdiD/BugTriage-AI/issues/42",
+      issueNumber: 42,
+    });
   });
 
   it("blocks unauthorized ticket export before calling GitHub", async () => {
-    getTicketByCodeMock.mockRejectedValue(
+    claimTicketGitHubExportMock.mockRejectedValue(
       new AuthorizationErrorMock("Ticket not found or access denied.")
     );
 
     const response = await POST(
-      createRequest({
-        ticketCode: "BUG-4242",
-        owner: "skerdiD",
-        repo: "BugTriage-AI",
-        token: "ghp_secret_token",
-      })
+      createRequest({ ticketCode: "BUG-4242" })
     );
 
     expect(response.status).toBe(403);
@@ -296,17 +305,28 @@ describe("POST /api/github/issues", () => {
     );
 
     const response = await POST(
-      createRequest({
-        ticketCode: "BUG-4242",
-        owner: "skerdiD",
-        repo: "BugTriage-AI",
-        token: "ghp_secret_token",
-      })
+      createRequest({ ticketCode: "BUG-4242" })
     );
     const text = await response.text();
 
     expect(response.status).toBe(502);
     expect(text).toContain("GitHub rejected the token");
-    expect(text).not.toContain("ghp_secret_token");
+    expect(failTicketGitHubExportMock).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+      ticketCode: "BUG-4242",
+      error:
+        "GitHub rejected the token. Check that it is valid and has permission to create issues.",
+    });
+  });
+
+  it("returns a conflict when the ticket was already exported", async () => {
+    claimTicketGitHubExportMock.mockRejectedValue(
+      new GitHubExportStateErrorMock("This ticket was already exported.")
+    );
+
+    const response = await POST(createRequest({ ticketCode: "BUG-4242" }));
+
+    expect(response.status).toBe(409);
+    expect(exportTicketToGitHubIssueMock).not.toHaveBeenCalled();
   });
 });

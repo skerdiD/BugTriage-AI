@@ -1,5 +1,6 @@
 import {
   AttachmentType,
+  GitHubExportStatus,
   TicketSeverity,
   TicketStatus,
 } from "@prisma/client";
@@ -150,6 +151,11 @@ describe("ticket mappers", () => {
       description: "Support report with mobile crash details.",
       stepsToReproduce: "1. Open checkout\n2. Validate card\n3. Observe crash",
       priorityScore: 95,
+      githubExportStatus: GitHubExportStatus.EXPORTED,
+      githubIssueUrl: "https://github.com/acme/project/issues/42",
+      githubIssueNumber: 42,
+      githubExportedAt: new Date("2026-05-08T09:57:00.000Z"),
+      githubExportError: null,
       browser: "safari",
       device: "ios-mobile",
       environment: "production",
@@ -175,6 +181,10 @@ describe("ticket mappers", () => {
         "Reset payment state after validation and guard mobile callbacks.",
       aiAnalysisRunId: "run-1",
       aiFeedback: "HELPFUL",
+      githubExportStatus: "EXPORTED",
+      githubIssueUrl: "https://github.com/acme/project/issues/42",
+      githubIssueNumber: 42,
+      githubExportedAt: "May 8, 2026, 11:57",
     });
     expect(result.aiHistory).toEqual([
       {

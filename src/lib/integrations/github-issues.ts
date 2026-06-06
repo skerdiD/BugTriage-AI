@@ -39,20 +39,15 @@ export const githubIssueExportSchema = z.object({
     .min(1, "Ticket code is required.")
     .max(24, "Ticket code is invalid.")
     .regex(/^BUG-\d{4,12}$/, "Ticket code is invalid."),
-  owner: githubOwnerSchema,
-  repo: githubRepoSchema,
-  token: z
-    .string()
-    .trim()
-    .min(8, "GitHub token is required.")
-    .max(300, "GitHub token is too long.")
-    .regex(
-      /^[A-Za-z0-9_]+$/,
-      "GitHub token can only contain letters, numbers, and underscores."
-    ),
 });
 
 export type GitHubIssueExportInput = z.infer<typeof githubIssueExportSchema>;
+
+export type GitHubIssueExportConfig = {
+  owner: string;
+  repo: string;
+  token: string;
+};
 
 export type GitHubIssueExportResult = {
   issueUrl: string;
@@ -99,6 +94,30 @@ export function parseGitHubRepository(input: string) {
     ok: true as const,
     owner: parsedOwner.data,
     repo: parsedRepo.data,
+  };
+}
+
+export function getGitHubIssueExportConfig(): GitHubIssueExportConfig {
+  const owner = githubOwnerSchema.safeParse(process.env.GITHUB_REPOSITORY_OWNER);
+  const repo = githubRepoSchema.safeParse(process.env.GITHUB_REPOSITORY_NAME);
+  const token = z
+    .string()
+    .trim()
+    .min(8)
+    .max(300)
+    .regex(/^[A-Za-z0-9_]+$/)
+    .safeParse(process.env.GITHUB_TOKEN);
+
+  if (!owner.success || !repo.success || !token.success) {
+    throw new Error(
+      "GitHub export is not configured. Check the server repository and token settings."
+    );
+  }
+
+  return {
+    owner: owner.data,
+    repo: repo.data,
+    token: token.data,
   };
 }
 
@@ -345,7 +364,7 @@ function githubHeaders(token: string) {
 }
 
 export async function exportTicketToGitHubIssue(
-  input: GitHubIssueExportInput,
+  config: GitHubIssueExportConfig,
   ticket: TicketDetail
 ): Promise<GitHubIssueExportResult> {
   const title = buildIssueTitle(ticket);
@@ -356,10 +375,10 @@ export async function exportTicketToGitHubIssue(
   }
 
   const issueResponse = await githubFetch(
-    `https://api.github.com/repos/${input.owner}/${input.repo}/issues`,
+    `https://api.github.com/repos/${config.owner}/${config.repo}/issues`,
     {
       method: "POST",
-      headers: githubHeaders(input.token),
+      headers: githubHeaders(config.token),
       body: JSON.stringify({
         title,
         body,
@@ -384,10 +403,10 @@ export async function exportTicketToGitHubIssue(
 
   try {
     await githubFetch(
-      `https://api.github.com/repos/${input.owner}/${input.repo}/issues/${issuePayload.number}/labels`,
+      `https://api.github.com/repos/${config.owner}/${config.repo}/issues/${issuePayload.number}/labels`,
       {
         method: "POST",
-        headers: githubHeaders(input.token),
+        headers: githubHeaders(config.token),
         body: JSON.stringify({
           labels,
         }),

@@ -145,6 +145,13 @@ export function mapTicketDetailToUiTicket(
     aiAnalysisRunId: latestAiRun?.id ?? null,
     aiFeedback: latestAiRun?.feedback ?? null,
     aiHistory,
+    githubExportStatus: ticket.githubExportStatus,
+    githubIssueUrl: ticket.githubIssueUrl,
+    githubIssueNumber: ticket.githubIssueNumber,
+    githubExportedAt: ticket.githubExportedAt
+      ? format(ticket.githubExportedAt, "MMM d, yyyy, HH:mm")
+      : null,
+    githubExportError: ticket.githubExportError,
     attachments: ticket.attachments.map((attachment) => ({
       id: attachment.id,
       type:

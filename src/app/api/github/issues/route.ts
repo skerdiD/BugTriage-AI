@@ -3,10 +3,17 @@ import {
   AuthenticationError,
   getCurrentWorkspaceContextOrThrow,
 } from "@/lib/auth/session";
-import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
-import { getTicketByCode } from "@/lib/data/tickets";
+import { isDemoUser } from "@/lib/demo";
+import {
+  claimTicketGitHubExport,
+  completeTicketGitHubExport,
+  failTicketGitHubExport,
+  getTicketByCode,
+  GitHubExportStateError,
+} from "@/lib/data/tickets";
 import {
   exportTicketToGitHubIssue,
+  getGitHubIssueExportConfig,
   githubIssueExportSchema,
 } from "@/lib/integrations/github-issues";
 import { captureServerException } from "@/lib/observability/server-monitoring";
@@ -116,7 +123,7 @@ export async function POST(request: Request) {
 
   if (isDemoUser(context.user)) {
     return Response.json(
-      { ok: false, error: DEMO_READ_ONLY_MESSAGE },
+      { ok: false, error: "GitHub export is disabled in demo mode." },
       { status: 403 }
     );
   }
@@ -186,26 +193,40 @@ export async function POST(request: Request) {
         ok: false,
         error:
           parsed.error.issues[0]?.message ??
-          "Check the GitHub repository details and token.",
+          "Check the ticket details and try again.",
       },
       { status: 400 }
     );
   }
 
+  let claimed = false;
+
   try {
+    await claimTicketGitHubExport({
+      workspaceId: context.workspace.id,
+      ticketCode: parsed.data.ticketCode,
+      actorId: context.user.id,
+    });
+    claimed = true;
+
+    const config = getGitHubIssueExportConfig();
     const ticket = await getTicketByCode(
       parsed.data.ticketCode,
       context.workspace.id
     );
 
     if (!ticket) {
-      return Response.json(
-        { ok: false, error: "Ticket was not found." },
-        { status: 404 }
-      );
+      throw new Error("This ticket could not be loaded for export.");
     }
 
-    const result = await exportTicketToGitHubIssue(parsed.data, ticket);
+    const result = await exportTicketToGitHubIssue(config, ticket);
+    await completeTicketGitHubExport({
+      workspaceId: context.workspace.id,
+      ticketCode: ticket.code,
+      actorId: context.user.id,
+      issueUrl: result.issueUrl,
+      issueNumber: result.issueNumber,
+    });
 
     return Response.json({
       ok: true,
@@ -217,8 +238,26 @@ export async function POST(request: Request) {
       return Response.json({ ok: false, error: error.message }, { status: 403 });
     }
 
-    if (error instanceof Error && error.message.startsWith("GitHub ")) {
-      return Response.json({ ok: false, error: error.message }, { status: 502 });
+    if (error instanceof GitHubExportStateError) {
+      return Response.json(
+        { ok: false, error: error.message },
+        { status: error.status }
+      );
+    }
+
+    const safeError =
+      error instanceof Error &&
+      (error.message.startsWith("GitHub ") ||
+        error.message.startsWith("This ticket"))
+        ? error.message
+        : "We couldn't export this ticket right now.";
+
+    if (claimed) {
+      await failTicketGitHubExport({
+        workspaceId: context.workspace.id,
+        ticketCode: parsed.data.ticketCode,
+        error: safeError,
+      }).catch(() => undefined);
     }
 
     captureServerException(error, {
@@ -227,14 +266,12 @@ export async function POST(request: Request) {
       message: "[github-export] failed to export ticket",
       context: {
         ticketCode: parsed.data.ticketCode,
-        owner: parsed.data.owner,
-        repo: parsed.data.repo,
       },
     });
 
     return Response.json(
-      { ok: false, error: "We couldn't export this ticket right now." },
-      { status: 500 }
+      { ok: false, error: safeError },
+      { status: safeError.startsWith("GitHub ") ? 502 : 500 }
     );
   }
 }

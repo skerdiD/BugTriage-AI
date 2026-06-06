@@ -1,10 +1,15 @@
-import { TicketSeverity, TicketStatus } from "@prisma/client";
+import {
+  GitHubExportStatus,
+  TicketSeverity,
+  TicketStatus,
+} from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   exportTicketToGitHubIssue,
   formatTicketAsGitHubIssueBody,
   getSafeGitHubErrorMessage,
+  getGitHubIssueExportConfig,
   githubIssueExportSchema,
   parseGitHubRepository,
 } from "@/lib/integrations/github-issues";
@@ -34,6 +39,11 @@ function createTicket(overrides: Partial<TicketDetail> = {}) {
     category: "Payment",
     priorityScore: 88,
     aiConfidence: 91,
+    githubExportStatus: GitHubExportStatus.NOT_EXPORTED,
+    githubIssueUrl: null,
+    githubIssueNumber: null,
+    githubExportedAt: null,
+    githubExportError: null,
     createdAt: new Date("2026-05-12T10:00:00Z"),
     updatedAt: new Date("2026-05-12T10:00:00Z"),
     reporter: {
@@ -81,15 +91,20 @@ describe("GitHub Issues export", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("validates owner, repo, token, and ticket input", () => {
+  it("validates ticket input without accepting client credentials", () => {
     const result = githubIssueExportSchema.safeParse({
-      ticketCode: "BUG-4242",
-      owner: "-bad-owner",
-      repo: "bad repo",
-      token: "short",
+      ticketCode: "bad-ticket",
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("reads repository credentials only from server environment variables", () => {
+    expect(getGitHubIssueExportConfig()).toEqual({
+      owner: "skerdiD",
+      repo: "BugTriage-AI",
+      token: "ghp_test_server_token",
+    });
   });
 
   it("parses GitHub repository slugs and URLs", () => {
@@ -128,7 +143,6 @@ describe("GitHub Issues export", () => {
 
     const result = await exportTicketToGitHubIssue(
       {
-        ticketCode: "BUG-4242",
         owner: "skerdiD",
         repo: "BugTriage-AI",
         token: "ghp_valid_test_token",
@@ -172,7 +186,6 @@ describe("GitHub Issues export", () => {
     await expect(
       exportTicketToGitHubIssue(
         {
-          ticketCode: "BUG-4242",
           owner: "skerdiD",
           repo: "BugTriage-AI",
           token: "ghp_invalid_test_token",
@@ -202,7 +215,6 @@ describe("GitHub Issues export", () => {
     await expect(
       exportTicketToGitHubIssue(
         {
-          ticketCode: "BUG-4242",
           owner: "skerdiD",
           repo: "BugTriage-AI",
           token: "ghp_valid_test_token",

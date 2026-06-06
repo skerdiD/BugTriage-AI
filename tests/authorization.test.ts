@@ -35,6 +35,7 @@ import {
   assertCanAccessProject,
   assertCanAccessTicket,
   assertCanCreateTicket,
+  assertCanExportTicket,
   assertWorkspaceMember,
 } from "@/lib/auth/authorization";
 
@@ -94,6 +95,24 @@ describe("authorization helpers", () => {
         }),
       })
     );
+  });
+
+  it("requires an admin role to export a workspace ticket", async () => {
+    prismaMock.ticket.findFirst.mockResolvedValue({
+      id: "ticket-1",
+      workspaceId: "ws-1",
+    });
+    prismaMock.workspace.findFirst.mockResolvedValue({
+      id: "ws-1",
+      name: "Acme Workspace",
+      slug: "acme-workspace",
+      ownerId: "owner-1",
+      members: [{ role: WorkspaceRole.MEMBER }],
+    });
+
+    await expect(
+      assertCanExportTicket({ ticketCode: "BUG-1001", workspaceId: "ws-1" })
+    ).rejects.toBeInstanceOf(AuthorizationError);
   });
 
   it("rejects ticket creation when the project is outside the selected workspace", async () => {

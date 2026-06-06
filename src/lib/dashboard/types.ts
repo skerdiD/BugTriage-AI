@@ -103,6 +103,12 @@ export type UiAiAnalysisRun = {
   createdAt: string;
 };
 
+export type UiGitHubExportStatus =
+  | "NOT_EXPORTED"
+  | "EXPORTING"
+  | "EXPORTED"
+  | "FAILED";
+
 export type UiTicket = {
   id: string;
   title: string;
@@ -124,6 +130,11 @@ export type UiTicket = {
   aiAnalysisRunId: string | null;
   aiFeedback: UiAiAnalysisFeedback | null;
   aiHistory: UiAiAnalysisRun[];
+  githubExportStatus: UiGitHubExportStatus;
+  githubIssueUrl: string | null;
+  githubIssueNumber: number | null;
+  githubExportedAt: string | null;
+  githubExportError: string | null;
   attachments: UiTicketAttachment[];
   browser: string;
   device: string;

@@ -3,6 +3,7 @@ import "server-only";
 import {
   AiAnalysisFeedback,
   AttachmentType,
+  GitHubExportStatus,
   Prisma,
   TicketActivityType,
   TicketSeverity,
@@ -16,6 +17,7 @@ import {
   assertCanAccessTicket,
   assertCanCommentOnTicket,
   assertCanCreateTicket,
+  assertCanExportTicket,
   assertCanModifyTicket,
   assertWorkspaceMember,
 } from "@/lib/auth/authorization";
@@ -192,6 +194,17 @@ export type AddTicketCommentInput = {
 };
 
 export const MAX_TICKET_COMMENT_LENGTH = 4_000;
+export const MAX_GITHUB_EXPORT_ERROR_LENGTH = 500;
+
+export class GitHubExportStateError extends Error {
+  status: number;
+
+  constructor(message: string, status = 409) {
+    super(message);
+    this.name = "GitHubExportStateError";
+    this.status = status;
+  }
+}
 
 function clampPageSize(take?: number) {
   const normalized = take ?? 50;
@@ -710,6 +723,150 @@ export async function setTicketAiAnalysisFeedback(input: {
     });
     throw error;
   }
+}
+
+export async function claimTicketGitHubExport(input: {
+  workspaceId: string;
+  ticketCode: string;
+  actorId?: string;
+}) {
+  const currentUser = await getCurrentUserOrThrow();
+  const access = await assertCanExportTicket(
+    {
+      ticketCode: input.ticketCode,
+      workspaceId: input.workspaceId,
+    },
+    currentUser.id
+  );
+
+  if (input.actorId && input.actorId !== currentUser.id) {
+    throw new AuthorizationError(
+      "GitHub exports must be attributed to the current authenticated user."
+    );
+  }
+
+  const claimed = await prisma.ticket.updateMany({
+    where: {
+      id: access.ticket.id,
+      githubExportStatus: {
+        in: [GitHubExportStatus.NOT_EXPORTED, GitHubExportStatus.FAILED],
+      },
+    },
+    data: {
+      githubExportStatus: GitHubExportStatus.EXPORTING,
+      githubExportError: null,
+    },
+  });
+
+  if (claimed.count === 1) {
+    return access.ticket;
+  }
+
+  const current = await prisma.ticket.findUnique({
+    where: {
+      id: access.ticket.id,
+    },
+    select: {
+      githubExportStatus: true,
+      githubIssueUrl: true,
+    },
+  });
+
+  if (current?.githubExportStatus === GitHubExportStatus.EXPORTED) {
+    throw new GitHubExportStateError(
+      current.githubIssueUrl
+        ? "This ticket has already been exported to GitHub."
+        : "This ticket is already marked as exported."
+    );
+  }
+
+  throw new GitHubExportStateError(
+    "A GitHub export is already in progress for this ticket."
+  );
+}
+
+export async function completeTicketGitHubExport(input: {
+  workspaceId: string;
+  ticketCode: string;
+  actorId?: string;
+  issueUrl: string;
+  issueNumber: number;
+}) {
+  const currentUser = await getCurrentUserOrThrow();
+  const access = await assertCanExportTicket(
+    {
+      ticketCode: input.ticketCode,
+      workspaceId: input.workspaceId,
+    },
+    currentUser.id
+  );
+
+  if (input.actorId && input.actorId !== currentUser.id) {
+    throw new AuthorizationError(
+      "GitHub exports must be attributed to the current authenticated user."
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.ticket.updateMany({
+      where: {
+        id: access.ticket.id,
+        githubExportStatus: GitHubExportStatus.EXPORTING,
+      },
+      data: {
+        githubExportStatus: GitHubExportStatus.EXPORTED,
+        githubIssueUrl: input.issueUrl,
+        githubIssueNumber: input.issueNumber,
+        githubExportedAt: new Date(),
+        githubExportError: null,
+      },
+    });
+
+    if (updated.count !== 1) {
+      throw new GitHubExportStateError(
+        "GitHub export state changed before completion."
+      );
+    }
+
+    await tx.ticketActivity.create({
+      data: {
+        ticketId: access.ticket.id,
+        actorId: input.actorId ?? currentUser.id,
+        type: TicketActivityType.UPDATED,
+        title: "Exported to GitHub",
+        description: `GitHub issue #${input.issueNumber} was created.`,
+        metadata: {
+          issueNumber: input.issueNumber,
+          issueUrl: input.issueUrl,
+        },
+      },
+    });
+
+    return {
+      issueUrl: input.issueUrl,
+      issueNumber: input.issueNumber,
+    };
+  });
+}
+
+export async function failTicketGitHubExport(input: {
+  workspaceId: string;
+  ticketCode: string;
+  error: string;
+}) {
+  const safeError = input.error.trim().slice(0, MAX_GITHUB_EXPORT_ERROR_LENGTH);
+
+  return prisma.ticket.updateMany({
+    where: {
+      code: input.ticketCode,
+      workspaceId: input.workspaceId,
+      githubExportStatus: GitHubExportStatus.EXPORTING,
+    },
+    data: {
+      githubExportStatus: GitHubExportStatus.FAILED,
+      githubExportError: safeError || "GitHub export failed. Please try again.",
+    },
+  });
 }
 
 export async function updateTicketStatus(

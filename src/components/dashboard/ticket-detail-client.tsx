@@ -68,6 +68,7 @@ import type {
 
 type TicketDetailClientProps = {
   ticket: Ticket;
+  canExportGitHub: boolean;
 };
 
 const workflowStatuses: TicketStatus[] = [
@@ -86,7 +87,10 @@ const uiToDbStatus: Record<TicketStatus, DbTicketStatus> = {
   Closed: DbTicketStatus.CLOSED,
 };
 
-export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
+export function TicketDetailClient({
+  ticket,
+  canExportGitHub,
+}: TicketDetailClientProps) {
   const router = useRouter();
   const [status, setStatus] = useState<TicketStatus>(ticket.status);
   const [commentText, setCommentText] = useState("");
@@ -221,7 +225,15 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
               </Link>
             </Button>
 
-            <GitHubIssueExportDialog ticketCode={ticket.id} />
+            <GitHubIssueExportDialog
+              ticketCode={ticket.id}
+              canExport={canExportGitHub}
+              status={ticket.githubExportStatus}
+              issueUrl={ticket.githubIssueUrl}
+              issueNumber={ticket.githubIssueNumber}
+              exportedAt={ticket.githubExportedAt}
+              failureMessage={ticket.githubExportError}
+            />
           </div>
 
           <div>

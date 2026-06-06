@@ -34,6 +34,10 @@ vi.mock("@/lib/auth/session", () => ({
   getCurrentWorkspaceContextOrRedirect: getCurrentWorkspaceContextOrRedirectMock,
 }));
 
+vi.mock("@/lib/auth/authorization", () => ({
+  hasRequiredWorkspaceRole: () => true,
+}));
+
 vi.mock("@/lib/data/ticket-mappers", () => ({
   mapTicketDetailToUiTicket: mapTicketDetailToUiTicketMock,
 }));
@@ -61,6 +65,7 @@ describe("ticket detail page", () => {
     vi.clearAllMocks();
 
     getCurrentWorkspaceContextOrRedirectMock.mockResolvedValue({
+      role: "OWNER",
       workspace: {
         id: "workspace-1",
       },
@@ -128,6 +133,7 @@ describe("ticket detail page", () => {
       id: "BUG-4242",
       title: "Mapped ticket",
     });
+    expect(result.props.canExportGitHub).toBe(true);
   });
 
   it("stops before signed URL generation when the ticket is missing", async () => {
