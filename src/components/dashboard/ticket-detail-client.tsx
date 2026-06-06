@@ -8,6 +8,7 @@ import {
   Activity,
   ArrowLeft,
   Bot,
+  BrainCircuit,
   CalendarClock,
   CheckCircle2,
   ChevronRight,
@@ -21,17 +22,22 @@ import {
   MessageSquare,
   MonitorSmartphone,
   PackageCheck,
+  RefreshCw,
   Send,
   SearchCheck,
   ShieldAlert,
   Sparkles,
   Tags,
+  ThumbsDown,
+  ThumbsUp,
   UserRound,
 } from "lucide-react";
 import { TicketStatus as DbTicketStatus } from "@prisma/client";
 
 import {
   addTicketCommentAction,
+  regenerateTicketAiAnalysisAction,
+  setTicketAiAnalysisFeedbackAction,
   updateTicketStatusAction,
 } from "@/app/(dashboard)/tickets/[ticketId]/actions";
 import { GitHubIssueExportDialog } from "@/components/dashboard/github-issue-export-dialog";
@@ -86,8 +92,13 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
   const [commentText, setCommentText] = useState("");
   const [statusError, setStatusError] = useState("");
   const [commentError, setCommentError] = useState("");
+  const [aiMessage, setAiMessage] = useState("");
+  const [aiError, setAiError] = useState("");
+  const [aiFeedback, setAiFeedback] = useState(ticket.aiFeedback);
   const [isStatusPending, startStatusTransition] = useTransition();
   const [isCommentPending, startCommentTransition] = useTransition();
+  const [isAiPending, startAiTransition] = useTransition();
+  const [isFeedbackPending, startFeedbackTransition] = useTransition();
 
   const statusIndex = workflowStatuses.indexOf(status);
 
@@ -143,6 +154,53 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
       }
 
       setCommentText("");
+      router.refresh();
+    });
+  }
+
+  function handleRegenerateAiAnalysis() {
+    setAiError("");
+    setAiMessage("");
+
+    startAiTransition(async () => {
+      const result = await regenerateTicketAiAnalysisAction({
+        ticketCode: ticket.id,
+      });
+
+      if (!result.ok) {
+        setAiError(result.error);
+        return;
+      }
+
+      setAiFeedback(null);
+      setAiMessage(result.message);
+      router.refresh();
+    });
+  }
+
+  function handleAiFeedback(feedback: "HELPFUL" | "NOT_HELPFUL") {
+    if (!ticket.aiAnalysisRunId) {
+      setAiError("Regenerate this analysis before leaving feedback.");
+      return;
+    }
+
+    setAiError("");
+    setAiMessage("");
+
+    startFeedbackTransition(async () => {
+      const result = await setTicketAiAnalysisFeedbackAction({
+        ticketCode: ticket.id,
+        analysisRunId: ticket.aiAnalysisRunId!,
+        feedback,
+      });
+
+      if (!result.ok) {
+        setAiError(result.error);
+        return;
+      }
+
+      setAiFeedback(feedback);
+      setAiMessage(result.message);
       router.refresh();
     });
   }
@@ -244,20 +302,55 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
 
           <Card className="rounded-3xl border-violet-500/20 bg-gradient-to-br from-violet-500/12 via-purple-500/7 to-transparent shadow-xl shadow-black/20">
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10">
-                  <Sparkles className="size-5 text-violet-300" />
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-11 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10">
+                    <Sparkles className="size-5 text-violet-300" />
+                  </div>
+                  <div>
+                    <CardTitle>AI Analysis</CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Structured engineering output generated from the report.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle>AI Analysis</CardTitle>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Structured engineering output generated from the report.
-                  </p>
-                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isAiPending}
+                  onClick={handleRegenerateAiAnalysis}
+                  className="rounded-xl border-violet-400/25 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20 hover:text-white"
+                >
+                  {isAiPending ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 size-4" />
+                  )}
+                  {isAiPending ? "Regenerating..." : "Regenerate AI"}
+                </Button>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-6">
+              {aiError ? (
+                <p
+                  role="alert"
+                  className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+                >
+                  {aiError}
+                </p>
+              ) : null}
+
+              {aiMessage ? (
+                <p
+                  role="status"
+                  className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"
+                >
+                  {aiMessage}
+                </p>
+              ) : null}
+
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                   AI-generated summary
@@ -287,6 +380,25 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                     {ticket.suggestedFix}
                   </p>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-sky-500/20 bg-sky-500/[0.06] p-5">
+                <div className="flex items-center gap-2">
+                  <BrainCircuit className="size-4 text-sky-300" />
+                  <p className="font-semibold">AI reasoning signals</p>
+                </div>
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                  Review the severity recommendation against the reported impact and
+                  the AI&apos;s possible root cause above. Compare those signals with the{" "}
+                  <span className="font-semibold text-white">
+                    {ticket.priorityScore}/100 priority
+                  </span>{" "}
+                  and{" "}
+                  <span className="font-semibold text-white">
+                    {ticket.confidence}% confidence
+                  </span>{" "}
+                  before changing workflow status.
+                </p>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[1fr_0.45fr]">
@@ -345,6 +457,90 @@ export function TicketDetailClient({ ticket }: TicketDetailClientProps) {
                     ) : (
                       <p className="text-xs text-muted-foreground">
                         No AI tags were recorded for this ticket.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[0.75fr_1.25fr]">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <p className="font-semibold">Was this analysis helpful?</p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Feedback is stored with this AI run.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isFeedbackPending || !ticket.aiAnalysisRunId}
+                      onClick={() => handleAiFeedback("HELPFUL")}
+                      className={
+                        aiFeedback === "HELPFUL"
+                          ? "rounded-xl border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
+                          : "rounded-xl border-white/10 bg-white/[0.035]"
+                      }
+                    >
+                      <ThumbsUp className="mr-2 size-4" />
+                      Helpful
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isFeedbackPending || !ticket.aiAnalysisRunId}
+                      onClick={() => handleAiFeedback("NOT_HELPFUL")}
+                      className={
+                        aiFeedback === "NOT_HELPFUL"
+                          ? "rounded-xl border-red-500/40 bg-red-500/15 text-red-200"
+                          : "rounded-xl border-white/10 bg-white/[0.035]"
+                      }
+                    >
+                      <ThumbsDown className="mr-2 size-4" />
+                      Not helpful
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <p className="font-semibold">Analysis history</p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Recent AI runs are preserved for review.
+                  </p>
+                  <div className="mt-4 space-y-2">
+                    {ticket.aiHistory.length > 0 ? (
+                      ticket.aiHistory.map((run, index) => (
+                        <div
+                          key={run.id}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/15 px-4 py-3"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-white">
+                              {index === 0 ? "Current run" : "Previous run"}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {run.createdAt}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge className="border-white/10 bg-white/[0.06] text-slate-200">
+                              {run.severity}
+                            </Badge>
+                            <Badge className="border-white/10 bg-white/[0.06] text-slate-200">
+                              {run.confidence}% confidence
+                            </Badge>
+                            {run.feedback ? (
+                              <Badge className="border-violet-500/25 bg-violet-500/10 text-violet-200">
+                                {run.feedback === "HELPFUL"
+                                  ? "Helpful"
+                                  : "Not helpful"}
+                              </Badge>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No preserved AI runs are available yet.
                       </p>
                     )}
                   </div>

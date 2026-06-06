@@ -1,9 +1,14 @@
 "use server";
 
+import { request as getArcjetRequest } from "@arcjet/next";
 import { revalidatePath } from "next/cache";
-import { TicketStatus } from "@prisma/client";
+import { AiAnalysisFeedback, TicketStatus } from "@prisma/client";
 import { z } from "zod";
 
+import {
+  analyzeBugReportWithGemini,
+  getPublicAiTriageFailureMessage,
+} from "@/lib/ai/bug-triage";
 import { AuthorizationError } from "@/lib/auth/authorization";
 import {
   getCurrentUserOrThrow,
@@ -12,11 +17,24 @@ import {
 import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import {
   addTicketComment,
+  getTicketByCode,
   MAX_TICKET_COMMENT_LENGTH,
+  regenerateTicketAiAnalysis,
+  setTicketAiAnalysisFeedback,
   updateTicketStatus,
 } from "@/lib/data/tickets";
+import { createAndStoreTicketEmbedding } from "@/lib/data/similar-issues";
 import { captureServerException } from "@/lib/observability/server-monitoring";
-import { ticketCodeSchema } from "@/lib/validation/resource-identifiers";
+import {
+  bugSubmissionProtection,
+  getArcjetDeniedMessage,
+  logArcjetError,
+} from "@/lib/security/arcjet";
+import { bugReportFormSchema } from "@/lib/validation/bug-report";
+import {
+  resourceIdSchema,
+  ticketCodeSchema,
+} from "@/lib/validation/resource-identifiers";
 
 const commentSchema = z.object({
   ticketCode: ticketCodeSchema,
@@ -33,6 +51,16 @@ const commentSchema = z.object({
 const statusSchema = z.object({
   ticketCode: ticketCodeSchema,
   status: z.nativeEnum(TicketStatus),
+});
+
+const regenerateSchema = z.object({
+  ticketCode: ticketCodeSchema,
+});
+
+const feedbackSchema = z.object({
+  ticketCode: ticketCodeSchema,
+  analysisRunId: resourceIdSchema,
+  feedback: z.nativeEnum(AiAnalysisFeedback),
 });
 
 function revalidateTicketViews(ticketCode: string) {
@@ -169,6 +197,185 @@ export async function updateTicketStatusAction(input: {
     return {
       ok: false as const,
       error: "We couldn't update that ticket status right now. Please try again.",
+    };
+  }
+}
+
+export async function regenerateTicketAiAnalysisAction(input: {
+  ticketCode: string;
+}) {
+  try {
+    const parsed = regenerateSchema.safeParse(input);
+
+    if (!parsed.success) {
+      return { ok: false as const, error: "That AI regeneration request was invalid." };
+    }
+
+    const [user, context] = await Promise.all([
+      getCurrentUserOrThrow(),
+      getCurrentWorkspaceContextOrThrow(),
+    ]);
+
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
+
+    const arcjetRequest = await getArcjetRequest();
+    const arcjetDecision = await bugSubmissionProtection.protect(arcjetRequest, {
+      userId: user.id,
+    });
+
+    logArcjetError("regenerate-ticket-ai-analysis", arcjetDecision);
+
+    if (arcjetDecision.isDenied()) {
+      return {
+        ok: false as const,
+        error: getArcjetDeniedMessage(
+          arcjetDecision,
+          "AI regeneration blocked by application security."
+        ),
+      };
+    }
+
+    const ticket = await getTicketByCode(
+      parsed.data.ticketCode,
+      context.workspace.id
+    );
+
+    if (!ticket) {
+      return { ok: false as const, error: "Ticket was not found." };
+    }
+
+    const report = bugReportFormSchema.safeParse({
+      title: ticket.title,
+      description: ticket.description,
+      stepsToReproduce: ticket.stepsToReproduce ?? "",
+      expectedBehavior: ticket.expectedBehavior ?? "",
+      actualBehavior: ticket.actualBehavior ?? "",
+      browser: ticket.browser ?? "",
+      device: ticket.device ?? "",
+      environment: ticket.environment ?? "",
+      affectedPage: ticket.affectedPage ?? "",
+      consoleLogs: "",
+    });
+
+    if (!report.success) {
+      return {
+        ok: false as const,
+        error:
+          "This ticket does not contain enough valid report detail to regenerate AI analysis.",
+      };
+    }
+
+    const output = await analyzeBugReportWithGemini({
+      report: report.data,
+      attachmentNames: ticket.attachments.map((attachment) => attachment.filename),
+    });
+
+    await regenerateTicketAiAnalysis({
+      workspaceId: context.workspace.id,
+      ticketCode: ticket.code,
+      actorId: user.id,
+      output,
+    });
+
+    try {
+      await createAndStoreTicketEmbedding({
+        ticketId: ticket.id,
+        workspaceId: ticket.workspaceId,
+        projectId: ticket.projectId,
+        source: {
+          title: output.improvedTitle,
+          description: ticket.description,
+          expectedBehavior: ticket.expectedBehavior,
+          actualBehavior: ticket.actualBehavior,
+          stepsToReproduce: ticket.stepsToReproduce,
+          browser: ticket.browser,
+          device: ticket.device,
+          environment: ticket.environment,
+          affectedPage: ticket.affectedPage,
+          aiSummary: output.summary,
+        },
+      });
+    } catch (error) {
+      captureServerException(error, {
+        area: "ai-triage",
+        action: "regenerate-ticket-embedding",
+        message: "[ticket-actions] regenerated analysis embedding failed",
+        context: {
+          ticketCode: ticket.code,
+          workspaceId: ticket.workspaceId,
+        },
+      });
+    }
+
+    revalidateTicketViews(ticket.code);
+
+    return {
+      ok: true as const,
+      message: "AI analysis regenerated and the previous run was preserved.",
+    };
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return { ok: false as const, error: error.message };
+    }
+
+    return {
+      ok: false as const,
+      error: getPublicAiTriageFailureMessage(error),
+    };
+  }
+}
+
+export async function setTicketAiAnalysisFeedbackAction(input: {
+  ticketCode: string;
+  analysisRunId: string;
+  feedback: AiAnalysisFeedback;
+}) {
+  try {
+    const parsed = feedbackSchema.safeParse(input);
+
+    if (!parsed.success) {
+      return { ok: false as const, error: "That AI feedback request was invalid." };
+    }
+
+    const [user, context] = await Promise.all([
+      getCurrentUserOrThrow(),
+      getCurrentWorkspaceContextOrThrow(),
+    ]);
+
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
+
+    await setTicketAiAnalysisFeedback({
+      workspaceId: context.workspace.id,
+      ticketCode: parsed.data.ticketCode,
+      analysisRunId: parsed.data.analysisRunId,
+      feedback: parsed.data.feedback,
+    });
+
+    revalidatePath(`/tickets/${parsed.data.ticketCode}`);
+
+    return { ok: true as const, message: "AI feedback saved." };
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return { ok: false as const, error: error.message };
+    }
+
+    captureServerException(error, {
+      area: "ai-triage",
+      action: "set-ticket-ai-feedback",
+      message: "[ticket-actions] AI feedback failed",
+      context: {
+        ticketCode: input.ticketCode,
+        analysisRunId: input.analysisRunId,
+      },
+    });
+
+    return {
+      ok: false as const,
+      error: "We couldn't save that AI feedback right now. Please try again.",
     };
   }
 }

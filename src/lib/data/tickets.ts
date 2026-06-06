@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  AiAnalysisFeedback,
   AttachmentType,
   Prisma,
   TicketActivityType,
@@ -8,6 +9,7 @@ import {
   TicketStatus,
 } from "@prisma/client";
 
+import type { BugTriageAiOutput } from "@/lib/ai/bug-triage";
 import {
   AuthorizationError,
   assertCanAccessProject,
@@ -82,6 +84,20 @@ const ticketDetailInclude = {
       createdAt: true,
       updatedAt: true,
     },
+  },
+  aiAnalysisRuns: {
+    select: {
+      id: true,
+      severity: true,
+      priorityScore: true,
+      confidenceScore: true,
+      feedback: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 5,
   },
   attachments: {
     orderBy: {
@@ -458,6 +474,22 @@ export async function createTicket(input: CreateTicketInput) {
                   },
                 }
               : undefined,
+            aiAnalysisRuns: input.aiAnalysis
+              ? {
+                  create: {
+                    summary: input.aiAnalysis.summary,
+                    severity: input.severity ?? TicketSeverity.MEDIUM,
+                    category: input.category,
+                    priorityScore: input.priorityScore,
+                    confidenceScore: input.aiAnalysis.confidenceScore,
+                    tags: input.aiAnalysis.tags,
+                    likelyCause: input.aiAnalysis.likelyCause,
+                    suggestedFix: input.aiAnalysis.suggestedFix,
+                    reproductionSteps: input.aiAnalysis.reproductionSteps,
+                    rawAiResponse: input.aiAnalysis.rawAiResponse,
+                  },
+                }
+              : undefined,
             attachments: input.attachments?.length
               ? {
                   create: input.attachments.map((attachment) => ({
@@ -500,6 +532,180 @@ export async function createTicket(input: CreateTicketInput) {
         workspaceId: input.workspaceId,
         projectId: input.projectId,
         ticketCode: input.code,
+      },
+    });
+    throw error;
+  }
+}
+
+export async function regenerateTicketAiAnalysis(input: {
+  workspaceId: string;
+  ticketCode: string;
+  actorId?: string;
+  output: BugTriageAiOutput;
+}) {
+  const currentUser = await getCurrentUserOrThrow();
+  const access = await assertCanModifyTicket(
+    {
+      ticketCode: input.ticketCode,
+      workspaceId: input.workspaceId,
+    },
+    currentUser.id
+  );
+
+  if (input.actorId && input.actorId !== currentUser.id) {
+    throw new AuthorizationError(
+      "AI regeneration must be attributed to the current authenticated user."
+    );
+  }
+
+  const rawAiResponse = {
+    ...input.output,
+    developerTask: input.output.developerTask,
+  } satisfies Prisma.InputJsonValue;
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const ticket = await tx.ticket.update({
+        where: {
+          id: access.ticket.id,
+        },
+        data: {
+          title: input.output.improvedTitle,
+          severity: input.output.severity,
+          category: input.output.category,
+          priorityScore: input.output.priorityScore,
+          aiConfidence: input.output.confidenceScore,
+          aiAnalysis: {
+            upsert: {
+              update: {
+                summary: input.output.summary,
+                likelyCause: input.output.likelyCause,
+                suggestedFix: input.output.suggestedFix,
+                reproductionSteps: input.output.reproductionSteps,
+                tags: input.output.tags,
+                confidenceScore: input.output.confidenceScore,
+                rawAiResponse,
+              },
+              create: {
+                summary: input.output.summary,
+                likelyCause: input.output.likelyCause,
+                suggestedFix: input.output.suggestedFix,
+                reproductionSteps: input.output.reproductionSteps,
+                tags: input.output.tags,
+                confidenceScore: input.output.confidenceScore,
+                rawAiResponse,
+              },
+            },
+          },
+          aiAnalysisRuns: {
+            create: {
+              summary: input.output.summary,
+              severity: input.output.severity,
+              category: input.output.category,
+              priorityScore: input.output.priorityScore,
+              confidenceScore: input.output.confidenceScore,
+              tags: input.output.tags,
+              likelyCause: input.output.likelyCause,
+              suggestedFix: input.output.suggestedFix,
+              reproductionSteps: input.output.reproductionSteps,
+              rawAiResponse,
+            },
+          },
+        },
+        select: {
+          id: true,
+          code: true,
+        },
+      });
+
+      await tx.ticketActivity.create({
+        data: {
+          ticketId: access.ticket.id,
+          actorId: input.actorId ?? currentUser.id,
+          type: TicketActivityType.AI_ANALYZED,
+          title: "AI analysis regenerated",
+          description:
+            "AI triage was regenerated and the previous analysis was preserved in history.",
+          metadata: {
+            confidenceScore: input.output.confidenceScore,
+            severity: input.output.severity,
+            priorityScore: input.output.priorityScore,
+          },
+        },
+      });
+
+      return ticket;
+    });
+  } catch (error) {
+    captureServerException(error, {
+      area: "database",
+      action: "regenerate-ticket-ai-analysis",
+      message: "[tickets] failed to persist regenerated AI analysis",
+      context: {
+        workspaceId: input.workspaceId,
+        ticketCode: input.ticketCode,
+      },
+    });
+    throw error;
+  }
+}
+
+export async function setTicketAiAnalysisFeedback(input: {
+  workspaceId: string;
+  ticketCode: string;
+  analysisRunId: string;
+  feedback: AiAnalysisFeedback;
+}) {
+  const currentUser = await getCurrentUserOrThrow();
+  const access = await assertCanAccessTicket(
+    {
+      ticketCode: input.ticketCode,
+      workspaceId: input.workspaceId,
+    },
+    currentUser.id
+  );
+
+  try {
+    const run = await prisma.ticketAiAnalysisRun.findFirst({
+      where: {
+        id: input.analysisRunId,
+        ticketId: access.ticket.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!run) {
+      throw new AuthorizationError("AI analysis run not found or access denied.");
+    }
+
+    return await prisma.ticketAiAnalysisRun.update({
+      where: {
+        id: run.id,
+      },
+      data: {
+        feedback: input.feedback,
+      },
+      select: {
+        id: true,
+        feedback: true,
+      },
+    });
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      throw error;
+    }
+
+    captureServerException(error, {
+      area: "database",
+      action: "set-ticket-ai-analysis-feedback",
+      message: "[tickets] failed to save AI analysis feedback",
+      context: {
+        workspaceId: input.workspaceId,
+        ticketCode: input.ticketCode,
+        analysisRunId: input.analysisRunId,
       },
     });
     throw error;

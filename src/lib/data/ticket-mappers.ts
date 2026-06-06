@@ -109,6 +109,15 @@ export function mapTicketDetailToUiTicket(
   const assigneeName = ticket.assignee?.name ?? "Unassigned";
   const analysisSteps = stringArrayFromJson(ticket.aiAnalysis?.reproductionSteps);
   const tags = stringArrayFromJson(ticket.aiAnalysis?.tags);
+  const aiHistory = (ticket.aiAnalysisRuns ?? []).map((run) => ({
+    id: run.id,
+    severity: mapDbSeverityToUiSeverity(run.severity),
+    confidence: run.confidenceScore ?? 0,
+    priorityScore: run.priorityScore,
+    feedback: run.feedback,
+    createdAt: format(run.createdAt, "MMM d, yyyy, HH:mm"),
+  }));
+  const latestAiRun = aiHistory[0] ?? null;
 
   return {
     id: ticket.code,
@@ -133,6 +142,9 @@ export function mapTicketDetailToUiTicket(
       "Review the original report and add a suggested fix after investigation.",
     priorityScore: ticket.priorityScore ?? 50,
     tags: tags.length > 0 ? tags : ["manual-review"],
+    aiAnalysisRunId: latestAiRun?.id ?? null,
+    aiFeedback: latestAiRun?.feedback ?? null,
+    aiHistory,
     attachments: ticket.attachments.map((attachment) => ({
       id: attachment.id,
       type:

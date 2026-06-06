@@ -87,6 +87,22 @@ describe("ticket mappers", () => {
         createdAt: new Date("2026-05-08T09:05:00.000Z"),
         updatedAt: new Date("2026-05-08T09:06:00.000Z"),
       },
+      aiAnalysisRuns: [
+        {
+          id: "run-1",
+          summary: "AI summary",
+          severity: TicketSeverity.CRITICAL,
+          category: "Payments",
+          priorityScore: 95,
+          confidenceScore: 88,
+          tags: ["payments", "mobile"],
+          likelyCause: "A stale payment validation state crashes the mobile flow.",
+          suggestedFix:
+            "Reset payment state after validation and guard mobile callbacks.",
+          feedback: "HELPFUL",
+          createdAt: new Date("2026-05-08T09:06:00.000Z"),
+        },
+      ],
       attachments: [
         {
           id: "attachment-1",
@@ -157,7 +173,19 @@ describe("ticket mappers", () => {
         "A stale payment validation state crashes the mobile flow.",
       suggestedFix:
         "Reset payment state after validation and guard mobile callbacks.",
+      aiAnalysisRunId: "run-1",
+      aiFeedback: "HELPFUL",
     });
+    expect(result.aiHistory).toEqual([
+      {
+        id: "run-1",
+        severity: "Critical",
+        confidence: 88,
+        priorityScore: 95,
+        feedback: "HELPFUL",
+        createdAt: "May 8, 2026, 11:06",
+      },
+    ]);
     expect(result.reproductionSteps).toEqual([
       "Open checkout",
       "Validate card",

@@ -50,6 +50,11 @@ enum TicketActivityType {
   UPDATED
 }
 
+enum AiAnalysisFeedback {
+  HELPFUL
+  NOT_HELPFUL
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -77,9 +82,9 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members WorkspaceMember[]
-  invites WorkspaceInvite[]
+  owner    User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  WorkspaceMember[]
+  invites  WorkspaceInvite[]
   projects Project[]
   tickets  Ticket[]
 
@@ -162,15 +167,16 @@ model Ticket {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  reporter    User?              @relation("ReportedTickets", fields: [reporterId], references: [id], onDelete: SetNull)
-  assignee    User?              @relation("AssignedTickets", fields: [assigneeId], references: [id], onDelete: SetNull)
-  aiAnalysis  TicketAiAnalysis?
-  embedding   TicketEmbedding?
-  attachments TicketAttachment[]
-  comments    TicketComment[]
-  activities  TicketActivity[]
+  workspace      Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project        Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter       User?                 @relation("ReportedTickets", fields: [reporterId], references: [id], onDelete: SetNull)
+  assignee       User?                 @relation("AssignedTickets", fields: [assigneeId], references: [id], onDelete: SetNull)
+  aiAnalysis     TicketAiAnalysis?
+  aiAnalysisRuns TicketAiAnalysisRun[]
+  embedding      TicketEmbedding?
+  attachments    TicketAttachment[]
+  comments       TicketComment[]
+  activities     TicketActivity[]
 
   @@index([workspaceId])
   @@index([projectId])
@@ -201,17 +207,39 @@ model TicketAiAnalysis {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }
 
+model TicketAiAnalysisRun {
+  id                String              @id @default(cuid())
+  ticketId          String
+  summary           String              @db.Text
+  severity          TicketSeverity
+  category          String?
+  priorityScore     Int?
+  confidenceScore   Int?
+  tags              Json?
+  likelyCause       String?             @db.Text
+  suggestedFix      String?             @db.Text
+  reproductionSteps Json?
+  rawAiResponse     Json?
+  feedback          AiAnalysisFeedback?
+  createdAt         DateTime            @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@index([feedback])
+}
+
 model TicketEmbedding {
-  id          String                  @id @default(cuid())
-  ticketId    String                  @unique
+  id          String                     @id @default(cuid())
+  ticketId    String                     @unique
   workspaceId String
   projectId   String
   provider    String
   model       String
   contentHash String
   embedding   Unsupported("vector(768)")
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 

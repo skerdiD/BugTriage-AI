@@ -1,4 +1,5 @@
 import {
+  AiAnalysisFeedback,
   AttachmentType,
   TicketActivityType,
   TicketStatus,
@@ -41,6 +42,9 @@ const {
     ticketComment: {
       create: vi.fn(),
     },
+    ticketAiAnalysisRun: {
+      create: vi.fn(),
+    },
   };
 
   return {
@@ -57,6 +61,10 @@ const {
       ticket: {
         create: vi.fn(),
         findFirst: vi.fn(),
+      },
+      ticketAiAnalysisRun: {
+        findFirst: vi.fn(),
+        update: vi.fn(),
       },
       $transaction: vi.fn(),
     },
@@ -95,6 +103,8 @@ import {
   addTicketComment,
   createTicket,
   getTicketByCode,
+  regenerateTicketAiAnalysis,
+  setTicketAiAnalysisFeedback,
   updateTicketStatus,
 } from "@/lib/data/tickets";
 
@@ -212,6 +222,13 @@ describe("ticket data layer", () => {
               confidenceScore: 92,
             }),
           },
+          aiAnalysisRuns: {
+            create: expect.objectContaining({
+              summary: "AI summary",
+              confidenceScore: 92,
+              severity: "MEDIUM",
+            }),
+          },
           attachments: {
             create: [
               expect.objectContaining({
@@ -233,6 +250,84 @@ describe("ticket data layer", () => {
         }),
       })
     );
+  });
+
+  it("persists regenerated AI analysis, history, and activity together", async () => {
+    txMock.ticket.update.mockResolvedValue({
+      id: "ticket-1",
+      code: "BUG-4242",
+    });
+
+    await regenerateTicketAiAnalysis({
+      workspaceId: "workspace-1",
+      ticketCode: "BUG-4242",
+      output: {
+        improvedTitle: "Checkout fails after payment validation",
+        summary: "Checkout cannot complete after valid payment details.",
+        severity: "CRITICAL",
+        category: "Payments",
+        reproductionSteps: ["Open checkout", "Enter payment details"],
+        likelyCause: "Payment validation state remains stale.",
+        suggestedFix: "Reset payment validation state before submit.",
+        priorityScore: 96,
+        confidenceScore: 94,
+        tags: ["payments", "checkout"],
+        developerTask: "Investigate stale payment validation state.",
+      },
+    });
+
+    expect(txMock.ticket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          severity: "CRITICAL",
+          aiAnalysis: {
+            upsert: expect.any(Object),
+          },
+          aiAnalysisRuns: {
+            create: expect.objectContaining({
+              summary: "Checkout cannot complete after valid payment details.",
+              confidenceScore: 94,
+            }),
+          },
+        }),
+      })
+    );
+    expect(txMock.ticketActivity.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: TicketActivityType.AI_ANALYZED,
+          title: "AI analysis regenerated",
+        }),
+      })
+    );
+  });
+
+  it("saves feedback only for an analysis run belonging to the ticket", async () => {
+    prismaMock.ticketAiAnalysisRun.findFirst.mockResolvedValue({
+      id: "run-1",
+    });
+    prismaMock.ticketAiAnalysisRun.update.mockResolvedValue({
+      id: "run-1",
+      feedback: AiAnalysisFeedback.HELPFUL,
+    });
+
+    const result = await setTicketAiAnalysisFeedback({
+      workspaceId: "workspace-1",
+      ticketCode: "BUG-4242",
+      analysisRunId: "run-1",
+      feedback: AiAnalysisFeedback.HELPFUL,
+    });
+
+    expect(prismaMock.ticketAiAnalysisRun.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: "run-1",
+        ticketId: "ticket-1",
+      },
+      select: {
+        id: true,
+      },
+    });
+    expect(result.feedback).toBe(AiAnalysisFeedback.HELPFUL);
   });
 
   it("rejects reporter spoofing before creating a ticket", async () => {

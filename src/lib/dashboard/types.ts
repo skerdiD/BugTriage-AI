@@ -92,6 +92,17 @@ export type UiSimilarIssue = {
   matchPercent: number;
 };
 
+export type UiAiAnalysisFeedback = "HELPFUL" | "NOT_HELPFUL";
+
+export type UiAiAnalysisRun = {
+  id: string;
+  severity: UiTicketSeverity;
+  confidence: number;
+  priorityScore: number | null;
+  feedback: UiAiAnalysisFeedback | null;
+  createdAt: string;
+};
+
 export type UiTicket = {
   id: string;
   title: string;
@@ -110,6 +121,9 @@ export type UiTicket = {
   suggestedFix: string;
   priorityScore: number;
   tags: string[];
+  aiAnalysisRunId: string | null;
+  aiFeedback: UiAiAnalysisFeedback | null;
+  aiHistory: UiAiAnalysisRun[];
   attachments: UiTicketAttachment[];
   browser: string;
   device: string;

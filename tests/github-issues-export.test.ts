@@ -67,6 +67,7 @@ function createTicket(overrides: Partial<TicketDetail> = {}) {
       createdAt: new Date("2026-05-12T10:00:00Z"),
       updatedAt: new Date("2026-05-12T10:00:00Z"),
     },
+    aiAnalysisRuns: [],
     attachments: [],
     comments: [],
     activities: [],
