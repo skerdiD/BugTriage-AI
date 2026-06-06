@@ -8,6 +8,7 @@ import {
   AuthenticationError,
   getCurrentWorkspaceContextOrThrow,
 } from "@/lib/auth/session";
+import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import {
   analyzeBugReportWithGemini,
   AI_TRIAGE_MAX_LOG_BYTES_PER_FILE,
@@ -201,6 +202,9 @@ export async function analyzeAndCreateTicketAction(
 
   try {
     const workspaceContext = await getCurrentWorkspaceContextOrThrow();
+    if (isDemoUser(workspaceContext.user)) {
+      return { ok: false, error: DEMO_READ_ONLY_MESSAGE };
+    }
     if (!workspaceContext.project) {
       recordBugSubmissionMetric("validation_error", {
         reason: "missing_project",

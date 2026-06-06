@@ -8,6 +8,20 @@ It turns messy bug reports, screenshots, logs, and user complaints into structur
 
 ---
 
+## Demo Account
+
+Use the **Continue as Demo User** button on the sign-in page, or sign in with:
+
+```txt
+Email: demo@bugtriage.ai
+Password: Demo1234!
+```
+
+The shared demo account is read-only. Its workspace, teammates, tickets, activity,
+and AI triage results are fake and may be reset at any time.
+
+---
+
 ## Preview
 
 Explore the deployed app: [bug-triage-ai.vercel.app](https://bug-triage-ai.vercel.app/)
@@ -234,8 +248,11 @@ SENTRY_AUTH_TOKEN=
 ```bash
 npx prisma migrate dev
 npx prisma generate
-npx prisma db seed
+npm run seed:demo
 ```
+
+This idempotent command uses `SUPABASE_SERVICE_ROLE_KEY` to create or reset the
+Supabase Auth demo user, then refreshes only the managed demo workspace data.
 
 ### 5. Start the development server
 
@@ -261,6 +278,7 @@ npm run lint              # Run ESLint
 npm run typecheck         # Run TypeScript checks
 npm run test              # Run Vitest tests
 npm run test:e2e          # Run Playwright tests
+npm run seed:demo         # Create or reset the shared demo account and fake data
 npx prisma migrate dev    # Run local migrations
 npx prisma migrate deploy # Apply production migrations
 npx prisma studio         # Open Prisma Studio

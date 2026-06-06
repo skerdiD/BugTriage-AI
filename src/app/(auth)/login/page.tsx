@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { getSafeAuthClientErrorMessage } from "@/lib/security/public-errors";
 import { getSafeRedirectPath } from "@/lib/security/urls";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "@/lib/demo";
 
 function LoginContent() {
   const router = useRouter();
@@ -71,6 +72,43 @@ function LoginContent() {
         tags: {
           area: "auth",
           action: "login",
+        },
+      });
+      setErrorMessage(getSafeAuthClientErrorMessage(error, "login"));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleDemoLogin() {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: DEMO_USER_EMAIL,
+        password: DEMO_USER_PASSWORD,
+      });
+
+      if (error) {
+        Sentry.captureException(error, {
+          tags: {
+            area: "auth",
+            action: "demo-login",
+          },
+        });
+        setErrorMessage(getSafeAuthClientErrorMessage(error, "login"));
+        return;
+      }
+
+      router.push(redirectedFrom);
+      router.refresh();
+    } catch (error) {
+      Sentry.captureException(error, {
+        tags: {
+          area: "auth",
+          action: "demo-login",
         },
       });
       setErrorMessage(getSafeAuthClientErrorMessage(error, "login"));
@@ -204,6 +242,22 @@ function LoginContent() {
                       <ArrowRight className="ml-2 size-4" />
                     </>
                   )}
+                </Button>
+
+                <div className="flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  <span className="h-px flex-1 bg-white/10" />
+                  Demo access
+                  <span className="h-px flex-1 bg-white/10" />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isLoading}
+                  onClick={handleDemoLogin}
+                  className="h-12 w-full rounded-xl border-violet-400/25 bg-violet-500/10 font-semibold text-violet-100 hover:bg-violet-500/20 hover:text-white"
+                >
+                  Continue as Demo User
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">

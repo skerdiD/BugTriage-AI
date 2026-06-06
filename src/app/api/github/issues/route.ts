@@ -3,6 +3,7 @@ import {
   AuthenticationError,
   getCurrentWorkspaceContextOrThrow,
 } from "@/lib/auth/session";
+import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import { getTicketByCode } from "@/lib/data/tickets";
 import {
   exportTicketToGitHubIssue,
@@ -110,6 +111,13 @@ export async function POST(request: Request) {
     return Response.json(
       { ok: false, error: "We couldn't export this ticket right now." },
       { status: 500 }
+    );
+  }
+
+  if (isDemoUser(context.user)) {
+    return Response.json(
+      { ok: false, error: DEMO_READ_ONLY_MESSAGE },
+      { status: 403 }
     );
   }
 

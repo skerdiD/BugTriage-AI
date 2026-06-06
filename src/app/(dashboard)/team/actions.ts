@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { AuthorizationError } from "@/lib/auth/authorization";
 import { getCurrentUserOrThrow } from "@/lib/auth/session";
+import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import {
   createWorkspaceInvite,
   revokeWorkspaceInvite,
@@ -51,6 +52,9 @@ export async function createWorkspaceInviteAction(input: {
 }) {
   try {
     const user = await getCurrentUserOrThrow();
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
     const parsed = inviteInputSchema.safeParse(input);
 
     if (!parsed.success) {
@@ -112,6 +116,9 @@ export async function revokeWorkspaceInviteAction(input: {
 }) {
   try {
     const user = await getCurrentUserOrThrow();
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
     const parsed = revokeInviteInputSchema.safeParse(input);
 
     if (!parsed.success) {
@@ -169,6 +176,9 @@ export async function updateWorkspaceMemberRoleAction(input: {
 }) {
   try {
     const user = await getCurrentUserOrThrow();
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
     const parsed = updateMemberRoleInputSchema.safeParse(input);
 
     if (!parsed.success) {
@@ -228,6 +238,9 @@ export async function removeWorkspaceMemberAction(input: {
 }) {
   try {
     const user = await getCurrentUserOrThrow();
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
     const parsed = removeMemberInputSchema.safeParse(input);
 
     if (!parsed.success) {

@@ -9,6 +9,7 @@ import {
   AuthorizationError,
 } from "@/lib/auth/authorization";
 import { getCurrentUserOrThrow } from "@/lib/auth/session";
+import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import {
   createWorkspace,
   createWorkspaceProject,
@@ -95,6 +96,9 @@ export async function setCurrentProjectAction(projectId: string) {
 export async function createWorkspaceAction(input: { name: string }) {
   try {
     const user = await getCurrentUserOrThrow();
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
     const parsed = createWorkspaceInputSchema.safeParse(input);
 
     if (!parsed.success) {
@@ -158,6 +162,9 @@ export async function createProjectAction(input: {
 }) {
   try {
     const user = await getCurrentUserOrThrow();
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
     const parsed = createProjectInputSchema.safeParse(input);
 
     if (!parsed.success) {

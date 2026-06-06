@@ -9,6 +9,9 @@ import {
   WorkspaceRole,
 } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { createClient } from "@supabase/supabase-js";
+
+import { DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "../src/lib/demo";
 
 const databaseUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 
@@ -20,14 +23,33 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg(databaseUrl),
 });
 
-export const DEFAULT_DEMO_USER_EMAIL = "mirejemi896@gmail.com";
+export const DEFAULT_DEMO_USER_EMAIL = DEMO_USER_EMAIL;
 export const DEMO_TICKET_CODE_PREFIX = "DEMO-";
-export const DEMO_WORKSPACE_SLUG = "portfolio-demo-mirejemi";
+export const DEMO_WORKSPACE_SLUG = "bugtriage-ai-demo";
+export const LEGACY_DEMO_WORKSPACE_SLUG = "portfolio-demo-mirejemi";
 export const DEMO_WORKSPACE_NAME = "BugTriage AI Portfolio Demo";
 export const DEMO_PROJECT_SLUG = "saas-demo-workspace";
 export const DEMO_PROJECT_NAME = "SaaS Demo Workspace";
 export const DEMO_PROJECT_DESCRIPTION =
   "Demo-only project seeded for portfolio screenshots, walkthroughs, and realistic dashboard footage.";
+
+const DEMO_TEAM_MEMBERS = [
+  {
+    email: "maya.chen@demo.bugtriage.ai",
+    name: "Maya Chen",
+    role: WorkspaceRole.ADMIN,
+  },
+  {
+    email: "jon.bell@demo.bugtriage.ai",
+    name: "Jon Bell",
+    role: WorkspaceRole.MEMBER,
+  },
+  {
+    email: "priya.shah@demo.bugtriage.ai",
+    name: "Priya Shah",
+    role: WorkspaceRole.MEMBER,
+  },
+] as const;
 
 type DemoCommentSeed = {
   body: string;
@@ -78,14 +100,6 @@ function daysAgo(days: number, hour = 10, minute = 0) {
 
 function hoursAfter(date: Date, hours: number) {
   return new Date(date.getTime() + hours * 60 * 60 * 1000);
-}
-
-export function resolveDemoSeedUserEmail(env?: { SEED_DEMO_USER_EMAIL?: string }) {
-  const source = env ?? process.env;
-
-  return (
-    source.SEED_DEMO_USER_EMAIL?.trim() || DEFAULT_DEMO_USER_EMAIL
-  ).toLowerCase();
 }
 
 export function getObsoleteDemoTicketCodes(
@@ -738,6 +752,159 @@ async function ensureDemoProject(workspaceId: string) {
   });
 }
 
+async function ensureDemoAuthUser() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required to create the demo login."
+    );
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+
+  let authUser = null;
+  let page = 1;
+
+  while (!authUser) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    authUser = data.users.find(
+      (user) => user.email?.toLowerCase() === DEMO_USER_EMAIL
+    );
+
+    if (authUser || data.users.length < 1000) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  if (!authUser) {
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: DEMO_USER_EMAIL,
+      password: DEMO_USER_PASSWORD,
+      email_confirm: true,
+      user_metadata: {
+        name: "Demo User",
+        full_name: "Demo User",
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    authUser = data.user;
+  } else {
+    const { data, error } = await supabase.auth.admin.updateUserById(authUser.id, {
+      password: DEMO_USER_PASSWORD,
+      email_confirm: true,
+      user_metadata: {
+        ...authUser.user_metadata,
+        name: "Demo User",
+        full_name: "Demo User",
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    authUser = data.user;
+  }
+
+  const existingDatabaseUser = await prisma.user.findUnique({
+    where: {
+      email: DEMO_USER_EMAIL,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (existingDatabaseUser && existingDatabaseUser.id !== authUser.id) {
+    throw new Error(
+      `The Prisma demo user ID does not match the Supabase Auth user ID. Remove only the stale "${DEMO_USER_EMAIL}" demo records before seeding again.`
+    );
+  }
+
+  return prisma.user.upsert({
+    where: {
+      email: DEMO_USER_EMAIL,
+    },
+    update: {
+      name: "Demo User",
+    },
+    create: {
+      id: authUser.id,
+      email: DEMO_USER_EMAIL,
+      name: "Demo User",
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+    },
+  });
+}
+
+async function ensureDemoTeamMembers(workspaceId: string) {
+  const members = [];
+
+  for (const member of DEMO_TEAM_MEMBERS) {
+    const user = await prisma.user.upsert({
+      where: {
+        email: member.email,
+      },
+      update: {
+        name: member.name,
+      },
+      create: {
+        email: member.email,
+        name: member.name,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await prisma.workspaceMember.upsert({
+      where: {
+        userId_workspaceId: {
+          userId: user.id,
+          workspaceId,
+        },
+      },
+      update: {
+        role: member.role,
+      },
+      create: {
+        userId: user.id,
+        workspaceId,
+        role: member.role,
+      },
+    });
+
+    members.push(user);
+  }
+
+  return members;
+}
+
 async function removeObsoleteDemoTickets(projectId: string, demoTicketCodes: string[]) {
   const existingDemoTickets = await prisma.ticket.findMany({
     where: {
@@ -765,6 +932,19 @@ async function removeObsoleteDemoTickets(projectId: string, demoTicketCodes: str
       projectId,
       code: {
         in: obsoleteCodes,
+      },
+    },
+  });
+}
+
+async function removeLegacyDemoTickets(demoTicketCodes: string[]) {
+  await prisma.ticket.deleteMany({
+    where: {
+      code: {
+        in: demoTicketCodes,
+      },
+      workspace: {
+        slug: LEGACY_DEMO_WORKSPACE_SLUG,
       },
     },
   });
@@ -816,11 +996,12 @@ async function ensureDemoTicketCodesAreSafe(input: {
 
 function upsertDemoTicket(input: {
   userId: string;
+  assigneeId: string;
   workspaceId: string;
   projectId: string;
   ticket: DemoTicketSeed;
 }) {
-  const { userId, workspaceId, projectId, ticket } = input;
+  const { userId, assigneeId, workspaceId, projectId, ticket } = input;
 
   return prisma.ticket.upsert({
     where: {
@@ -830,7 +1011,7 @@ function upsertDemoTicket(input: {
       workspaceId,
       projectId,
       reporterId: userId,
-      assigneeId: userId,
+      assigneeId,
       title: ticket.title,
       description: ticket.description,
       expectedBehavior: ticket.expectedBehavior,
@@ -911,7 +1092,7 @@ function upsertDemoTicket(input: {
       workspaceId,
       projectId,
       reporterId: userId,
-      assigneeId: userId,
+      assigneeId,
       title: ticket.title,
       description: ticket.description,
       expectedBehavior: ticket.expectedBehavior,
@@ -969,28 +1150,15 @@ function upsertDemoTicket(input: {
 }
 
 export async function runDemoSeed() {
-  const demoUserEmail = resolveDemoSeedUserEmail();
-  const demoUser = await prisma.user.findUnique({
-    where: {
-      email: demoUserEmail,
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-    },
-  });
-
-  if (!demoUser) {
-    throw new Error(
-      `Demo seed user "${demoUserEmail}" was not found. Create or sign in with that account first, then run the seed again.`
-    );
-  }
+  const demoUser = await ensureDemoAuthUser();
 
   const workspace = await ensureDemoWorkspace(demoUser);
   const project = await ensureDemoProject(workspace.id);
+  const teamMembers = await ensureDemoTeamMembers(workspace.id);
   const demoTickets = buildDemoTickets();
   const demoTicketCodes = demoTickets.map((ticket) => ticket.code);
+
+  await removeLegacyDemoTickets(demoTicketCodes);
 
   await ensureDemoTicketCodesAreSafe({
     workspaceId: workspace.id,
@@ -1001,9 +1169,10 @@ export async function runDemoSeed() {
   await removeObsoleteDemoTickets(project.id, demoTicketCodes);
 
   await prisma.$transaction(
-    demoTickets.map((ticket) =>
+    demoTickets.map((ticket, index) =>
       upsertDemoTicket({
         userId: demoUser.id,
+        assigneeId: teamMembers[index % teamMembers.length]?.id ?? demoUser.id,
         workspaceId: workspace.id,
         projectId: project.id,
         ticket,

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 
 import { getCurrentUserOrThrow } from "@/lib/auth/session";
+import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import { PROJECT_COOKIE_NAME, WORKSPACE_COOKIE_NAME } from "@/lib/data/workspaces";
 import {
   acceptWorkspaceInvite,
@@ -38,6 +39,9 @@ function normalizeNameFromUserMetadata(
 export async function acceptWorkspaceInviteAction(input: { token: string }) {
   try {
     const user = await getCurrentUserOrThrow();
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
     const parsed = acceptInviteInputSchema.safeParse(input);
 
     if (!parsed.success) {

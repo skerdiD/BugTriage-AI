@@ -5,22 +5,12 @@ import {
   DEMO_TICKET_CODE_PREFIX,
   buildDemoTickets,
   getObsoleteDemoTicketCodes,
-  resolveDemoSeedUserEmail,
 } from "../prisma/seed";
+import { DEMO_USER_EMAIL } from "@/lib/demo";
 
 describe("demo seed helpers", () => {
-  it("uses SEED_DEMO_USER_EMAIL when it is configured", () => {
-    const result = resolveDemoSeedUserEmail({
-      SEED_DEMO_USER_EMAIL: "  PortfolioUser@Example.com  ",
-    });
-
-    expect(result).toBe("portfoliouser@example.com");
-  });
-
-  it("falls back to the documented demo seed account when no env override is set", () => {
-    const result = resolveDemoSeedUserEmail({});
-
-    expect(result).toBe(DEFAULT_DEMO_USER_EMAIL);
+  it("uses the documented shared demo account", () => {
+    expect(DEFAULT_DEMO_USER_EMAIL).toBe(DEMO_USER_EMAIL);
   });
 
   it("builds a stable set of managed demo tickets without duplicate codes", () => {

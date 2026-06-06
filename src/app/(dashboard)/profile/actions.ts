@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getCurrentUserOrThrow } from "@/lib/auth/session";
+import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import { captureServerException } from "@/lib/observability/server-monitoring";
 import { prisma } from "@/lib/prisma";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -32,6 +33,9 @@ export async function updateProfileNameAction(formData: FormData) {
 
   try {
     const currentUser = await getCurrentUserOrThrow();
+    if (isDemoUser(currentUser)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.auth.updateUser({
       data: {

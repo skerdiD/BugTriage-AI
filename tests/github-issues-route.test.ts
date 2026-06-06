@@ -152,6 +152,31 @@ describe("POST /api/github/issues", () => {
     expect(getTicketByCodeMock).not.toHaveBeenCalled();
   });
 
+  it("blocks real GitHub exports for the shared demo account", async () => {
+    getCurrentWorkspaceContextOrThrowMock.mockResolvedValue({
+      user: {
+        id: "demo-user",
+        email: "demo@bugtriage.ai",
+      },
+      workspace: {
+        id: "workspace-1",
+      },
+    });
+
+    const response = await POST(
+      createRequest({
+        ticketCode: "DEMO-1001",
+        owner: "skerdiD",
+        repo: "BugTriage-AI",
+        token: "ghp_secret_token",
+      })
+    );
+
+    expect(response.status).toBe(403);
+    expect(protectMock).not.toHaveBeenCalled();
+    expect(exportTicketToGitHubIssueMock).not.toHaveBeenCalled();
+  });
+
   it("rate limits GitHub exports before reading the token payload", async () => {
     protectMock.mockResolvedValue(createDeniedDecision());
 

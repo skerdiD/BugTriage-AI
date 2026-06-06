@@ -9,6 +9,7 @@ import {
   getCurrentUserOrThrow,
   getCurrentWorkspaceContextOrThrow,
 } from "@/lib/auth/session";
+import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import {
   addTicketComment,
   MAX_TICKET_COMMENT_LENGTH,
@@ -61,6 +62,9 @@ export async function addTicketCommentAction(input: {
       getCurrentUserOrThrow(),
       getCurrentWorkspaceContextOrThrow(),
     ]);
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
 
     await addTicketComment({
       workspaceId: context.workspace.id,
@@ -128,6 +132,9 @@ export async function updateTicketStatusAction(input: {
       getCurrentUserOrThrow(),
       getCurrentWorkspaceContextOrThrow(),
     ]);
+    if (isDemoUser(user)) {
+      return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
+    }
 
     await updateTicketStatus(
       parsed.data.ticketCode,
