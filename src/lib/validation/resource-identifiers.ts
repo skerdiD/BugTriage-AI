@@ -15,4 +15,4 @@ export const ticketCodeSchema = z
   .trim()
   .min(1)
   .max(MAX_TICKET_CODE_LENGTH)
-  .regex(/^BUG-\d{4,12}$/, "Invalid ticket code.");
+  .regex(/^(?:BUG|DEMO)-\d{4,12}$/, "Invalid ticket code.");

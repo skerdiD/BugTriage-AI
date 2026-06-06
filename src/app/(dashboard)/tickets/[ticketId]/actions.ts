@@ -14,7 +14,11 @@ import {
   getCurrentUserOrThrow,
   getCurrentWorkspaceContextOrThrow,
 } from "@/lib/auth/session";
-import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
+import {
+  DEMO_READ_ONLY_MESSAGE,
+  isDemoTicketCode,
+  isDemoUser,
+} from "@/lib/demo";
 import {
   addTicketComment,
   getTicketByCode,
@@ -216,7 +220,7 @@ export async function regenerateTicketAiAnalysisAction(input: {
       getCurrentWorkspaceContextOrThrow(),
     ]);
 
-    if (isDemoUser(user)) {
+    if (isDemoUser(user) || isDemoTicketCode(parsed.data.ticketCode)) {
       return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
     }
 
