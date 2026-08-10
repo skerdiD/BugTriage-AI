@@ -11,6 +11,7 @@ const {
   createSupabaseAdminClientMock,
   createAndStoreTicketEmbeddingMock,
   createTicketMock,
+  dispatchTicketAnalysisMock,
   generateUniqueTicketCodeMock,
   getArcjetDeniedMessageMock,
   getArcjetRequestMock,
@@ -30,6 +31,7 @@ const {
     createAndStoreTicketEmbeddingMock: vi.fn(),
     createSupabaseAdminClientMock: vi.fn(),
     createTicketMock: vi.fn(),
+    dispatchTicketAnalysisMock: vi.fn(),
     generateUniqueTicketCodeMock: vi.fn(),
     getArcjetDeniedMessageMock: vi.fn(),
     getArcjetRequestMock: vi.fn(),
@@ -76,6 +78,10 @@ vi.mock("@/lib/data/tickets", () => ({
 
 vi.mock("@/lib/data/similar-issues", () => ({
   createAndStoreTicketEmbedding: createAndStoreTicketEmbeddingMock,
+}));
+
+vi.mock("@/lib/queue/dispatch-ticket-analysis", () => ({
+  dispatchTicketAnalysis: dispatchTicketAnalysisMock,
 }));
 
 vi.mock("@/lib/security/arcjet", () => ({
@@ -204,6 +210,11 @@ describe("analyzeAndCreateTicketAction", () => {
       id: "ticket-1",
       code: "BUG-4242",
     });
+    dispatchTicketAnalysisMock.mockResolvedValue({
+      mode: "synchronous",
+      jobId: "ticket-analysis-ticket-1-test",
+      result: { status: "completed", similarIssueCount: 0 },
+    });
   });
 
   it("returns the first validation error before making external calls", async () => {
@@ -306,8 +317,7 @@ describe("analyzeAndCreateTicketAction", () => {
     expect(uploadLogFileMock).not.toHaveBeenCalled();
   });
 
-  it("creates a ticket with AI-enriched fields when analysis succeeds", async () => {
-    analyzeBugReportWithGeminiMock.mockResolvedValue(validAiResponse);
+  it("creates the ticket before dispatching its AI processing operation", async () => {
 
     const formData = buildValidFormData();
     formData.append(
@@ -327,24 +337,15 @@ describe("analyzeAndCreateTicketAction", () => {
       aiFailed: false,
     });
     expect(result).not.toHaveProperty("uploadedFiles");
-    expect(analyzeBugReportWithGeminiMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        attachmentNames: ["checkout.png", "console.log"],
-        logText: expect.stringContaining("File: console.log"),
-      })
-    );
     expect(createTicketMock).toHaveBeenCalledWith(
       expect.objectContaining({
         code: "BUG-4242",
-        title: validAiResponse.improvedTitle,
-        severity: TicketSeverity.CRITICAL,
+        title: defaultBugReportValues.title,
+        severity: TicketSeverity.MEDIUM,
         status: TicketStatus.NEW,
-        category: "Payment",
-        priorityScore: 96,
-        aiConfidence: 94,
-        aiAnalysis: expect.objectContaining({
-          summary: validAiResponse.summary,
-          confidenceScore: 94,
+        category: "Pending AI triage",
+        aiInputContext: expect.objectContaining({
+          uploadedLogText: expect.stringContaining("File: console.log"),
         }),
         attachments: [
           expect.objectContaining({
@@ -358,20 +359,15 @@ describe("analyzeAndCreateTicketAction", () => {
         ],
       })
     );
-    expect(createAndStoreTicketEmbeddingMock).toHaveBeenCalledWith({
+    expect(dispatchTicketAnalysisMock).toHaveBeenCalledWith({
       ticketId: "ticket-1",
-      workspaceId: "workspace-1",
-      projectId: "project-1",
-      source: expect.objectContaining({
-        title: validAiResponse.improvedTitle,
-        description: defaultBugReportValues.description,
-        aiSummary: validAiResponse.summary,
-      }),
+      requestedById: "user-1",
     });
+    expect(analyzeBugReportWithGeminiMock).not.toHaveBeenCalled();
   });
 
   it("falls back to a manual ticket when AI analysis fails", async () => {
-    analyzeBugReportWithGeminiMock.mockRejectedValue(
+    dispatchTicketAnalysisMock.mockRejectedValue(
       new Error("GOOGLE_GENERATIVE_AI_API_KEY is missing")
     );
 
@@ -392,17 +388,17 @@ describe("analyzeAndCreateTicketAction", () => {
       expect.objectContaining({
         title: defaultBugReportValues.title,
         severity: TicketSeverity.MEDIUM,
-        category: "Manual Review",
-        aiAnalysis: undefined,
+        category: "Pending AI triage",
       })
     );
   });
 
-  it("still returns success when ticket embedding generation fails", async () => {
-    analyzeBugReportWithGeminiMock.mockResolvedValue(validAiResponse);
-    createAndStoreTicketEmbeddingMock.mockRejectedValue(
-      new Error("embedding service unavailable")
-    );
+  it("returns immediately when Redis mode queues the analysis", async () => {
+    dispatchTicketAnalysisMock.mockResolvedValue({
+      mode: "queued",
+      jobId: "ticket-analysis-ticket-1-test",
+      queueName: "bug-analysis",
+    });
 
     const result = await analyzeAndCreateTicketAction(buildValidFormData());
 
@@ -412,17 +408,12 @@ describe("analyzeAndCreateTicketAction", () => {
       aiFailed: false,
     });
     expect(createTicketMock).toHaveBeenCalled();
-    expect(createAndStoreTicketEmbeddingMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ticketId: "ticket-1",
-        workspaceId: "workspace-1",
-        projectId: "project-1",
-      })
-    );
+    expect(dispatchTicketAnalysisMock).toHaveBeenCalledOnce();
+    expect(createAndStoreTicketEmbeddingMock).not.toHaveBeenCalled();
   });
 
   it("uses a timeout-specific fallback message for slow AI calls", async () => {
-    analyzeBugReportWithGeminiMock.mockRejectedValue(
+    dispatchTicketAnalysisMock.mockRejectedValue(
       new Error("Request timed out after 12000ms")
     );
 

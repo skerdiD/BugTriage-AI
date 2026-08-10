@@ -198,6 +198,7 @@ Server and Data Layer
   |-- Tickets / Comments / Activity / Supabase Postgres
 
 AI and Search Layer
+  |-- BullMQ Producer / Redis / Standalone Node Worker
   |-- Gemini AI / Structured Output
   |-- Gemini Embeddings / pgvector / Similar Issues
 
@@ -207,6 +208,58 @@ Integration and Security Layer
 ```
 
 Bug reports stay workspace-scoped, attachments stay private, AI logic runs server-side, and semantic search connects new reports with related historical issues.
+
+---
+
+## Background Processing — Redis + BullMQ
+
+Ticket creation writes the authorized, workspace-scoped report to PostgreSQL before
+dispatching expensive AI work. When `REDIS_URL` is configured, the Next.js server
+adds a minimal `{ ticketId }` job to the single `bug-analysis` queue and returns
+without waiting for Gemini. A standalone Node.js worker reloads authoritative ticket
+data, performs structured triage, upserts the pgvector embedding, runs the existing
+workspace-scoped similarity search, and persists the processing state.
+
+Jobs receive three attempts with exponential backoff starting at two seconds. The
+worker defaults to three concurrent jobs (`BULLMQ_WORKER_CONCURRENCY`) to control
+pressure on Gemini and PostgreSQL. Each intentional analysis has a stable operation
+ID; automatic retries reuse its unique history row and the embedding upsert, while a
+manual re-analysis creates a new operation and preserves history. Permanent failure
+marks the ticket `FAILED` without deleting the original report. Sentry and structured
+worker logs contain identifiers, attempts, status, and duration, never report content
+or credentials.
+
+For free local Redis development:
+
+```bash
+docker compose up -d redis
+```
+
+Set `REDIS_URL=redis://localhost:6379` in `.env`, then run the web app and worker in
+separate terminals:
+
+```bash
+npm run dev
+npm run worker:dev
+```
+
+If `REDIS_URL` is absent, or publishing to Redis fails, the request uses the same
+processing service synchronously. This transition mode avoids losing analysis work
+and keeps the existing deployment functional before hosted Redis is provisioned.
+
+Production has three separate runtime responsibilities:
+
+```txt
+Vercel Next.js Web/API -> hosted Redis/BullMQ -> long-running Node.js worker
+          |                                             |
+          +---------------- PostgreSQL + pgvector ------+
+                                      |
+                                   Gemini
+```
+
+Do not run the persistent BullMQ consumer inside a Vercel serverless request. Deploy
+`npm run worker` to a worker-capable Node host with the same database, Gemini, Sentry,
+and Redis server environment variables used by the web backend.
 
 ---
 
@@ -274,6 +327,8 @@ http://localhost:3000
 npm run dev               # Start development server
 npm run build             # Create production build
 npm run start             # Start production server
+npm run worker            # Start the production BullMQ worker
+npm run worker:dev        # Start the worker with file watching
 npm run lint              # Run ESLint
 npm run typecheck         # Run TypeScript checks
 npm run test              # Run Vitest tests

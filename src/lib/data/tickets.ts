@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   AiAnalysisFeedback,
+  AiProcessingStatus,
   AttachmentType,
   GitHubExportStatus,
   Prisma,
@@ -167,6 +168,7 @@ export type CreateTicketInput = {
   category?: string;
   priorityScore?: number | null;
   aiConfidence?: number | null;
+  aiInputContext?: Prisma.InputJsonValue;
   aiAnalysis?: {
     summary: string;
     likelyCause?: string;
@@ -474,6 +476,11 @@ export async function createTicket(input: CreateTicketInput) {
             category: input.category,
             priorityScore: input.priorityScore,
             aiConfidence: input.aiConfidence,
+            aiProcessingStatus: input.aiAnalysis
+              ? AiProcessingStatus.COMPLETED
+              : AiProcessingStatus.PENDING,
+            aiProcessingCompletedAt: input.aiAnalysis ? new Date() : null,
+            aiInputContext: input.aiInputContext,
             aiAnalysis: input.aiAnalysis
               ? {
                   create: {
@@ -522,7 +529,7 @@ export async function createTicket(input: CreateTicketInput) {
                 title: "Bug submitted",
                 description: input.aiAnalysis
                   ? "Ticket created after AI triage completed."
-                  : "Ticket created from manual report because AI analysis was unavailable.",
+                  : "Ticket created successfully. AI analysis is pending.",
                 metadata: {
                   code: input.code,
                   aiAnalyzed: Boolean(input.aiAnalysis),

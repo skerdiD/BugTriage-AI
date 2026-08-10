@@ -303,7 +303,8 @@ export function getPublicAiTriageFailureMessage(error: unknown) {
 }
 
 export async function analyzeBugReportWithGemini(
-  input: AnalyzeBugReportInput
+  input: AnalyzeBugReportInput,
+  options: { maxRetries?: number } = {}
 ): Promise<BugTriageAiOutput> {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     throw new AiTriageError(
@@ -361,7 +362,7 @@ export async function analyzeBugReportWithGemini(
           prompt: builtPrompt.prompt,
           temperature: 0.2,
           maxOutputTokens: AI_TRIAGE_MAX_OUTPUT_TOKENS,
-          maxRetries: AI_TRIAGE_MAX_RETRIES,
+          maxRetries: options.maxRetries ?? AI_TRIAGE_MAX_RETRIES,
           timeout: { totalMs: AI_TRIAGE_TIMEOUT_MS },
         })
     );

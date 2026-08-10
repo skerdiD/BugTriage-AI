@@ -94,6 +94,12 @@ export type UiSimilarIssue = {
 
 export type UiAiAnalysisFeedback = "HELPFUL" | "NOT_HELPFUL";
 
+export type UiAiProcessingStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED";
+
 export type UiAiAnalysisRun = {
   id: string;
   severity: UiTicketSeverity;
@@ -128,6 +134,7 @@ export type UiTicket = {
   priorityScore: number;
   tags: string[];
   aiAnalysisRunId: string | null;
+  aiProcessingStatus: UiAiProcessingStatus;
   aiFeedback: UiAiAnalysisFeedback | null;
   aiHistory: UiAiAnalysisRun[];
   githubExportStatus: UiGitHubExportStatus;

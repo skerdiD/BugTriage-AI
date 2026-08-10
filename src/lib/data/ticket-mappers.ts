@@ -143,6 +143,7 @@ export function mapTicketDetailToUiTicket(
     priorityScore: ticket.priorityScore ?? 50,
     tags: tags.length > 0 ? tags : ["manual-review"],
     aiAnalysisRunId: latestAiRun?.id ?? null,
+    aiProcessingStatus: ticket.aiProcessingStatus,
     aiFeedback: latestAiRun?.feedback ?? null,
     aiHistory,
     githubExportStatus: ticket.githubExportStatus,

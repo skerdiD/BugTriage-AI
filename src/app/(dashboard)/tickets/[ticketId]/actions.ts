@@ -5,10 +5,7 @@ import { revalidatePath } from "next/cache";
 import { AiAnalysisFeedback, TicketStatus } from "@prisma/client";
 import { z } from "zod";
 
-import {
-  analyzeBugReportWithGemini,
-  getPublicAiTriageFailureMessage,
-} from "@/lib/ai/bug-triage";
+import { getPublicAiTriageFailureMessage } from "@/lib/ai/bug-triage";
 import { AuthorizationError } from "@/lib/auth/authorization";
 import {
   getCurrentUserOrThrow,
@@ -23,18 +20,16 @@ import {
   addTicketComment,
   getTicketByCode,
   MAX_TICKET_COMMENT_LENGTH,
-  regenerateTicketAiAnalysis,
   setTicketAiAnalysisFeedback,
   updateTicketStatus,
 } from "@/lib/data/tickets";
-import { createAndStoreTicketEmbedding } from "@/lib/data/similar-issues";
 import { captureServerException } from "@/lib/observability/server-monitoring";
+import { dispatchTicketAnalysis } from "@/lib/queue/dispatch-ticket-analysis";
 import {
   bugSubmissionProtection,
   getArcjetDeniedMessage,
   logArcjetError,
 } from "@/lib/security/arcjet";
-import { bugReportFormSchema } from "@/lib/validation/bug-report";
 import {
   resourceIdSchema,
   ticketCodeSchema,
@@ -250,74 +245,19 @@ export async function regenerateTicketAiAnalysisAction(input: {
       return { ok: false as const, error: "Ticket was not found." };
     }
 
-    const report = bugReportFormSchema.safeParse({
-      title: ticket.title,
-      description: ticket.description,
-      stepsToReproduce: ticket.stepsToReproduce ?? "",
-      expectedBehavior: ticket.expectedBehavior ?? "",
-      actualBehavior: ticket.actualBehavior ?? "",
-      browser: ticket.browser ?? "",
-      device: ticket.device ?? "",
-      environment: ticket.environment ?? "",
-      affectedPage: ticket.affectedPage ?? "",
-      consoleLogs: "",
+    const dispatch = await dispatchTicketAnalysis({
+      ticketId: ticket.id,
+      requestedById: user.id,
     });
-
-    if (!report.success) {
-      return {
-        ok: false as const,
-        error:
-          "This ticket does not contain enough valid report detail to regenerate AI analysis.",
-      };
-    }
-
-    const output = await analyzeBugReportWithGemini({
-      report: report.data,
-      attachmentNames: ticket.attachments.map((attachment) => attachment.filename),
-    });
-
-    await regenerateTicketAiAnalysis({
-      workspaceId: context.workspace.id,
-      ticketCode: ticket.code,
-      actorId: user.id,
-      output,
-    });
-
-    try {
-      await createAndStoreTicketEmbedding({
-        ticketId: ticket.id,
-        workspaceId: ticket.workspaceId,
-        projectId: ticket.projectId,
-        source: {
-          title: output.improvedTitle,
-          description: ticket.description,
-          expectedBehavior: ticket.expectedBehavior,
-          actualBehavior: ticket.actualBehavior,
-          stepsToReproduce: ticket.stepsToReproduce,
-          browser: ticket.browser,
-          device: ticket.device,
-          environment: ticket.environment,
-          affectedPage: ticket.affectedPage,
-          aiSummary: output.summary,
-        },
-      });
-    } catch (error) {
-      captureServerException(error, {
-        area: "ai-triage",
-        action: "regenerate-ticket-embedding",
-        message: "[ticket-actions] regenerated analysis embedding failed",
-        context: {
-          ticketCode: ticket.code,
-          workspaceId: ticket.workspaceId,
-        },
-      });
-    }
 
     revalidateTicketViews(ticket.code);
 
     return {
       ok: true as const,
-      message: "AI analysis regenerated and the previous run was preserved.",
+      message:
+        dispatch.mode === "queued"
+          ? "AI analysis was queued and will update shortly."
+          : "AI analysis regenerated and the previous run was preserved.",
     };
   } catch (error) {
     if (error instanceof AuthorizationError) {

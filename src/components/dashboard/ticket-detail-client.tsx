@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -103,6 +103,25 @@ export function TicketDetailClient({
   const [isCommentPending, startCommentTransition] = useTransition();
   const [isAiPending, startAiTransition] = useTransition();
   const [isFeedbackPending, startFeedbackTransition] = useTransition();
+  const isAnalysisProcessing =
+    ticket.aiProcessingStatus === "PENDING" ||
+    ticket.aiProcessingStatus === "PROCESSING";
+
+  useEffect(() => {
+    if (!isAnalysisProcessing) return;
+
+    let pollCount = 0;
+    const interval = window.setInterval(() => {
+      pollCount += 1;
+      router.refresh();
+
+      if (pollCount >= 12) {
+        window.clearInterval(interval);
+      }
+    }, 5_000);
+
+    return () => window.clearInterval(interval);
+  }, [isAnalysisProcessing, router]);
 
   const statusIndex = workflowStatuses.indexOf(status);
 
@@ -330,7 +349,7 @@ export function TicketDetailClient({
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={isAiPending}
+                  disabled={isAiPending || isAnalysisProcessing}
                   onClick={handleRegenerateAiAnalysis}
                   className="rounded-xl border-violet-400/25 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20 hover:text-white"
                 >
@@ -339,12 +358,36 @@ export function TicketDetailClient({
                   ) : (
                     <RefreshCw className="mr-2 size-4" />
                   )}
-                  {isAiPending ? "Regenerating..." : "Regenerate AI"}
+                  {isAiPending || isAnalysisProcessing
+                    ? "Processing..."
+                    : ticket.aiProcessingStatus === "FAILED"
+                      ? "Retry AI Analysis"
+                      : "Regenerate AI"}
                 </Button>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-6">
+              {isAnalysisProcessing ? (
+                <p
+                  role="status"
+                  className="rounded-2xl border border-sky-500/20 bg-sky-500/10 px-4 py-3 text-sm text-sky-100"
+                >
+                  AI analysis is processing in the background. This page will refresh
+                  periodically for up to one minute.
+                </p>
+              ) : null}
+
+              {ticket.aiProcessingStatus === "FAILED" ? (
+                <p
+                  role="alert"
+                  className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+                >
+                  AI processing failed. The original ticket is safe; use Retry AI
+                  Analysis to start a new processing run.
+                </p>
+              ) : null}
+
               {aiError ? (
                 <p
                   role="alert"

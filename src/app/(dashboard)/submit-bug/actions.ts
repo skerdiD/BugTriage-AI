@@ -10,22 +10,23 @@ import {
 } from "@/lib/auth/session";
 import { DEMO_READ_ONLY_MESSAGE, isDemoUser } from "@/lib/demo";
 import {
-  analyzeBugReportWithGemini,
   AI_TRIAGE_MAX_LOG_BYTES_PER_FILE,
-  type BugTriageAiOutput,
   getPublicAiTriageFailureMessage,
 } from "@/lib/ai/bug-triage";
 import {
   createTicket,
   generateUniqueTicketCode,
 } from "@/lib/data/tickets";
-import { createAndStoreTicketEmbedding } from "@/lib/data/similar-issues";
+import { dispatchTicketAnalysis } from "@/lib/queue/dispatch-ticket-analysis";
 import {
   bugSubmissionProtection,
   getArcjetDeniedMessage,
   logArcjetError,
 } from "@/lib/security/arcjet";
-import { getSafeErrorMessage } from "@/lib/security/redaction";
+import {
+  getSafeErrorMessage,
+  redactSensitiveText,
+} from "@/lib/security/redaction";
 import {
   addServerBreadcrumb,
   captureServerException,
@@ -72,19 +73,6 @@ function getFiles(formData: FormData, key: string) {
 
 function getTotalUploadBytes(files: File[]) {
   return files.reduce((sum, file) => sum + file.size, 0);
-}
-
-function mapAiSeverityToDbSeverity(severity?: BugTriageAiOutput["severity"]) {
-  if (!severity) return TicketSeverity.MEDIUM;
-
-  const map: Record<BugTriageAiOutput["severity"], TicketSeverity> = {
-    LOW: TicketSeverity.LOW,
-    MEDIUM: TicketSeverity.MEDIUM,
-    HIGH: TicketSeverity.HIGH,
-    CRITICAL: TicketSeverity.CRITICAL,
-  };
-
-  return map[severity];
 }
 
 function mapAttachmentType(type: UploadedTicketFile["attachmentType"]) {
@@ -384,38 +372,10 @@ export async function analyzeAndCreateTicketAction(
       }
     }
 
-    let aiOutput: BugTriageAiOutput | null = null;
-    let aiErrorMessage = "";
-
-    try {
-      const uploadedLogText = await readLogFiles(logFiles);
-
-      aiOutput = await analyzeBugReportWithGemini({
-        report: parsed.data,
-        logText: uploadedLogText,
-        attachmentNames: uploadedFiles.map((file) => file.fileName),
-      });
-    } catch (error) {
-      aiErrorMessage = getPublicAiTriageFailureMessage(error);
-      addServerBreadcrumb({
-        category: "ai",
-        level: "warning",
-        message: "AI triage fell back to manual ticket creation.",
-        data: {
-          action: "ticket-analysis-fallback",
-          provider: AI_PROVIDER_NAME,
-          ticketCode,
-          workspaceId: workspaceContext.workspace.id,
-          projectId: project.id,
-          screenshotCount: screenshotFiles.length,
-          logFileCount: logFiles.length,
-          hasConsoleLogs: Boolean(parsed.data.consoleLogs),
-        },
-      });
-      if (process.env.NODE_ENV === "development") {
-        console.warn("[submit-bug] AI triage fallback", getSafeErrorMessage(error));
-      }
-    }
+    const uploadedLogText = redactSensitiveText(await readLogFiles(logFiles)).slice(
+      0,
+      20_000
+    );
 
     let createdTicket: Awaited<ReturnType<typeof createTicket>>;
 
@@ -429,7 +389,7 @@ export async function analyzeAndCreateTicketAction(
             projectId: project.id,
             ticketCode,
             attachmentCount: uploadedFiles.length,
-            aiFailed: !aiOutput,
+            aiProcessingStatus: "PENDING",
           },
         },
         () =>
@@ -438,7 +398,7 @@ export async function analyzeAndCreateTicketAction(
             workspaceId: workspaceContext.workspace.id,
             projectId: project.id,
             reporterId: workspaceContext.user.id,
-            title: aiOutput?.improvedTitle ?? parsed.data.title,
+            title: parsed.data.title,
             description: parsed.data.description,
             expectedBehavior: parsed.data.expectedBehavior,
             actualBehavior: parsed.data.actualBehavior,
@@ -447,25 +407,15 @@ export async function analyzeAndCreateTicketAction(
             device: parsed.data.device,
             environment: parsed.data.environment,
             affectedPage: parsed.data.affectedPage,
-            severity: mapAiSeverityToDbSeverity(aiOutput?.severity),
+            severity: TicketSeverity.MEDIUM,
             status: TicketStatus.NEW,
-            category: aiOutput?.category ?? "Manual Review",
-            priorityScore: aiOutput?.priorityScore ?? null,
-            aiConfidence: aiOutput?.confidenceScore ?? null,
-            aiAnalysis: aiOutput
-              ? {
-                  summary: aiOutput.summary,
-                  likelyCause: aiOutput.likelyCause,
-                  suggestedFix: aiOutput.suggestedFix,
-                  reproductionSteps: aiOutput.reproductionSteps,
-                  tags: aiOutput.tags,
-                  confidenceScore: aiOutput.confidenceScore,
-                  rawAiResponse: {
-                    ...aiOutput,
-                    developerTask: aiOutput.developerTask,
-                  },
-                }
-              : undefined,
+            category: "Pending AI triage",
+            priorityScore: null,
+            aiConfidence: null,
+            aiInputContext: {
+              consoleLogs: redactSensitiveText(parsed.data.consoleLogs).slice(0, 8_000),
+              uploadedLogText,
+            },
             attachments: uploadedFiles.map((file) => ({
               filename: file.fileName,
               fileType: file.fileType,
@@ -483,11 +433,14 @@ export async function analyzeAndCreateTicketAction(
       throw error;
     }
 
+    let aiFailed = false;
+    let aiErrorMessage = "";
+
     try {
       await withServerSpan(
         {
-          name: "ticket.embedding.create",
-          op: "ai.embedding",
+          name: "ticket.analysis.dispatch",
+          op: "queue.publish",
           context: {
             workspaceId: workspaceContext.workspace.id,
             projectId: project.id,
@@ -495,31 +448,20 @@ export async function analyzeAndCreateTicketAction(
           },
         },
         () =>
-          createAndStoreTicketEmbedding({
+          dispatchTicketAnalysis({
             ticketId: createdTicket.id,
-            workspaceId: workspaceContext.workspace.id,
-            projectId: project.id,
-            source: {
-              title: aiOutput?.improvedTitle ?? parsed.data.title,
-              description: parsed.data.description,
-              expectedBehavior: parsed.data.expectedBehavior,
-              actualBehavior: parsed.data.actualBehavior,
-              stepsToReproduce: parsed.data.stepsToReproduce,
-              browser: parsed.data.browser,
-              device: parsed.data.device,
-              environment: parsed.data.environment,
-              affectedPage: parsed.data.affectedPage,
-              aiSummary: aiOutput?.summary,
-            },
+            requestedById: workspaceContext.user.id,
           })
       );
     } catch (error) {
+      aiFailed = true;
+      aiErrorMessage = getPublicAiTriageFailureMessage(error);
       addServerBreadcrumb({
         category: "ai",
         level: "warning",
-        message: "Ticket embedding generation failed after ticket creation.",
+        message: "Ticket was preserved after AI processing failed.",
         data: {
-          action: "ticket-embedding-fallback",
+          action: "ticket-analysis-failed",
           provider: AI_PROVIDER_NAME,
           ticketCode,
           workspaceId: workspaceContext.workspace.id,
@@ -528,14 +470,14 @@ export async function analyzeAndCreateTicketAction(
       });
       if (process.env.NODE_ENV === "development") {
         console.warn(
-          "[submit-bug] ticket embedding fallback",
+          "[submit-bug] ticket analysis failed",
           getSafeErrorMessage(error)
         );
       }
     }
 
     recordBugSubmissionMetric("created", {
-      aiFailed: !aiOutput,
+      aiFailed,
       workspaceId: workspaceContext.workspace.id,
       projectId: project.id,
       screenshotCount: screenshotFiles.length,
@@ -545,10 +487,8 @@ export async function analyzeAndCreateTicketAction(
     return {
       ok: true,
       ticketCode,
-      aiFailed: !aiOutput,
-      warning: aiOutput
-        ? undefined
-        : `Ticket was created, but ${aiErrorMessage}`,
+      aiFailed,
+      warning: aiFailed ? `Ticket was created, but ${aiErrorMessage}` : undefined,
     };
   } catch (error) {
     if (error instanceof AuthenticationError) {
