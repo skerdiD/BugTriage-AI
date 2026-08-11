@@ -162,6 +162,17 @@ function recordBugSubmissionMetric(
 export async function analyzeAndCreateTicketAction(
   formData: FormData
 ): Promise<CreateBugTicketActionResult> {
+  if (!(formData instanceof FormData)) {
+    recordBugSubmissionMetric("validation_error", {
+      reason: "invalid_form_data",
+    });
+
+    return {
+      ok: false,
+      error: "Invalid bug report. Please refresh and try again.",
+    };
+  }
+
   const parsed = bugReportFormSchema.safeParse({
     title: getString(formData, "title"),
     description: getString(formData, "description"),

@@ -18,6 +18,13 @@ const profileNameSchema = z.object({
 });
 
 export async function updateProfileNameAction(formData: FormData) {
+  if (!(formData instanceof FormData)) {
+    return {
+      ok: false as const,
+      error: "Invalid profile update. Please refresh and try again.",
+    };
+  }
+
   const parsed = profileNameSchema.safeParse({
     name: formData.get("name"),
   });

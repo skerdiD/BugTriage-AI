@@ -217,6 +217,18 @@ describe("analyzeAndCreateTicketAction", () => {
     });
   });
 
+  it("rejects malformed action payloads before accessing FormData", async () => {
+    const result = await analyzeAndCreateTicketAction(
+      null as unknown as FormData
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Invalid bug report. Please refresh and try again.",
+    });
+    expect(getCurrentWorkspaceContextOrThrowMock).not.toHaveBeenCalled();
+  });
+
   it("returns the first validation error before making external calls", async () => {
     const formData = buildValidFormData();
     formData.set("title", "Bad");

@@ -23,6 +23,14 @@ const contentSecurityPolicy = [
   .join("; ");
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // The upload action accepts up to 20 MiB of files. Leave a small amount of
+    // headroom for multipart fields while keeping a firm per-request ceiling.
+    serverActions: {
+      bodySizeLimit: "21mb",
+    },
+    proxyClientMaxBodySize: "21mb",
+  },
   async headers() {
     const securityHeaders = [
       {
