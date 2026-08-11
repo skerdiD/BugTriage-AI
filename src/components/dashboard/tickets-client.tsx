@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -9,6 +11,7 @@ import {
   type TicketStatusFilter,
 } from "@/components/dashboard/ticket-filters";
 import { TicketTable } from "@/components/dashboard/ticket-table";
+import { Button } from "@/components/ui/button";
 import type { UiTicketListItem as Ticket } from "@/lib/dashboard/types";
 
 type TicketsClientProps = {
@@ -57,8 +60,18 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
     <div className="space-y-8">
       <PageHeader
         title="Tickets"
-        description="Manage and track AI-triaged bug reports"
-      />
+        description="Search the queue, check ownership, and move the right bugs forward."
+      >
+        <Button
+          asChild
+          className="h-11 rounded-xl bg-violet-600 px-4 shadow-lg shadow-violet-500/20 hover:bg-violet-500"
+        >
+          <Link href="/submit-bug">
+            <Plus className="size-4" />
+            Report a bug
+          </Link>
+        </Button>
+      </PageHeader>
 
       <TicketFilters
         searchQuery={searchQuery}
@@ -66,6 +79,12 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
         activeStatus={activeStatus}
         onActiveStatusChange={setActiveStatus}
         statusCounts={statusCounts}
+        visibleCount={filteredTickets.length}
+        totalCount={initialTickets.length}
+        onClearFilters={() => {
+          setSearchQuery("");
+          setActiveStatus("All");
+        }}
       />
 
       {filteredTickets.length > 0 ? (
@@ -73,8 +92,8 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
       ) : initialTickets.length === 0 ? (
         <EmptyState
           title="No tickets yet"
-          description="This workspace has not received any bug reports yet. Submit the first ticket to populate the queue."
-          actionLabel="Submit the first bug"
+          description="No bugs have been reported in this project yet. Add the first one when you are ready."
+          actionLabel="Report the first bug"
           actionHref="/submit-bug"
         />
       ) : (

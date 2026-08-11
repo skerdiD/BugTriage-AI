@@ -38,7 +38,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -46,7 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -55,15 +53,31 @@ import {
   type BugReportFormValues,
 } from "@/lib/validation/bug-report";
 
-const aiPreviewItems = [
-  "AI Summary",
-  "Severity Level",
-  "Category",
-  "Reproduction Steps",
-  "Possible Root Cause",
-  "Suggested Fix",
-  "Priority Score",
-  "Confidence Score",
+const ticketDraftItems = [
+  {
+    title: "A concise summary",
+    detail: "A scannable description of the problem and its impact.",
+  },
+  {
+    title: "Suggested severity and category",
+    detail: "A consistent first pass for the team to confirm.",
+  },
+  {
+    title: "Reproduction steps",
+    detail: "The sequence cleaned up without losing the original context.",
+  },
+  {
+    title: "Likely cause",
+    detail: "A practical starting point for the investigation.",
+  },
+  {
+    title: "Suggested next step",
+    detail: "A focused action the assignee can review and refine.",
+  },
+  {
+    title: "Priority and confidence",
+    detail: "Signals to help the team decide what to review first.",
+  },
 ];
 
 const UploadDropzone = dynamic<UploadDropzoneProps>(
@@ -94,12 +108,6 @@ export default function SubmitBugPage() {
   });
 
   const isSubmitting = isPending || form.formState.isSubmitting;
-
-  const progress = useMemo(() => {
-    if (isSubmitting) return 72;
-    if (createdCode) return 100;
-    return 0;
-  }, [createdCode, isSubmitting]);
 
   const totalUploadBytes = useMemo(
     () =>
@@ -164,9 +172,9 @@ export default function SubmitBugPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Submit Bug Report"
-        description="Upload the raw bug context your team already has, and BugTriage AI will turn it into a structured engineering ticket."
-        badge="Real AI workflow"
+        title="Report a bug"
+        description="Share what happened and attach any evidence you have. You can review the generated ticket before moving it through the workflow."
+        badge="Private workspace"
       />
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.75fr]">
@@ -177,9 +185,9 @@ export default function SubmitBugPage() {
                 <UploadCloud className="size-5 text-violet-300" />
               </div>
               <div>
-                <CardTitle>Bug Details</CardTitle>
+                <CardTitle>Start with what you know</CardTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Submit raw bug context, upload private files, and generate a real AI-triaged ticket.
+                  A clear description matters more than perfect formatting.
                 </p>
               </div>
             </div>
@@ -193,7 +201,7 @@ export default function SubmitBugPage() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bug Title *</FormLabel>
+                      <FormLabel>Bug title *</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Example: Payment form fails on Safari mobile"
@@ -305,7 +313,7 @@ export default function SubmitBugPage() {
                   name="affectedPage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Affected Page / Component *</FormLabel>
+                      <FormLabel>Affected page or component *</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Example: /checkout/payment or PaymentForm.tsx"
@@ -328,7 +336,7 @@ export default function SubmitBugPage() {
                     name="stepsToReproduce"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Steps to Reproduce *</FormLabel>
+                        <FormLabel>Steps to reproduce *</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder={"1. Open checkout\n2. Enter card details\n3. Click submit"}
@@ -337,7 +345,7 @@ export default function SubmitBugPage() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Use one step per line so the AI can preserve the sequence clearly.
+                        Use one step per line to keep the sequence easy to scan.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -350,7 +358,7 @@ export default function SubmitBugPage() {
                       name="expectedBehavior"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Expected Behavior *</FormLabel>
+                          <FormLabel>Expected behavior *</FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="What should happen?"
@@ -368,7 +376,7 @@ export default function SubmitBugPage() {
                       name="actualBehavior"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Actual Behavior *</FormLabel>
+                          <FormLabel>Actual behavior *</FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="What actually happened?"
@@ -399,7 +407,7 @@ export default function SubmitBugPage() {
                   />
 
                   <UploadDropzone
-                    title="Console Logs"
+                    title="Console logs"
                     description="Drop log files here or click to upload"
                     helperText="TXT, LOG, and JSON up to 10MB each. Up to 3 files."
                     icon={FileText}
@@ -430,7 +438,7 @@ export default function SubmitBugPage() {
                   name="consoleLogs"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Paste Console Logs</FormLabel>
+                      <FormLabel>Paste console logs</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Paste console output, stack traces, or network errors here."
@@ -439,7 +447,7 @@ export default function SubmitBugPage() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Optional, but useful for better AI root cause analysis.
+                        Optional, but useful when the error is difficult to reproduce.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -486,12 +494,12 @@ export default function SubmitBugPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Uploading, analyzing, and saving...
+                      Creating ticket...
                     </>
                   ) : (
                     <>
                       <Sparkles className="mr-2 size-4" />
-                      Analyze with AI
+                      Analyze and create ticket
                     </>
                   )}
                 </Button>
@@ -508,9 +516,9 @@ export default function SubmitBugPage() {
                   <WandSparkles className="size-5 text-violet-300" />
                 </div>
                 <div>
-                  <CardTitle>AI Will Generate</CardTitle>
+                  <CardTitle>Your ticket draft will include</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Structured output saved directly to the ticket.
+                    Review and adjust any suggestion after the ticket is created.
                   </p>
                 </div>
               </div>
@@ -518,40 +526,29 @@ export default function SubmitBugPage() {
 
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                {aiPreviewItems.map((item) => (
-                  <div key={item} className="flex gap-3">
+                {ticketDraftItems.map((item) => (
+                  <div key={item.title} className="flex gap-3">
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-violet-300" />
                     <div>
-                      <p className="text-sm font-semibold text-white">{item}</p>
+                      <p className="text-sm font-semibold text-white">{item.title}</p>
                       <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                        Validated with Zod before saving.
+                        {item.detail}
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <Separator className="bg-white/10" />
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium">Workflow progress</span>
-                  <span className="text-sm font-semibold text-violet-300">
-                    {progress}%
-                  </span>
-                </div>
-                <Progress value={progress} className="h-2 bg-white/10" />
-              </div>
-
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <div className="flex items-center gap-3">
                   <Badge className="border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
-                    Real flow
+                    Private by default
                   </Badge>
-                  <p className="text-sm font-semibold">Gemini + Prisma + Supabase</p>
+                  <p className="text-sm font-semibold">Workspace-only attachments</p>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  Files are private, AI output is validated, and tickets are saved to Postgres.
+                  Files stay private, and generated fields are checked before the
+                  ticket is saved.
                 </p>
               </div>
             </CardContent>

@@ -4,18 +4,18 @@ import type { FeatureCard } from "@/components/landing/landing-data";
 export function FeatureGrid({ features }: { features: FeatureCard[] }) {
   return (
     <>
-      <section className="px-5 py-12 sm:px-6 md:py-16">
+      <section id="features" className="scroll-mt-24 px-5 py-12 sm:px-6 md:py-16">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-3xl">
             <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">
-              Product system
+              Built for the handoff
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Everything your team needs to triage bugs faster.
+              Keep the report, evidence, and next steps together.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-300">
-              A focused workspace for turning support and QA noise into clear
-              engineering context.
+              One place for support and QA to share what happened, and for
+              engineering to decide what happens next.
             </p>
           </div>
 
@@ -41,7 +41,7 @@ export function FeatureGrid({ features }: { features: FeatureCard[] }) {
         </div>
       </section>
 
-      <section className="px-5 py-10 sm:px-6 md:py-14">
+      <section id="workflow" className="scroll-mt-24 px-5 py-10 sm:px-6 md:py-14">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
             <div>
@@ -49,7 +49,7 @@ export function FeatureGrid({ features }: { features: FeatureCard[] }) {
                 Workflow
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                Submit, structure, resolve.
+                From report to next step.
               </h2>
             </div>
 

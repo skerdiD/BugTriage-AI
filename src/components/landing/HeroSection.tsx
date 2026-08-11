@@ -11,17 +11,17 @@ export function HeroSection() {
       <div className="mx-auto max-w-4xl text-center landing-fade-up">
         <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-medium tracking-[0.2em] text-cyan-100 uppercase shadow-[0_16px_50px_-32px_rgba(34,211,238,0.9)]">
           <Sparkles className="size-3.5" />
-          AI-powered bug triage
+          Built for support, QA, and engineering
         </div>
 
         <h1 className="mx-auto mt-6 max-w-4xl text-balance text-4xl font-semibold leading-[1.06] tracking-tight text-white sm:text-5xl lg:text-[4rem]">
-          Turn messy bug reports into engineering-ready tickets.
+          Turn rough bug reports into tickets engineers can act on.
         </h1>
 
         <p className="mx-auto mt-5 max-w-3xl text-pretty text-base leading-8 text-slate-300 sm:text-lg">
-          BugTriage AI converts vague user complaints, screenshots, logs, and
-          technical context into structured tickets with severity, category,
-          reproduction steps, likely cause, and suggested fixes.
+          Paste in the complaint, attach the screenshot or logs, and get a
+          consistent ticket with impact, reproduction steps, and a practical
+          place to start investigating.
         </p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -30,8 +30,8 @@ export function HeroSection() {
             size="lg"
             className="h-11 w-full rounded-full bg-white px-6 text-sm text-slate-950 shadow-[0_18px_55px_-28px_rgba(255,255,255,0.85)] transition active:scale-[0.98] hover:bg-slate-100 sm:w-auto"
           >
-            <Link href="/submit-bug" aria-label="Submit a bug report">
-              Submit a bug
+            <Link href="/login" aria-label="Explore the demo workspace">
+              Explore the demo
               <ArrowRight className="size-4" />
             </Link>
           </Button>
@@ -42,15 +42,15 @@ export function HeroSection() {
             variant="outline"
             className="h-11 w-full rounded-full border-white/12 bg-white/[0.035] px-6 text-sm text-white transition active:scale-[0.98] hover:bg-white/[0.08] sm:w-auto"
           >
-            <Link href="/dashboard">
-              View dashboard
+            <Link href="#product-preview">
+              See an example
             </Link>
           </Button>
         </div>
 
         <p className="mt-5 inline-flex flex-wrap items-center justify-center gap-2 text-sm text-slate-400">
           <ShieldCheck className="size-4 text-emerald-200" />
-          Private uploads, validated AI output, protected workspace routes.
+          Screenshots and logs stay private to the people in your workspace.
         </p>
       </div>
 

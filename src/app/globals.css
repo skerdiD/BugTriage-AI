@@ -106,6 +106,14 @@
       linear-gradient(180deg, #08080d 0%, #090910 45%, #08080d 100%);
   }
 
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   ::selection {
     background: rgba(139, 92, 246, 0.45);
     color: #ffffff;
@@ -136,6 +144,28 @@
 }
 
 @layer utilities {
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 100;
+    transform: translateY(-160%);
+    border-radius: 0.75rem;
+    background: #ffffff;
+    color: #111827;
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+    transition: transform 160ms ease;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+    outline: 3px solid rgba(34, 211, 238, 0.65);
+    outline-offset: 3px;
+  }
+
   .landing-fade-up {
     animation: landing-fade-up 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
@@ -145,6 +175,19 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+
     .landing-fade-up,
     .landing-delay-2 {
       animation: none;

@@ -18,9 +18,9 @@ export function RepeatedPatterns({ patterns }: RepeatedPatternsProps) {
             <Repeat2 className="size-5 text-sky-300" />
           </div>
           <div>
-            <CardTitle className="text-lg">Repeated Issue Patterns</CardTitle>
+            <CardTitle className="text-lg">Recurring patterns</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Recurring failures AI detected across reports.
+              Similar failures showing up across multiple reports.
             </p>
           </div>
         </div>

@@ -272,8 +272,8 @@ export function TicketDetailClient({
             </h1>
 
             <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-              Review the original report, structured AI output, attachments, comments,
-              and ticket activity in one workspace-safe view.
+              Review the original report, generated analysis, attachments, comments,
+              and ticket history in one place.
             </p>
           </div>
         </div>
@@ -286,7 +286,7 @@ export function TicketDetailClient({
                   <Bot className="size-5 text-violet-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">AI Confidence</p>
+                  <p className="text-sm text-muted-foreground">AI confidence</p>
                   <p className="text-2xl font-bold text-violet-200">
                     {ticket.confidence}%
                   </p>
@@ -294,7 +294,7 @@ export function TicketDetailClient({
               </div>
 
               <Badge className="rounded-full border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
-                {ticket.confidence > 0 ? "Ready" : "Pending"}
+                {ticket.confidence > 0 ? "Analysis ready" : "Pending"}
               </Badge>
             </div>
 
@@ -314,9 +314,9 @@ export function TicketDetailClient({
                   <FileText className="size-5 text-sky-300" />
                 </div>
                 <div>
-                  <CardTitle>Original Bug Report</CardTitle>
+                  <CardTitle>Original bug report</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Raw user or support input before AI triage.
+                    The report exactly as it was submitted.
                   </p>
                 </div>
               </div>
@@ -339,9 +339,9 @@ export function TicketDetailClient({
                     <Sparkles className="size-5 text-violet-300" />
                   </div>
                   <div>
-                    <CardTitle>AI Analysis</CardTitle>
+                    <CardTitle>AI analysis</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Structured engineering output generated from the report.
+                      A structured draft for the team to review.
                     </p>
                   </div>
                 </div>
@@ -361,8 +361,8 @@ export function TicketDetailClient({
                   {isAiPending || isAnalysisProcessing
                     ? "Processing..."
                     : ticket.aiProcessingStatus === "FAILED"
-                      ? "Retry AI Analysis"
-                      : "Regenerate AI"}
+                      ? "Retry analysis"
+                      : "Regenerate analysis"}
                 </Button>
               </div>
             </CardHeader>
@@ -373,8 +373,8 @@ export function TicketDetailClient({
                   role="status"
                   className="rounded-2xl border border-sky-500/20 bg-sky-500/10 px-4 py-3 text-sm text-sky-100"
                 >
-                  AI analysis is processing in the background. This page will refresh
-                  periodically for up to one minute.
+                  Analysis is running in the background. This page will refresh
+                  automatically for up to one minute.
                 </p>
               ) : null}
 
@@ -383,8 +383,8 @@ export function TicketDetailClient({
                   role="alert"
                   className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
                 >
-                  AI processing failed. The original ticket is safe; use Retry AI
-                  Analysis to start a new processing run.
+                  The analysis failed, but the original report is safe. Try the
+                  analysis again when you are ready.
                 </p>
               ) : null}
 
@@ -408,7 +408,7 @@ export function TicketDetailClient({
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  AI-generated summary
+                  Summary
                 </p>
                 <p className="mt-3 text-sm leading-7 text-white">
                   {ticket.aiSummary}
@@ -419,7 +419,7 @@ export function TicketDetailClient({
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                   <div className="mb-4 flex items-center gap-2">
                     <ShieldAlert className="size-4 text-red-300" />
-                    <p className="font-semibold">Possible Root Cause</p>
+                    <p className="font-semibold">Possible root cause</p>
                   </div>
                   <p className="text-sm leading-7 text-muted-foreground">
                     {ticket.possibleRootCause}
@@ -429,7 +429,7 @@ export function TicketDetailClient({
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                   <div className="mb-4 flex items-center gap-2">
                     <PackageCheck className="size-4 text-emerald-300" />
-                    <p className="font-semibold">Suggested Fix</p>
+                    <p className="font-semibold">Suggested next step</p>
                   </div>
                   <p className="text-sm leading-7 text-muted-foreground">
                     {ticket.suggestedFix}
@@ -440,19 +440,19 @@ export function TicketDetailClient({
               <div className="rounded-2xl border border-sky-500/20 bg-sky-500/[0.06] p-5">
                 <div className="flex items-center gap-2">
                   <BrainCircuit className="size-4 text-sky-300" />
-                  <p className="font-semibold">AI reasoning signals</p>
+                  <p className="font-semibold">Review before updating</p>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                  Review the severity recommendation against the reported impact and
-                  the AI&apos;s possible root cause above. Compare those signals with the{" "}
+                  Compare the suggested severity and cause with the original report.
+                  The current draft has a{" "}
                   <span className="font-semibold text-white">
-                    {ticket.priorityScore}/100 priority
+                    {ticket.priorityScore}/100 priority score
                   </span>{" "}
                   and{" "}
                   <span className="font-semibold text-white">
                     {ticket.confidence}% confidence
-                  </span>{" "}
-                  before changing workflow status.
+                  </span>
+                  . Confirm both before changing the ticket status.
                 </p>
               </div>
 
@@ -460,7 +460,7 @@ export function TicketDetailClient({
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                   <div className="mb-4 flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-violet-300" />
-                    <p className="font-semibold">Reproduction Steps</p>
+                    <p className="font-semibold">Reproduction steps</p>
                   </div>
 
                   <div className="space-y-3">
@@ -481,7 +481,7 @@ export function TicketDetailClient({
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <p className="text-sm text-muted-foreground">Priority Score</p>
+                  <p className="text-sm text-muted-foreground">Priority score</p>
                   <p className="mt-3 text-5xl font-bold tracking-tight text-red-300">
                     {ticket.priorityScore}
                   </p>
@@ -511,7 +511,7 @@ export function TicketDetailClient({
                       ))
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        No AI tags were recorded for this ticket.
+                        No tags were suggested for this ticket.
                       </p>
                     )}
                   </div>
@@ -522,7 +522,7 @@ export function TicketDetailClient({
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                   <p className="font-semibold">Was this analysis helpful?</p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Feedback is stored with this AI run.
+                    Your feedback helps evaluate this version of the analysis.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button
@@ -559,7 +559,7 @@ export function TicketDetailClient({
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                   <p className="font-semibold">Analysis history</p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Recent AI runs are preserved for review.
+                    Previous versions stay available for comparison.
                   </p>
                   <div className="mt-4 space-y-2">
                     {ticket.aiHistory.length > 0 ? (

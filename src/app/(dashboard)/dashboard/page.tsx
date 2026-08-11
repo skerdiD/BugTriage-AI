@@ -2,8 +2,10 @@ import {
   AlertTriangle,
   Bug,
   CheckCircle2,
+  Plus,
   TrendingUp,
 } from "lucide-react";
+import Link from "next/link";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
 import {
@@ -16,6 +18,7 @@ import { RecentActivityFeed } from "@/components/dashboard/recent-activity-feed"
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { getDashboardPageData } from "@/lib/data/dashboard";
 
@@ -46,9 +49,19 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Engineering Dashboard"
-        description="Real-time bug triage, ticket health, and workspace activity from your selected project scope."
-      />
+        title="Overview"
+        description="See what needs attention, what changed, and how work is moving across this project."
+      >
+        <Button
+          asChild
+          className="h-11 rounded-xl bg-violet-600 px-4 shadow-lg shadow-violet-500/20 hover:bg-violet-500"
+        >
+          <Link href="/submit-bug">
+            <Plus className="size-4" />
+            Report a bug
+          </Link>
+        </Button>
+      </PageHeader>
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {data.stats.map((stat) => (
@@ -71,12 +84,11 @@ export default async function DashboardPage() {
 
       <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Ticket Status Distribution</CardTitle>
+          <CardTitle className="text-lg">Tickets by status</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Average AI confidence: {data.averageConfidenceLabel}
             {data.confidenceSampleCount > 0
-              ? ` across ${data.confidenceSampleCount} scored tickets.`
-              : " because this scope has not recorded AI scores yet."}
+              ? `AI confidence averages ${data.averageConfidenceLabel} across ${data.confidenceSampleCount} analyzed tickets.`
+              : "Confidence scores will appear after the first ticket is analyzed."}
           </p>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -106,9 +118,9 @@ export default async function DashboardPage() {
 
       {!data.hasTickets ? (
         <EmptyState
-          title="No dashboard data yet"
-          description="Create the first bug report to populate the dashboard, charts, and activity feed with real workspace data."
-          actionLabel="Submit a bug report"
+          title="Nothing to show yet"
+          description="Report the first bug and this overview will start tracking severity, status, and recent activity."
+          actionLabel="Report the first bug"
           actionHref="/submit-bug"
         />
       ) : null}

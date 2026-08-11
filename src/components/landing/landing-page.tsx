@@ -9,7 +9,10 @@ import { ProductPreview } from "@/components/landing/ProductPreview";
 
 export function LandingPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05060b]">
+    <main
+      id="main-content"
+      className="relative min-h-screen overflow-hidden bg-[#05060b]"
+    >
       <div className="pointer-events-none absolute inset-0 -z-30 bg-[#05060b]" />
       <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.16),transparent_30rem),radial-gradient(circle_at_18%_14%,rgba(139,92,246,0.13),transparent_22rem),radial-gradient(circle_at_82%_22%,rgba(16,185,129,0.1),transparent_24rem)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] bg-[linear-gradient(to_bottom,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(to_right,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:88px_88px] [mask-image:linear-gradient(to_bottom,black,transparent)] opacity-30" />
@@ -27,16 +30,16 @@ export function LandingPage() {
               BugTriage AI
             </p>
             <p className="mt-2 text-slate-400">
-              AI bug triage workspace for modern software teams.
+              A clearer handoff from bug report to engineering ticket.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-4">
-            <Link href="/submit-bug" className="transition hover:text-white">
-              Submit a bug
+            <Link href="#product-preview" className="transition hover:text-white">
+              See an example
             </Link>
-            <Link href="/dashboard" className="transition hover:text-white">
-              Open app
+            <Link href="/login" className="transition hover:text-white">
+              Explore demo
             </Link>
             <Link href="/login" className="transition hover:text-white">
               Sign in

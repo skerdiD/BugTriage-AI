@@ -100,7 +100,10 @@ function SignupContent() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+    <main
+      id="main-content"
+      className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground"
+    >
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -111,22 +114,22 @@ function SignupContent() {
               <div>
                 <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                 <p className="text-sm text-muted-foreground">
-                  Engineering Command
+                  Triage workspace
                 </p>
               </div>
             </Link>
 
             <Badge className="mb-5 rounded-full border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-violet-200">
-              Build a protected bug triage workspace
+              Your team&apos;s shared bug queue
             </Badge>
 
             <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-white">
-              Create your engineering command center.
+              Give bug reports a clear place to go.
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Start with authentication, private storage, structured tickets, and a
-              premium workflow designed for real engineering teams.
+              Set up a workspace where support, QA, and engineering can share
+              evidence, ownership, and progress.
             </p>
 
             <div className="mt-8 grid max-w-2xl gap-4 md:grid-cols-3">
@@ -148,9 +151,9 @@ function SignupContent() {
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <Sparkles className="size-5 text-sky-300" />
-                <p className="mt-4 font-semibold">AI workflow</p>
+                <p className="mt-4 font-semibold">Structured drafts</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Prepare reports for future Gemini analysis.
+                  Turn rough reports into a consistent first pass.
                 </p>
               </div>
             </div>
@@ -163,7 +166,7 @@ function SignupContent() {
               <div>
                 <CardTitle className="text-2xl">Create account</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Set up your BugTriage AI access and continue to the dashboard.
+                  Create your profile, then set up your first workspace.
                 </p>
               </div>
             </CardHeader>
@@ -212,8 +215,8 @@ function SignupContent() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use at least 6 characters. You&apos;ll confirm the account by email if
-                    your Supabase project requires verification.
+                    Use at least 6 characters. We may ask you to confirm your email
+                    before signing in.
                   </p>
                 </div>
 

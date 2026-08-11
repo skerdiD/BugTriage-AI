@@ -13,9 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BugTriage AI",
+  title: {
+    default: "BugTriage AI",
+    template: "%s | BugTriage AI",
+  },
   description:
-    "AI-powered issue triage platform for converting messy bug reports into structured engineering tickets.",
+    "Turn rough bug reports, screenshots, and logs into clear tickets your engineering team can act on.",
 };
 
 export default function RootLayout({
@@ -26,6 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         {children}
       </body>
     </html>

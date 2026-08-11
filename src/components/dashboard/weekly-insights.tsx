@@ -34,9 +34,9 @@ export function WeeklyInsights({ insights }: WeeklyInsightsProps) {
             <Sparkles className="size-5 text-violet-300" />
           </div>
           <div>
-            <CardTitle className="text-lg">AI Insights for This Week</CardTitle>
+            <CardTitle className="text-lg">This week at a glance</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Concise recommendations based on volume, severity, and resolution patterns.
+              Suggested focus areas based on volume, severity, and resolution patterns.
             </p>
           </div>
         </div>
@@ -79,8 +79,7 @@ export function WeeklyInsights({ insights }: WeeklyInsightsProps) {
           })
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground md:col-span-3">
-            AI insights need a little more real ticket history before they can offer
-            meaningful recommendations for this workspace.
+            Add a little more ticket history before looking for weekly patterns.
           </div>
         )}
       </CardContent>

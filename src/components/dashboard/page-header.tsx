@@ -25,9 +25,9 @@ export function PageHeader({
         className
       )}
     >
-      <div>
+      <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
+          <h1 className="text-balance text-3xl font-bold tracking-tight text-white md:text-4xl">
             {title}
           </h1>
 
@@ -39,7 +39,7 @@ export function PageHeader({
         </div>
 
         {description ? (
-          <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
+          <p className="mt-3 max-w-2xl text-pretty text-base leading-7 text-muted-foreground">
             {description}
           </p>
         ) : null}

@@ -17,6 +17,7 @@ import {
   WORKSPACE_COOKIE_NAME,
   type WorkspaceSummary,
 } from "@/lib/data/workspaces";
+import { isDemoUser } from "@/lib/demo";
 import {
   addServerBreadcrumb,
   captureServerException,
@@ -129,6 +130,7 @@ export const getCurrentDashboardUser = cache(async () => {
     name: displayName,
     email: user.email ?? "No email",
     initials,
+    isDemo: isDemoUser(user),
   };
 });
 

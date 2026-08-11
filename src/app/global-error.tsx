@@ -19,7 +19,7 @@ export default function GlobalError({
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <main className="flex min-h-screen items-center justify-center px-6 py-16">
+        <main id="main-content" className="flex min-h-screen items-center justify-center px-6 py-16">
           <div className="w-full max-w-lg rounded-2xl border border-border/80 bg-card/85 p-8 shadow-2xl shadow-black/30 backdrop-blur">
             <title>BugTriage AI | Error</title>
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-muted-foreground">

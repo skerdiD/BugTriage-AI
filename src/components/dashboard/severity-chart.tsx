@@ -28,7 +28,7 @@ export function SeverityChart({ data }: SeverityChartProps) {
     <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
       <CardHeader className="pb-2">
         <div>
-          <CardTitle className="text-lg">Severity Distribution</CardTitle>
+          <CardTitle className="text-lg">Tickets by severity</CardTitle>
           <p className="mt-2 text-sm text-muted-foreground">
             Current ticket volume by impact level.
           </p>

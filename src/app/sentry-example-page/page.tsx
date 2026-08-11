@@ -25,7 +25,7 @@ export default async function SentryExamplePage({
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl items-center px-6 py-16">
+    <main id="main-content" className="mx-auto flex min-h-screen w-full max-w-3xl items-center px-6 py-16">
       <section className="w-full rounded-3xl border border-border/80 bg-card/80 p-8 shadow-2xl shadow-black/20 backdrop-blur">
         <p className="text-sm font-medium uppercase tracking-[0.24em] text-muted-foreground">
           Development only

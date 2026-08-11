@@ -32,10 +32,10 @@ export function PriorityQueue({
           </div>
 
           <div>
-            <h3 className="font-semibold text-white">High Priority Queue</h3>
+            <h3 className="font-semibold text-white">Needs attention</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              AI recommends addressing these issues first based on impact, severity,
-              confidence, and affected user workflows.
+              Open critical and high-severity issues, ordered by their current
+              priority score.
             </p>
           </div>
         </div>
@@ -68,7 +68,7 @@ export function PriorityQueue({
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {items.length > 0
                 ? "Work from top priority downward so the most severe open tickets are reviewed first."
-                : "Keep triage moving and new urgent tickets will surface here automatically."}
+                : "New urgent tickets will appear here automatically."}
             </p>
           </div>
 

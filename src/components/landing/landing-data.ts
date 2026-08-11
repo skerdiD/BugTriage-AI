@@ -36,43 +36,43 @@ export type SecurityItem = {
 
 export const proofCards: ProofCard[] = [
   {
-    title: "Raw reports cleaned",
-    value: "Messy -> structured",
-    description: "Turn vague intake into a ticket format engineering can scan.",
+    title: "What goes in",
+    value: "The report you already have",
+    description: "Paste a support note or QA report without rewriting it first.",
   },
   {
-    title: "Triage output",
-    value: "Severity + cause",
-    description: "Surface impact, likely source, and the next investigation path.",
+    title: "What comes out",
+    value: "A clear starting point",
+    description: "Give engineering the impact, likely cause, and steps to reproduce.",
   },
   {
-    title: "Engineering handoff",
-    value: "Ready for review",
-    description: "Keep screenshots, logs, and context attached to the same issue.",
+    title: "What stays together",
+    value: "Evidence and decisions",
+    description: "Keep screenshots, logs, updates, and ownership on the same issue.",
   },
 ];
 
 export const features: FeatureCard[] = [
   {
     icon: Sparkles,
-    title: "AI Ticket Generation",
-    description: "Convert messy reports into structured engineering tickets.",
+    title: "Consistent ticket drafts",
+    description: "Turn uneven reports into a format engineers can scan quickly.",
   },
   {
     icon: FileStack,
-    title: "Screenshot and Log Context",
-    description: "Keep visual proof, logs, and environment details attached.",
+    title: "Evidence in one place",
+    description: "Keep screenshots, logs, and environment details with the report.",
   },
   {
     icon: FolderKanban,
-    title: "Triage Workflow",
-    description: "Move bugs through New, Triaged, In Review, Fixed, and Closed.",
+    title: "A workflow people recognize",
+    description: "Move bugs from new to investigating, in progress, fixed, and closed.",
   },
   {
     icon: ShieldCheck,
-    title: "Secure Full-Stack Workflow",
+    title: "Private by default",
     description:
-      "Protected routes, user-scoped data, validation, and private uploads.",
+      "Keep workspace data scoped to members and store uploaded evidence privately.",
   },
 ];
 
@@ -82,19 +82,19 @@ export const workflowSteps: WorkflowStep[] = [
     description: "Capture the complaint, device details, screenshots, and logs.",
   },
   {
-    title: "AI structures context",
-    description: "Generate severity, category, reproduction steps, and likely cause.",
+    title: "Get a structured draft",
+    description: "Review the suggested severity, category, steps, and likely cause.",
   },
   {
-    title: "Team reviews and resolves",
-    description: "Move a cleaner ticket through the engineering workflow.",
+    title: "Review and assign",
+    description: "Confirm the details, choose an owner, and move the ticket forward.",
   },
 ];
 
 export const securityItems: SecurityItem[] = [
   { icon: Route, label: "Protected workspace routes" },
   { icon: LockKeyhole, label: "Private file handling" },
-  { icon: CheckCircle2, label: "Validated AI output" },
+  { icon: CheckCircle2, label: "Suggestions checked before saving" },
   { icon: UserCheck, label: "User-scoped data" },
 ];
 
@@ -125,12 +125,12 @@ export const pipelineCards = [
   },
   {
     icon: FileSearch,
-    title: "AI triage",
-    detail: "Critical payment issue with high confidence",
+    title: "Triage draft",
+    detail: "Critical payment issue flagged for review",
   },
   {
     icon: CheckCircle2,
     title: "Ready ticket",
-    detail: "Triaged with next fix path",
+    detail: "Reproduction steps and next action included",
   },
 ] as const;

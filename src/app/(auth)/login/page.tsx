@@ -118,7 +118,10 @@ function LoginContent() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+    <main
+      id="main-content"
+      className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground"
+    >
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -129,22 +132,22 @@ function LoginContent() {
               <div>
                 <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                 <p className="text-sm text-muted-foreground">
-                  Engineering Command
+                  Triage workspace
                 </p>
               </div>
             </Link>
 
             <Badge className="mb-5 rounded-full border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-violet-200">
-              Private engineering workspace
+              Private by default
             </Badge>
 
             <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-white">
-              Sign in to your AI-powered bug triage command center.
+              Keep every bug report moving.
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Review critical reports, manage engineering tickets, upload private
-              debugging files, and keep your team focused on the highest-impact issues.
+              Bring reports, screenshots, logs, ownership, and status updates into
+              one workspace your whole team can follow.
             </p>
 
             <div className="mt-8 grid max-w-2xl gap-4 md:grid-cols-3">
@@ -166,9 +169,9 @@ function LoginContent() {
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <Sparkles className="size-5 text-sky-300" />
-                <p className="mt-4 font-semibold">AI ready</p>
+                <p className="mt-4 font-semibold">Structured drafts</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Built for structured bug analysis workflows.
+                  Turn uneven reports into a consistent starting point.
                 </p>
               </div>
             </div>
@@ -181,13 +184,35 @@ function LoginContent() {
               <div>
                 <CardTitle className="text-2xl">Welcome back</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Sign in to continue managing AI-triaged engineering tickets.
+                  Sign in with your account, or look around using the sample workspace.
                 </p>
               </div>
             </CardHeader>
 
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-5">
+                <div className="rounded-2xl border border-violet-400/20 bg-violet-500/[0.08] p-4">
+                  <p className="text-sm font-semibold text-white">Just looking around?</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Open the read-only demo with sample tickets. No signup needed.
+                  </p>
+                  <Button
+                    type="button"
+                    disabled={isLoading}
+                    onClick={handleDemoLogin}
+                    className="mt-3 h-11 w-full rounded-xl bg-violet-600 font-semibold shadow-lg shadow-violet-500/20 hover:bg-violet-500"
+                  >
+                    Explore demo workspace
+                    <ArrowRight className="ml-2 size-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <span className="h-px flex-1 bg-white/10" />
+                  Or sign in
+                  <span className="h-px flex-1 bg-white/10" />
+                </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email address</Label>
                   <Input
@@ -242,22 +267,6 @@ function LoginContent() {
                       <ArrowRight className="ml-2 size-4" />
                     </>
                   )}
-                </Button>
-
-                <div className="flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  <span className="h-px flex-1 bg-white/10" />
-                  Demo access
-                  <span className="h-px flex-1 bg-white/10" />
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isLoading}
-                  onClick={handleDemoLogin}
-                  className="h-12 w-full rounded-xl border-violet-400/25 bg-violet-500/10 font-semibold text-violet-100 hover:bg-violet-500/20 hover:text-white"
-                >
-                  Continue as Demo User
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">

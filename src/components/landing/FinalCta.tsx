@@ -10,14 +10,13 @@ export function FinalCta() {
         <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">
-              Ready when your next report is not
+              Try the full workflow
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Start with a messy report. End with a clean ticket.
+              See how a rough report becomes a useful ticket.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-300">
-              Make support-to-engineering handoff faster, clearer, and more
-              organized.
+              Open the sample workspace—no setup or account creation required.
             </p>
           </div>
 
@@ -27,8 +26,8 @@ export function FinalCta() {
               size="lg"
               className="h-11 rounded-full bg-white px-6 text-sm text-slate-950 transition active:scale-[0.98] hover:bg-slate-100"
             >
-              <Link href="/submit-bug" aria-label="Submit a bug report">
-                Submit a bug
+              <Link href="/login" aria-label="Explore the demo workspace">
+                Explore the demo
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -39,8 +38,8 @@ export function FinalCta() {
               variant="outline"
               className="h-11 rounded-full border-white/12 bg-white/[0.035] px-6 text-sm text-white transition active:scale-[0.98] hover:bg-white/[0.08]"
             >
-              <Link href="/dashboard" aria-label="Open BugTriage AI dashboard">
-                Open dashboard
+              <Link href="/signup" aria-label="Create a BugTriage AI account">
+                Create account
               </Link>
             </Button>
           </div>

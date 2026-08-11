@@ -19,7 +19,7 @@ export function RecentActivityFeed({ items }: RecentActivityFeedProps) {
           <div>
             <CardTitle className="text-lg">Recent Activity</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Real ticket events from this workspace and project scope.
+              The latest updates in this project.
             </p>
           </div>
         </div>

@@ -15,14 +15,38 @@ export function LandingHeader() {
           <AppLogoMark className="size-9 sm:size-10" iconClassName="size-6" />
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white/80 sm:tracking-[0.18em] sm:uppercase">
+            <p className="truncate text-sm font-semibold text-white sm:tracking-[0.12em] sm:uppercase">
               BugTriage AI
             </p>
             <p className="hidden text-xs text-slate-400 sm:block">
-              AI bug triage workspace
+              Bug reports, ready for engineering
             </p>
           </div>
         </Link>
+
+        <nav
+          aria-label="Landing page"
+          className="hidden items-center gap-1 lg:flex"
+        >
+          <Link
+            href="#product-preview"
+            className="rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+          >
+            Example
+          </Link>
+          <Link
+            href="#features"
+            className="rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+          >
+            Features
+          </Link>
+          <Link
+            href="#workflow"
+            className="rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+          >
+            How it works
+          </Link>
+        </nav>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <Button
@@ -37,8 +61,8 @@ export function LandingHeader() {
             asChild
             className="h-9 rounded-full bg-white px-3 text-slate-950 shadow-[0_14px_32px_-18px_rgba(255,255,255,0.75)] transition active:scale-[0.98] hover:bg-slate-100 sm:px-5"
           >
-            <Link href="/dashboard">
-              Open app
+            <Link href="/login">
+              Explore demo
               <ArrowRight className="size-4" />
             </Link>
           </Button>

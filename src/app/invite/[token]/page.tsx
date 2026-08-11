@@ -79,7 +79,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   if (!invite) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+      <main id="main-content" className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -105,7 +105,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   if (lifecycleStatus === "REVOKED") {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+      <main id="main-content" className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -121,7 +121,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   if (lifecycleStatus === "EXPIRED") {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+      <main id="main-content" className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -137,7 +137,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   if (lifecycleStatus === "ACCEPTED") {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+      <main id="main-content" className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -161,7 +161,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   if (!user) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+      <main id="main-content" className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -172,7 +172,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 <div>
                   <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                   <p className="text-sm text-muted-foreground">
-                    Engineering Command
+                    Triage workspace
                   </p>
                 </div>
               </Link>
@@ -230,7 +230,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   if (!inviteEmailMatches) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+      <main id="main-content" className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -257,7 +257,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
+    <main id="main-content" className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
@@ -267,7 +267,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
               <AppLogoMark className="size-12" iconClassName="size-8" />
               <div>
                 <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
-                <p className="text-sm text-muted-foreground">Engineering Command</p>
+                <p className="text-sm text-muted-foreground">Triage workspace</p>
               </div>
             </Link>
 

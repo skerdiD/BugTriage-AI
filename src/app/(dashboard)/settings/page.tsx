@@ -1,8 +1,6 @@
 import {
   FolderKanban,
-  Lock,
   Shield,
-  Sparkles,
   Users,
 } from "lucide-react";
 import { WorkspaceRole } from "@prisma/client";
@@ -26,15 +24,15 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Workspace Settings"
-        description="Review ownership, route bug intake to the right project, and keep this workspace ready for a growing team."
+        title="Workspace settings"
+        description="Manage workspace access and choose where new bug reports should go."
         badge={context.workspace.slug}
       />
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
-            <CardTitle>Workspace Profile</CardTitle>
+            <CardTitle>Workspace profile</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-5">
@@ -114,7 +112,7 @@ export default async function SettingsPage() {
         <div className="space-y-5">
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
             <CardHeader>
-              <CardTitle>Project Routing</CardTitle>
+            <CardTitle>Project routing</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-5">
@@ -165,7 +163,7 @@ export default async function SettingsPage() {
 
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
             <CardHeader>
-              <CardTitle>Create New Project</CardTitle>
+            <CardTitle>Create a project</CardTitle>
             </CardHeader>
 
             <CardContent>
@@ -181,7 +179,7 @@ export default async function SettingsPage() {
       <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
-            <CardTitle>Your Workspaces</CardTitle>
+            <CardTitle>Your workspaces</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -239,54 +237,19 @@ export default async function SettingsPage() {
 
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
-            <CardTitle>Create New Workspace</CardTitle>
+            <CardTitle>Create a workspace</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Spin up another workspace when you need a separate team, client,
-              product line, or internal environment. The new workspace gets its own
-              default intake project immediately.
+              Use a separate workspace for another team, client, or product. A
+              default intake project will be created with it.
             </p>
             <WorkspaceCreateForm />
           </CardContent>
         </Card>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-3">
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <Sparkles className="size-5 text-violet-300" />
-            <h3 className="mt-5 font-semibold">AI Routing Context</h3>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              New AI-triaged tickets are created inside the active workspace and the
-              selected project from the header switcher.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <Users className="size-5 text-sky-300" />
-            <h3 className="mt-5 font-semibold">Team-Ready Ownership</h3>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Workspace owners and admins can shape project structure while members keep
-              ticket visibility and collaboration.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <Lock className="size-5 text-emerald-300" />
-            <h3 className="mt-5 font-semibold">Access Protection</h3>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Workspace and project changes stay scoped to people who actually belong to
-              the selected team space.
-            </p>
-          </CardContent>
-        </Card>
-      </section>
     </div>
   );
 }

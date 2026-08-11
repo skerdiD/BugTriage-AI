@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { LandingPage } from "@/components/landing/landing-page";
 
 export const metadata: Metadata = {
-  title: "BugTriage AI | Turn Messy Bug Reports Into Engineering-Ready Tickets",
+  title: "Bug reports engineers can act on",
   description:
-    "BugTriage AI helps teams turn screenshots, logs, and vague bug reports into structured engineering-ready tickets with AI triage and protected full-stack workflow.",
+    "Turn rough bug reports, screenshots, and logs into clear tickets with impact, reproduction steps, and a practical place to start.",
 };
 
 export default function HomePage() {

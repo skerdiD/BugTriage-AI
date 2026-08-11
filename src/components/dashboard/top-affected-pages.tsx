@@ -17,9 +17,9 @@ export function TopAffectedPages({ pages }: TopAffectedPagesProps) {
             <Code2 className="size-5 text-violet-300" />
           </div>
           <div>
-            <CardTitle className="text-lg">Top Affected Pages</CardTitle>
+            <CardTitle className="text-lg">Most affected pages</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Product surfaces creating the most bug volume.
+              The routes and product areas with the most reports.
             </p>
           </div>
         </div>

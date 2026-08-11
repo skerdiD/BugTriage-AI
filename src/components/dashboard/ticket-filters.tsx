@@ -1,11 +1,4 @@
-import Link from "next/link";
-import {
-  Download,
-  Filter,
-  Plus,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
+import { Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +19,9 @@ type TicketFiltersProps = {
   activeStatus: TicketStatusFilter;
   onActiveStatusChange: (value: TicketStatusFilter) => void;
   statusCounts: Record<TicketStatusFilter, number>;
+  visibleCount: number;
+  totalCount: number;
+  onClearFilters: () => void;
 };
 
 const statusTabs: TicketStatusFilter[] = [
@@ -43,51 +39,42 @@ export function TicketFilters({
   activeStatus,
   onActiveStatusChange,
   statusCounts,
+  visibleCount,
+  totalCount,
+  onClearFilters,
 }: TicketFiltersProps) {
+  const hasActiveFilters = searchQuery.trim().length > 0 || activeStatus !== "All";
+
   return (
     <div className="space-y-5">
       <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
         <CardContent className="p-4">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative flex-1">
+              <label htmlFor="ticket-search" className="sr-only">
+                Search tickets
+              </label>
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
+                id="ticket-search"
                 value={searchQuery}
                 onChange={(event) => onSearchQueryChange(event.target.value)}
-                placeholder="Search by ticket id, title, or category..."
+                placeholder="Search by ID, title, or category"
                 className="h-11 rounded-xl border-white/10 bg-white/[0.04] pl-10 text-sm"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:flex">
+            {hasActiveFilters ? (
               <Button
                 type="button"
-                variant="outline"
-                className="rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
+                variant="ghost"
+                onClick={onClearFilters}
+                className="h-11 justify-center rounded-xl px-4 text-muted-foreground hover:bg-white/[0.06] hover:text-white"
               >
-                <Filter className="mr-2 size-4" />
-                Filters
+                <X className="size-4" />
+                Clear filters
               </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
-              >
-                <Download className="mr-2 size-4" />
-                Export
-              </Button>
-
-              <Button
-                asChild
-                className="col-span-2 rounded-xl bg-violet-600 shadow-lg shadow-violet-500/20 hover:bg-violet-500 sm:col-span-1"
-              >
-                <Link href="/submit-bug">
-                  <Plus className="mr-2 size-4" />
-                  Submit New Bug
-                </Link>
-              </Button>
-            </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -115,10 +102,10 @@ export function TicketFilters({
           </TabsList>
         </Tabs>
 
-        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-muted-foreground">
-          <SlidersHorizontal className="size-4 text-violet-300" />
-          Client-side filtering active
-        </div>
+        <p aria-live="polite" className="text-sm text-muted-foreground">
+          Showing <span className="font-semibold text-white">{visibleCount}</span> of{" "}
+          {totalCount} {totalCount === 1 ? "ticket" : "tickets"}
+        </p>
       </div>
     </div>
   );

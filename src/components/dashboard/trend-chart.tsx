@@ -21,7 +21,7 @@ export function TrendChart({ data }: TrendChartProps) {
   return (
     <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
       <CardHeader className="pb-0">
-        <CardTitle className="text-lg">Bug Reports Trend</CardTitle>
+        <CardTitle className="text-lg">Bug reports over time</CardTitle>
       </CardHeader>
 
       <CardContent className="h-[340px] p-6">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Eye, Menu } from "lucide-react";
 
 import { AppLogoMark } from "@/components/brand/app-logo-mark";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
@@ -25,6 +25,7 @@ export type DashboardUser = {
   name: string;
   email: string;
   initials: string;
+  isDemo: boolean;
 };
 
 type DashboardShellProps = {
@@ -95,9 +96,7 @@ export function DashboardShell({
           <AppLogoMark className="size-9 rounded-xl" iconClassName="size-6" />
           <div>
             <p className="font-bold leading-none">BugTriage AI</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Engineering Command
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Triage workspace</p>
           </div>
         </Link>
 
@@ -120,6 +119,7 @@ export function DashboardShell({
       </header>
 
       <main
+        id="main-content"
         className={cn(
           "min-h-screen transition-[padding] duration-300 ease-out",
           hasLoadedSidebarPreference && isSidebarCollapsed
@@ -127,8 +127,21 @@ export function DashboardShell({
             : "lg:pl-[280px]"
         )}
       >
-        <div className="mx-auto w-full max-w-[1880px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-          <div className="mb-6 flex justify-end lg:mb-8">
+        <div className="mx-auto w-full max-w-[1640px] px-4 py-6 sm:px-6 lg:px-8 lg:py-9">
+          <div className="mb-6 flex flex-col gap-3 lg:mb-8 lg:flex-row lg:items-start lg:justify-between">
+            {user.isDemo ? (
+              <div className="flex items-start gap-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.08] px-4 py-3 text-sm text-sky-100">
+                <Eye className="mt-0.5 size-4 shrink-0 text-sky-300" />
+                <div>
+                  <p className="font-semibold">Read-only demo</p>
+                  <p className="mt-0.5 text-xs leading-5 text-sky-100/65">
+                    Explore the sample data freely. Changes and uploads are disabled.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div />
+            )}
             <WorkspaceContextSwitcher
               roleLabel={workspace.role}
               currentWorkspaceId={workspace.id}

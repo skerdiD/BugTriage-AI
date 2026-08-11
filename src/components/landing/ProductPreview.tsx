@@ -33,18 +33,18 @@ function MetaBadge({
 
 export function ProductPreview() {
   return (
-    <section className="px-5 py-12 sm:px-6 md:py-16">
+    <section id="product-preview" className="scroll-mt-24 px-5 py-12 sm:px-6 md:py-16">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">
-            Product preview
+            A real example
           </p>
           <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-            From vague report to clear engineering context.
+            The context engineers need, without the back-and-forth.
           </h2>
           <p className="mt-4 text-base leading-8 text-slate-300">
-            See how BugTriage AI turns scattered issue details into a ticket your
-            team can actually act on.
+            Here is what happens when a short complaint, a screenshot, and a log
+            are brought together in one ticket.
           </p>
         </div>
 
@@ -54,10 +54,10 @@ export function ProductPreview() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium tracking-[0.2em] text-slate-500 uppercase">
-                    Messy input
+                    What came in
                   </p>
                   <h3 className="mt-2 text-xl font-semibold text-white">
-                    User complaint
+                    Support report
                   </h3>
                 </div>
                 <span className="flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
@@ -110,7 +110,7 @@ export function ProductPreview() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium tracking-[0.2em] text-cyan-100/70 uppercase">
-                    Structured output
+                    What the team gets
                   </p>
                   <h3 className="mt-2 text-xl font-semibold text-white">
                     Safari mobile checkout freezes after card entry

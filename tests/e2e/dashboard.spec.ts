@@ -5,14 +5,14 @@ test("@smoke home page renders primary product CTAs", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: /turn messy bug reports into engineering-ready tickets/i,
+      name: /turn rough bug reports into tickets engineers can act on/i,
     })
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /submit a bug/i }).first()
+    page.getByRole("link", { name: /explore the demo/i }).first()
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /view dashboard/i })
+    page.getByRole("link", { name: /see an example/i }).first()
   ).toBeVisible();
 });
 

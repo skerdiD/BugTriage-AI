@@ -46,7 +46,7 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Submit Bug",
+    title: "Report a bug",
     href: "/submit-bug",
     icon: UploadCloud,
   },
@@ -155,7 +155,7 @@ export function AppSidebar({
                   BugTriage AI
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  Engineering Command
+                  Triage workspace
                 </p>
               </div>
             </Link>
@@ -256,7 +256,7 @@ export function AppSidebar({
                   )}
                 >
                   <span className="block truncate text-sm font-semibold leading-5">
-                    My Account
+                    Account
                   </span>
                 </span>
 
@@ -277,10 +277,10 @@ export function AppSidebar({
             >
               <DropdownMenuLabel className="px-2 py-2">
                 <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
-                  My Account
+                  Account
                 </span>
                 <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                  Profile and session controls
+                  Profile and sign-in settings
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/10" />
@@ -303,7 +303,7 @@ export function AppSidebar({
                 className="cursor-pointer gap-2 rounded-xl px-2.5 py-2.5 text-sm text-red-200 focus:bg-red-500/10 focus:text-red-100"
               >
                 <LogOut className="size-4 text-red-300" />
-                {isLoggingOut ? "Logging out..." : "Logout"}
+                {isLoggingOut ? "Signing out..." : "Sign out"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

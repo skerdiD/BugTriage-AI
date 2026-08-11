@@ -20,8 +20,8 @@ export default async function ProfilePage() {
     <div className="space-y-8">
       <PageHeader
         title="Profile"
-        description="Review your account identity and current workspace access."
-        badge="My Account"
+        description="Update your name and review your current workspace access."
+        badge="Account"
       />
 
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -39,17 +39,17 @@ export default async function ProfilePage() {
 
               <div className="min-w-0">
                 <p className="truncate text-xl font-semibold text-white">
-                  My Account
+                  {user.name}
                 </p>
                 <p className="mt-1 truncate text-sm text-muted-foreground">
-                  Manage your profile name and workspace access.
+                  Manage your profile and check where you have access.
                 </p>
               </div>
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2">
               <Badge className="border-emerald-500/25 bg-emerald-500/15 text-emerald-200">
-                Active Account
+                Active account
               </Badge>
               <Badge className="border-violet-500/25 bg-violet-500/10 text-violet-200">
                 {context.role}
@@ -64,7 +64,7 @@ export default async function ProfilePage() {
 
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
-            <CardTitle>Account Details</CardTitle>
+            <CardTitle>Account details</CardTitle>
           </CardHeader>
 
           <CardContent className="grid gap-4 md:grid-cols-2">

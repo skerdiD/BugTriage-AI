@@ -82,7 +82,7 @@ export default async function TeamPage() {
     <div className="space-y-8">
       <PageHeader
         title="Team"
-        description="See who belongs to this workspace, which role they hold, and who is carrying bug ownership across the current team space."
+        description="Invite teammates, review access, and see how bug ownership is shared."
         badge={`${members.length} members`}
       />
 
@@ -126,7 +126,7 @@ export default async function TeamPage() {
                 <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
                   <MailPlus className="size-5 text-violet-300" />
                 </div>
-                <h2 className="mt-6 text-xl font-semibold">Invite Teammates</h2>
+                <h2 className="mt-6 text-xl font-semibold">Invite teammates</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                   Create a secure shareable invite link for this workspace. The
                   invited person must sign in with the same email before the link
@@ -182,7 +182,7 @@ export default async function TeamPage() {
                 <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
                   <Clock3 className="size-5 text-sky-300" />
                 </div>
-                <h2 className="mt-6 text-xl font-semibold">Pending Invites</h2>
+                <h2 className="mt-6 text-xl font-semibold">Pending invites</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Pending access stays open for 7 days unless it is accepted or
                   revoked first.
