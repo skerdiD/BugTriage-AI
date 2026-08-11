@@ -292,9 +292,9 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
     email.split("@")[0]?.replace(/[._-]/g, " ") ||
     "BugTriage User";
 
-  const existingUser = await prisma.user.findFirst({
+  const existingUserByAuthId = await prisma.user.findUnique({
     where: {
-      OR: [{ id: input.authUserId }, { email }],
+      id: input.authUserId,
     },
     select: {
       id: true,
@@ -302,13 +302,29 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
       name: true,
     },
   });
+  const existingUserByEmail = existingUserByAuthId
+    ? null
+    : await prisma.user.findUnique({
+        where: {
+          email,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      });
+  const existingUser = existingUserByAuthId ?? existingUserByEmail;
 
   const user = existingUser
-    ? existingUser.email === email && existingUser.name === name
+    ? existingUser.id === input.authUserId &&
+      existingUser.email === email &&
+      existingUser.name === name
       ? existingUser
       : await prisma.user.update({
           where: { id: existingUser.id },
           data: {
+            id: input.authUserId,
             email,
             name,
           },
@@ -856,10 +872,22 @@ export async function removeWorkspaceMember(input: {
     );
   }
 
-  await prisma.workspaceMember.delete({
-    where: {
-      id: membership.id,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.ticket.updateMany({
+      where: {
+        workspaceId: input.workspaceId,
+        assigneeId: membership.userId,
+      },
+      data: {
+        assigneeId: null,
+      },
+    });
+
+    await tx.workspaceMember.delete({
+      where: {
+        id: membership.id,
+      },
+    });
   });
 
   return {

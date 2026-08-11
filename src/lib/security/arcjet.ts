@@ -183,7 +183,7 @@ export const bugSubmissionProtection = {
 
     return protectWithLocalFixedWindow(
       request,
-      getRequestKey(request, details.userId),
+      `bug-submission:${getRequestKey(request, details.userId)}`,
       10 * 60 * 1000,
       6
     );
@@ -201,7 +201,7 @@ export const githubIssueExportProtection = {
 
     return protectWithLocalFixedWindow(
       request,
-      getRequestKey(request, details.userId),
+      `github-export:${getRequestKey(request, details.userId)}`,
       10 * 60 * 1000,
       12
     );

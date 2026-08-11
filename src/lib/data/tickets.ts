@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomInt } from "node:crypto";
 import {
   AiAnalysisFeedback,
   AiProcessingStatus,
@@ -197,6 +198,7 @@ export type AddTicketCommentInput = {
 
 export const MAX_TICKET_COMMENT_LENGTH = 4_000;
 export const MAX_GITHUB_EXPORT_ERROR_LENGTH = 500;
+const GITHUB_EXPORT_LEASE_MS = 60_000;
 
 export class GitHubExportStateError extends Error {
   status: number;
@@ -260,8 +262,8 @@ function assertTicketAttachmentPaths(
 
 export async function generateUniqueTicketCode() {
   try {
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const code = `BUG-${Math.floor(1000 + Math.random() * 9000)}`;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const code = `BUG-${randomInt(10_000_000, 100_000_000)}`;
 
       const existing = await prisma.ticket.findUnique({
         where: { code },
@@ -271,7 +273,7 @@ export async function generateUniqueTicketCode() {
       if (!existing) return code;
     }
 
-    return `BUG-${Date.now().toString().slice(-6)}`;
+    throw new Error("Could not allocate a unique ticket code.");
   } catch (error) {
     captureServerException(error, {
       area: "database",
@@ -752,12 +754,23 @@ export async function claimTicketGitHubExport(input: {
     );
   }
 
+  const staleBefore = new Date(Date.now() - GITHUB_EXPORT_LEASE_MS);
   const claimed = await prisma.ticket.updateMany({
     where: {
       id: access.ticket.id,
-      githubExportStatus: {
-        in: [GitHubExportStatus.NOT_EXPORTED, GitHubExportStatus.FAILED],
-      },
+      OR: [
+        {
+          githubExportStatus: {
+            in: [GitHubExportStatus.NOT_EXPORTED, GitHubExportStatus.FAILED],
+          },
+        },
+        {
+          githubExportStatus: GitHubExportStatus.EXPORTING,
+          updatedAt: {
+            lt: staleBefore,
+          },
+        },
+      ],
     },
     data: {
       githubExportStatus: GitHubExportStatus.EXPORTING,

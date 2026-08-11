@@ -23,10 +23,14 @@ const {
       findFirst: vi.fn(),
       delete: vi.fn(),
     },
+    ticket: {
+      updateMany: vi.fn(),
+    },
     project: {
       findFirst: vi.fn(),
       create: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -67,6 +71,10 @@ import {
 describe("workspace member management", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    prismaMock.$transaction.mockImplementation(
+      async (callback: (tx: typeof prismaMock) => Promise<unknown>) =>
+        callback(prismaMock)
+    );
     assertWorkspaceMemberMock.mockResolvedValue({
       userId: "user-1",
       workspace: {
@@ -239,6 +247,15 @@ describe("workspace member management", () => {
     expect(prismaMock.workspaceMember.delete).toHaveBeenCalledWith({
       where: {
         id: "member-3",
+      },
+    });
+    expect(prismaMock.ticket.updateMany).toHaveBeenCalledWith({
+      where: {
+        workspaceId: "workspace-1",
+        assigneeId: "user-3",
+      },
+      data: {
+        assigneeId: null,
       },
     });
   });

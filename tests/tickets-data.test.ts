@@ -1,16 +1,18 @@
 import {
   AiAnalysisFeedback,
   AttachmentType,
+  GitHubExportStatus,
   TicketActivityType,
   TicketStatus,
 } from "@prisma/client";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   AuthorizationErrorMock,
   assertCanAccessTicketMock,
   assertCanCommentOnTicketMock,
   assertCanCreateTicketMock,
+  assertCanExportTicketMock,
   assertCanModifyTicketMock,
   assertCanAccessProjectMock,
   assertWorkspaceMemberMock,
@@ -53,6 +55,7 @@ const {
     assertCanAccessTicketMock: vi.fn(),
     assertCanCommentOnTicketMock: vi.fn(),
     assertCanCreateTicketMock: vi.fn(),
+    assertCanExportTicketMock: vi.fn(),
     assertCanModifyTicketMock: vi.fn(),
     assertWorkspaceMemberMock: vi.fn(),
     captureServerExceptionMock: vi.fn(),
@@ -61,6 +64,8 @@ const {
       ticket: {
         create: vi.fn(),
         findFirst: vi.fn(),
+        findUnique: vi.fn(),
+        updateMany: vi.fn(),
       },
       ticketAiAnalysisRun: {
         findFirst: vi.fn(),
@@ -85,6 +90,7 @@ vi.mock("@/lib/auth/authorization", () => ({
   assertCanAccessTicket: assertCanAccessTicketMock,
   assertCanCommentOnTicket: assertCanCommentOnTicketMock,
   assertCanCreateTicket: assertCanCreateTicketMock,
+  assertCanExportTicket: assertCanExportTicketMock,
   assertCanModifyTicket: assertCanModifyTicketMock,
   assertWorkspaceMember: assertWorkspaceMemberMock,
 }));
@@ -101,7 +107,9 @@ vi.mock("@/lib/prisma", () => ({
 import {
   MAX_TICKET_COMMENT_LENGTH,
   addTicketComment,
+  claimTicketGitHubExport,
   createTicket,
+  generateUniqueTicketCode,
   getTicketByCode,
   regenerateTicketAiAnalysis,
   setTicketAiAnalysisFeedback,
@@ -109,6 +117,10 @@ import {
 } from "@/lib/data/tickets";
 
 describe("ticket data layer", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -131,6 +143,12 @@ describe("ticket data layer", () => {
         workspace: {
           id: "workspace-1",
         },
+      },
+    });
+    assertCanExportTicketMock.mockResolvedValue({
+      ticket: {
+        id: "ticket-1",
+        code: "BUG-4242",
       },
     });
     assertCanAccessTicketMock.mockResolvedValue({
@@ -162,6 +180,55 @@ describe("ticket data layer", () => {
       }
 
       return Promise.all(callback as Promise<unknown>[]);
+    });
+  });
+
+  it("allocates a high-entropy ticket code after a collision", async () => {
+    prismaMock.ticket.findUnique
+      .mockResolvedValueOnce({ id: "existing-ticket" })
+      .mockResolvedValueOnce(null);
+
+    const code = await generateUniqueTicketCode();
+
+    expect(code).toMatch(/^BUG-\d{8}$/);
+    expect(prismaMock.ticket.findUnique).toHaveBeenCalledTimes(2);
+  });
+
+  it("allows an abandoned GitHub export claim to be recovered after its lease", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-11T10:00:00.000Z"));
+    prismaMock.ticket.updateMany.mockResolvedValue({ count: 1 });
+
+    await claimTicketGitHubExport({
+      workspaceId: "workspace-1",
+      ticketCode: "BUG-4242",
+      actorId: "user-1",
+    });
+
+    expect(prismaMock.ticket.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "ticket-1",
+        OR: [
+          {
+            githubExportStatus: {
+              in: [
+                GitHubExportStatus.NOT_EXPORTED,
+                GitHubExportStatus.FAILED,
+              ],
+            },
+          },
+          {
+            githubExportStatus: GitHubExportStatus.EXPORTING,
+            updatedAt: {
+              lt: new Date("2026-08-11T09:59:00.000Z"),
+            },
+          },
+        ],
+      },
+      data: {
+        githubExportStatus: GitHubExportStatus.EXPORTING,
+        githubExportError: null,
+      },
     });
   });
 
