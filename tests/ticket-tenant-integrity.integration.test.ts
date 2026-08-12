@@ -22,6 +22,7 @@ const workspaceAId = `tenant-integrity-workspace-a-${suffix}`;
 const workspaceBId = `tenant-integrity-workspace-b-${suffix}`;
 const projectAId = `tenant-integrity-project-a-${suffix}`;
 const projectBId = `tenant-integrity-project-b-${suffix}`;
+const embeddingVector = `[${Array.from({ length: 768 }, () => "0").join(",")}]`;
 
 describe("Ticket project/workspace tenant integrity", () => {
   beforeAll(async () => {
@@ -102,5 +103,51 @@ describe("Ticket project/workspace tenant integrity", () => {
     ).rejects.toMatchObject({
       code: "P2003",
     });
+  });
+
+  it("rejects an embedding whose workspace/project disagrees with its ticket", async () => {
+    const ticketId = `tenant-integrity-embedding-${suffix}`;
+
+    await prisma.ticket.create({
+      data: {
+        id: ticketId,
+        code: `TENANT-EMBEDDING-${suffix}`,
+        workspaceId: workspaceAId,
+        projectId: projectAId,
+        title: "Embedding ownership test",
+        description: "Its embedding must retain the same tenant ownership.",
+      },
+    });
+
+    await expect(
+      prisma.$executeRaw`
+        INSERT INTO "TicketEmbedding" (
+          "id", "ticketId", "workspaceId", "projectId", "provider", "model",
+          "contentHash", "embedding", "updatedAt"
+        ) VALUES (
+          ${`embedding-invalid-${suffix}`}, ${ticketId}, ${workspaceBId}, ${projectBId},
+          'test', 'test', 'hash-invalid', ${embeddingVector}::vector(768), CURRENT_TIMESTAMP
+        )
+      `
+    ).rejects.toMatchObject({ code: "P2010" });
+
+    await prisma.$executeRaw`
+      INSERT INTO "TicketEmbedding" (
+        "id", "ticketId", "workspaceId", "projectId", "provider", "model",
+        "contentHash", "embedding", "updatedAt"
+      ) VALUES (
+        ${`embedding-valid-${suffix}`}, ${ticketId}, ${workspaceAId}, ${projectAId},
+        'test', 'test', 'hash-valid', ${embeddingVector}::vector(768), CURRENT_TIMESTAMP
+      )
+    `;
+
+    await prisma.ticket.delete({ where: { id: ticketId } });
+
+    const embeddings = await prisma.$queryRaw<Array<{ ticketId: string }>>`
+      SELECT "ticketId"
+      FROM "TicketEmbedding"
+      WHERE "ticketId" = ${ticketId}
+    `;
+    expect(embeddings).toEqual([]);
   });
 });

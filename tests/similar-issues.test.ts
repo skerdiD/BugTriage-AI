@@ -193,5 +193,15 @@ describe("similar issues", () => {
       }),
     ]);
     expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(3);
+
+    const searchSql = (
+      prismaMock.$queryRaw.mock.calls[2]?.[0] as { strings?: readonly string[] }
+    ).strings?.join("?");
+
+    // The vector candidate scan is directly workspace-filtered, and the joined
+    // ticket is independently constrained to the same workspace.
+    expect(searchSql).toContain('te."workspaceId" = ?');
+    expect(searchSql).toContain('t."workspaceId" = ?');
+    expect(searchSql).toContain('t."workspaceId" = te."workspaceId"');
   });
 });

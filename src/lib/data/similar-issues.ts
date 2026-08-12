@@ -176,10 +176,15 @@ export async function findSimilarIssuesForTicket(input: {
     const currentEmbedding = await prisma.$queryRaw<Array<{ embedding: string }>>`
       SELECT te."embedding"::text AS "embedding"
       FROM "public"."TicketEmbedding" te
-      INNER JOIN "public"."Ticket" t ON t."id" = te."ticketId"
+      INNER JOIN "public"."Ticket" t
+        ON t."id" = te."ticketId"
+        AND t."workspaceId" = te."workspaceId"
+        AND t."projectId" = te."projectId"
       WHERE te."ticketId" = ${input.ticketId}
         AND te."workspaceId" = ${input.workspaceId}
+        AND te."projectId" = ${input.projectId}
         AND t."workspaceId" = ${input.workspaceId}
+        AND t."projectId" = ${input.projectId}
       LIMIT 1
     `;
 
@@ -204,7 +209,10 @@ export async function findSimilarIssuesForTicket(input: {
         t."priorityScore",
         (1 - (te."embedding" <=> current_embedding.embedding))::double precision AS "similarity"
       FROM "public"."TicketEmbedding" te
-      INNER JOIN "public"."Ticket" t ON t."id" = te."ticketId"
+      INNER JOIN "public"."Ticket" t
+        ON t."id" = te."ticketId"
+        AND t."workspaceId" = te."workspaceId"
+        AND t."projectId" = te."projectId"
       CROSS JOIN current_embedding
       WHERE te."workspaceId" = ${input.workspaceId}
         AND t."workspaceId" = ${input.workspaceId}

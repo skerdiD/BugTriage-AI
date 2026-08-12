@@ -207,6 +207,8 @@ model Ticket {
   comments                TicketComment[]
   activities              TicketActivity[]
 
+  // Referenced by TicketEmbedding's tenant-scoped composite foreign key.
+  @@unique([id, workspaceId, projectId])
   @@index([workspaceId])
   @@index([projectId])
   @@index([reporterId])
@@ -274,8 +276,13 @@ model TicketEmbedding {
   createdAt   DateTime                   @default(now())
   updatedAt   DateTime                   @updatedAt
 
-  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  // Keep tenant metadata beside the vector so pgvector searches can filter their
+  // candidate set by workspace, but make it impossible for it to disagree with
+  // the Ticket that owns the embedding.
+  ticket Ticket @relation(fields: [ticketId, workspaceId, projectId], references: [id, workspaceId, projectId], onDelete: Cascade, onUpdate: Cascade)
 
+  // Required by Prisma to model this tenant-scoped relation as one-to-one.
+  @@unique([ticketId, workspaceId, projectId])
   @@index([workspaceId])
   @@index([projectId])
   @@index([workspaceId, projectId])
