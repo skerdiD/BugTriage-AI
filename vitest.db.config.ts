@@ -1,4 +1,5 @@
 import path from "node:path";
+
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -10,8 +11,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    exclude: ["tests/e2e/**", "tests/**/*.integration.test.ts"],
-    include: ["tests/**/*.test.{ts,tsx}"],
+    include: ["tests/**/*.integration.test.ts"],
     setupFiles: ["./tests/setup/env.ts"],
   },
 });
