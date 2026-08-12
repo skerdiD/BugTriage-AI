@@ -213,11 +213,13 @@ Bug reports stay workspace-scoped, attachments stay private, AI logic runs serve
 
 ## Background Processing — Redis + BullMQ
 
-Ticket creation writes the authorized, workspace-scoped report to PostgreSQL before
-dispatching expensive AI work. When `REDIS_URL` is configured, the Next.js server
-adds a minimal `{ ticketId }` job to the single `bug-analysis` queue and returns
-without waiting for Gemini. A standalone Node.js worker reloads authoritative ticket
-data, performs structured triage, upserts the pgvector embedding, runs the existing
+Ticket creation writes the authorized, workspace-scoped report and a pending
+`TicketAnalysisDispatch` outbox row in the same PostgreSQL write before attempting
+to publish expensive AI work. The Next.js request adds only a minimal `{ ticketId }`
+job to the single `bug-analysis` queue and never waits for Gemini. If Redis is down,
+the durable outbox row remains pending, records a safe error and retry count, and the
+ticket stays usable. A standalone Node.js worker reloads authoritative ticket data,
+performs structured triage, upserts the pgvector embedding, runs the existing
 workspace-scoped similarity search, and persists the processing state.
 
 Jobs receive three attempts with exponential backoff starting at two seconds. The
@@ -243,23 +245,33 @@ npm run dev
 npm run worker:dev
 ```
 
-If `REDIS_URL` is absent, or publishing to Redis fails, the request uses the same
-processing service synchronously. This transition mode avoids losing analysis work
-and keeps the existing deployment functional before hosted Redis is provisioned.
+Dispatch retries are separate from BullMQ processing retries: the republisher uses
+PostgreSQL claims, exponential backoff, and a stable outbox-derived job ID; BullMQ
+retains its three processing attempts for Gemini/embedding failures. Schedule the
+one-shot republisher at least once per minute on any Node-capable platform:
+
+```bash
+npm run republish
+```
+
+Concurrent republisher runs atomically claim rows in PostgreSQL. A process crash
+after Redis accepts a job is safe because a recovered claim reuses the same BullMQ
+job ID, while the worker's ticket-level processing lease remains idempotent.
 
 Production has three separate runtime responsibilities:
 
 ```txt
-Vercel Next.js Web/API -> hosted Redis/BullMQ -> long-running Node.js worker
-          |                                             |
-          +---------------- PostgreSQL + pgvector ------+
-                                      |
-                                   Gemini
+Next.js Web/API -> PostgreSQL outbox <- scheduled `npm run republish`
+      |                    |                       |
+      +--------------------+-----> hosted Redis/BullMQ -> Node.js worker
+                                                       |
+                                                    Gemini
 ```
 
 Do not run the persistent BullMQ consumer inside a Vercel serverless request. Deploy
-`npm run worker` to a worker-capable Node host with the same database, Gemini, Sentry,
-and Redis server environment variables used by the web backend.
+`npm run worker` to a worker-capable Node host and schedule `npm run republish` at
+least once per minute, both with the same database, Gemini, Sentry, and Redis server
+environment variables used by the web backend.
 
 ---
 
@@ -329,6 +341,7 @@ npm run build             # Create production build
 npm run start             # Start production server
 npm run worker            # Start the production BullMQ worker
 npm run worker:dev        # Start the worker with file watching
+npm run republish         # Retry pending PostgreSQL -> Redis analysis dispatches once
 npm run lint              # Run ESLint
 npm run typecheck         # Run TypeScript checks
 npm run test              # Run Vitest tests

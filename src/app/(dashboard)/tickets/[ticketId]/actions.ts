@@ -257,7 +257,7 @@ export async function regenerateTicketAiAnalysisAction(input: {
       message:
         dispatch.mode === "queued"
           ? "AI analysis was queued and will update shortly."
-          : "AI analysis regenerated and the previous run was preserved.",
+          : "AI analysis is pending and will run when background processing is available.",
     };
   } catch (error) {
     if (error instanceof AuthorizationError) {

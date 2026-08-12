@@ -296,6 +296,7 @@ describe("ticket data layer", () => {
               severity: "MEDIUM",
             }),
           },
+          analysisDispatches: undefined,
           attachments: {
             create: [
               expect.objectContaining({
@@ -313,6 +314,33 @@ describe("ticket data layer", () => {
                 aiAnalyzed: true,
               },
             }),
+          },
+        }),
+      })
+    );
+  });
+
+  it("creates a pending analysis outbox row with a new ticket", async () => {
+    prismaMock.ticket.create.mockResolvedValue({ id: "ticket-2", code: "BUG-4243" });
+
+    await createTicket({
+      code: "BUG-4243",
+      workspaceId: "workspace-1",
+      projectId: "project-1",
+      title: "Search results fail to render",
+      description: "Opening the search page leaves users on a blank screen.",
+    });
+
+    expect(prismaMock.ticket.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          aiProcessingStatus: "PENDING",
+          aiProcessingJobId: expect.stringMatching(/^ticket-analysis-/),
+          analysisDispatches: {
+            create: {
+              id: expect.any(String),
+              jobId: expect.stringMatching(/^ticket-analysis-/),
+            },
           },
         }),
       })

@@ -1,7 +1,5 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
-
 import {
   AiProcessingStatus,
   Prisma,
@@ -21,6 +19,7 @@ import {
 } from "@/lib/data/similar-issues";
 import { captureServerException } from "@/lib/observability/server-monitoring";
 import { prisma } from "@/lib/prisma";
+import { prepareTicketAnalysisDispatch } from "@/lib/queue/ticket-analysis-outbox";
 import { getSafeErrorMessage } from "@/lib/security/redaction";
 import { bugReportFormSchema } from "@/lib/validation/bug-report";
 
@@ -57,53 +56,19 @@ export function isRetryableTicketAnalysisError(error: unknown) {
   return true;
 }
 
-export function createTicketAnalysisJobId(ticketId: string) {
-  const safeTicketId = ticketId.replace(/[^a-zA-Z0-9_-]/g, "-");
-  return `ticket-analysis-${safeTicketId}-${randomUUID()}`;
-}
-
 export async function prepareTicketAnalysis(input: {
   ticketId: string;
   requestedById?: string;
 }) {
-  return prisma.$transaction(async (tx) => {
-    const ticket = await tx.ticket.findUnique({
-      where: { id: input.ticketId },
-      select: {
-        id: true,
-        aiProcessingStatus: true,
-        aiProcessingJobId: true,
-      },
-    });
-
-    if (!ticket) {
-      throw new TicketAnalysisPermanentError("Ticket was not found.");
+  try {
+    const dispatch = await prepareTicketAnalysisDispatch(input);
+    return { jobId: dispatch.jobId, reused: dispatch.reused };
+  } catch (error) {
+    if (error instanceof Error && error.message === "Ticket was not found.") {
+      throw new TicketAnalysisPermanentError(error.message);
     }
-
-    if (
-      ticket.aiProcessingJobId &&
-      (ticket.aiProcessingStatus === AiProcessingStatus.PENDING ||
-        ticket.aiProcessingStatus === AiProcessingStatus.PROCESSING)
-    ) {
-      return { jobId: ticket.aiProcessingJobId, reused: true };
-    }
-
-    const jobId = createTicketAnalysisJobId(ticket.id);
-
-    await tx.ticket.update({
-      where: { id: ticket.id },
-      data: {
-        aiProcessingStatus: AiProcessingStatus.PENDING,
-        aiProcessingJobId: jobId,
-        aiProcessingError: null,
-        aiProcessingStartedAt: null,
-        aiProcessingCompletedAt: null,
-        aiProcessingRequestedById: input.requestedById ?? null,
-      },
-    });
-
-    return { jobId, reused: false };
-  });
+    throw error;
+  }
 }
 
 async function claimTicketAnalysis(ticketId: string, jobId: string) {

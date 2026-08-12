@@ -11,6 +11,7 @@
     "start": "next start",
     "worker": "node --env-file-if-exists=.env --conditions=react-server --import tsx src/workers/bug-analysis.worker.ts",
     "worker:dev": "node --env-file-if-exists=.env --conditions=react-server --watch --import tsx src/workers/bug-analysis.worker.ts",
+    "republish": "node --env-file-if-exists=.env --conditions=react-server --import tsx src/workers/ticket-analysis-republisher.ts",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit",

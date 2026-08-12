@@ -29,6 +29,7 @@ import {
   withServerSpan,
 } from "@/lib/observability/server-monitoring";
 import { prisma } from "@/lib/prisma";
+import { createTicketAnalysisDispatchIdentifiers } from "@/lib/queue/ticket-analysis-outbox";
 
 const minimalUserSelect = {
   id: true,
@@ -442,6 +443,9 @@ export async function createTicket(input: CreateTicketInput) {
   );
 
   const reporterId = input.reporterId ?? currentUser.id;
+  const analysisDispatch = input.aiAnalysis
+    ? null
+    : createTicketAnalysisDispatchIdentifiers();
 
   try {
     return await withServerSpan(
@@ -481,6 +485,7 @@ export async function createTicket(input: CreateTicketInput) {
             aiProcessingStatus: input.aiAnalysis
               ? AiProcessingStatus.COMPLETED
               : AiProcessingStatus.PENDING,
+            aiProcessingJobId: analysisDispatch?.jobId,
             aiProcessingCompletedAt: input.aiAnalysis ? new Date() : null,
             aiInputContext: input.aiInputContext,
             aiAnalysis: input.aiAnalysis
@@ -509,6 +514,14 @@ export async function createTicket(input: CreateTicketInput) {
                     suggestedFix: input.aiAnalysis.suggestedFix,
                     reproductionSteps: input.aiAnalysis.reproductionSteps,
                     rawAiResponse: input.aiAnalysis.rawAiResponse,
+                  },
+                }
+              : undefined,
+            analysisDispatches: analysisDispatch
+              ? {
+                  create: {
+                    id: analysisDispatch.dispatchId,
+                    jobId: analysisDispatch.jobId,
                   },
                 }
               : undefined,
