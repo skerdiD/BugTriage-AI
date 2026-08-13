@@ -486,6 +486,7 @@ export async function createTicket(input: CreateTicketInput) {
               ? AiProcessingStatus.COMPLETED
               : AiProcessingStatus.PENDING,
             aiProcessingJobId: analysisDispatch?.jobId,
+            aiProcessingRequestedById: analysisDispatch ? reporterId : null,
             aiProcessingCompletedAt: input.aiAnalysis ? new Date() : null,
             aiInputContext: input.aiInputContext,
             aiAnalysis: input.aiAnalysis

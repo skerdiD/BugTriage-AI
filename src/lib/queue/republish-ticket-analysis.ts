@@ -2,7 +2,10 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import { TicketAnalysisDispatchStatus } from "@prisma/client";
+import {
+  AiProcessingStatus,
+  TicketAnalysisDispatchStatus,
+} from "@prisma/client";
 
 import { enqueueBugAnalysis } from "@/lib/queue/bug-analysis";
 import { captureServerException } from "@/lib/observability/server-monitoring";
@@ -13,6 +16,8 @@ const CLAIM_LEASE_MS = 60_000;
 const MAX_DISPATCH_ATTEMPTS = 8;
 const MAX_DISPATCH_ERROR_LENGTH = 500;
 const MAX_DISPATCH_BACKOFF_MS = 15 * 60_000;
+const TERMINAL_TICKET_ERROR =
+  "Background analysis could not be scheduled. Retry the analysis later.";
 
 type RepublishDependencies = { enqueue: typeof enqueueBugAnalysis; now: () => Date };
 const defaultDependencies: RepublishDependencies = {
@@ -74,16 +79,52 @@ async function dispatchClaimedRecord(input: {
   } catch (error) {
     const safeError = getSafeErrorMessage(error).slice(0, MAX_DISPATCH_ERROR_LENGTH);
     const terminal = attempt >= MAX_DISPATCH_ATTEMPTS;
-    await prisma.ticketAnalysisDispatch.updateMany({
-      where: { id: input.id, status: TicketAnalysisDispatchStatus.DISPATCHING, claimToken: input.claimToken },
-      data: {
-        status: terminal ? TicketAnalysisDispatchStatus.FAILED : TicketAnalysisDispatchStatus.PENDING,
-        nextAttemptAt: new Date(input.now.getTime() + getDispatchBackoffMs(attempt)),
-        lastError: safeError,
-        lockedAt: null,
-        claimToken: null,
-      },
-    });
+    const dispatchWhere = {
+      id: input.id,
+      status: TicketAnalysisDispatchStatus.DISPATCHING,
+      claimToken: input.claimToken,
+    };
+    const dispatchData = {
+      status: terminal
+        ? TicketAnalysisDispatchStatus.FAILED
+        : TicketAnalysisDispatchStatus.PENDING,
+      nextAttemptAt: new Date(
+        input.now.getTime() + getDispatchBackoffMs(attempt)
+      ),
+      lastError: safeError,
+      lockedAt: null,
+      claimToken: null,
+    };
+
+    if (terminal) {
+      await prisma.$transaction(async (tx) => {
+        const finalized = await tx.ticketAnalysisDispatch.updateMany({
+          where: dispatchWhere,
+          data: dispatchData,
+        });
+
+        if (finalized.count !== 1) return;
+
+        await tx.ticket.updateMany({
+          where: {
+            id: input.ticketId,
+            aiProcessingJobId: input.jobId,
+            aiProcessingStatus: AiProcessingStatus.PENDING,
+          },
+          data: {
+            aiProcessingStatus: AiProcessingStatus.FAILED,
+            aiProcessingError: TERMINAL_TICKET_ERROR,
+            aiProcessingStartedAt: null,
+            aiProcessingCompletedAt: null,
+          },
+        });
+      });
+    } else {
+      await prisma.ticketAnalysisDispatch.updateMany({
+        where: dispatchWhere,
+        data: dispatchData,
+      });
+    }
     captureServerException(error, {
       area: "ticket-analysis-dispatch",
       action: "enqueue",

@@ -257,6 +257,9 @@ npm run republish
 Concurrent republisher runs atomically claim rows in PostgreSQL. A process crash
 after Redis accepts a job is safe because a recovered claim reuses the same BullMQ
 job ID, while the worker's ticket-level processing lease remains idempotent.
+Dispatch publishing is attempted up to eight times. If those attempts are exhausted,
+the outbox and current ticket operation move to `FAILED` together so the UI stops
+polling and offers a safe manual retry; Redis details remain internal.
 
 Production has three separate runtime responsibilities:
 

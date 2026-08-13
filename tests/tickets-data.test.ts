@@ -336,6 +336,7 @@ describe("ticket data layer", () => {
         data: expect.objectContaining({
           aiProcessingStatus: "PENDING",
           aiProcessingJobId: expect.stringMatching(/^ticket-analysis-/),
+          aiProcessingRequestedById: "user-1",
           analysisDispatches: {
             create: {
               id: expect.any(String),

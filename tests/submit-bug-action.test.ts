@@ -211,9 +211,8 @@ describe("analyzeAndCreateTicketAction", () => {
       code: "BUG-4242",
     });
     dispatchTicketAnalysisMock.mockResolvedValue({
-      mode: "synchronous",
+      mode: "pending",
       jobId: "ticket-analysis-ticket-1-test",
-      result: { status: "completed", similarIssueCount: 0 },
     });
   });
 
@@ -421,6 +420,24 @@ describe("analyzeAndCreateTicketAction", () => {
     });
     expect(createTicketMock).toHaveBeenCalled();
     expect(dispatchTicketAnalysisMock).toHaveBeenCalledOnce();
+    expect(createAndStoreTicketEmbeddingMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps ticket creation successful when Redis publishing is deferred", async () => {
+    dispatchTicketAnalysisMock.mockResolvedValue({
+      mode: "pending",
+      jobId: "ticket-analysis-ticket-1-test",
+    });
+
+    const result = await analyzeAndCreateTicketAction(buildValidFormData());
+
+    expect(result).toMatchObject({
+      ok: true,
+      ticketCode: "BUG-4242",
+      aiFailed: false,
+    });
+    expect(dispatchTicketAnalysisMock).toHaveBeenCalledOnce();
+    expect(analyzeBugReportWithGeminiMock).not.toHaveBeenCalled();
     expect(createAndStoreTicketEmbeddingMock).not.toHaveBeenCalled();
   });
 

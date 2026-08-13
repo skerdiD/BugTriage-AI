@@ -1,14 +1,22 @@
+import {
+  AiProcessingStatus,
+  TicketAnalysisDispatchStatus,
+} from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { enqueueMock, captureMock, prismaMock } = vi.hoisted(() => ({
   enqueueMock: vi.fn(),
   captureMock: vi.fn(),
   prismaMock: {
+    ticket: {
+      updateMany: vi.fn(),
+    },
     ticketAnalysisDispatch: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
       updateMany: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -32,6 +40,11 @@ describe("ticket analysis outbox republisher", () => {
     enqueueMock.mockResolvedValue({ jobId: "analysis-job-1", queueName: "bug-analysis" });
     prismaMock.ticketAnalysisDispatch.findUnique.mockResolvedValue(record);
     prismaMock.ticketAnalysisDispatch.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.ticket.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.$transaction.mockImplementation(
+      async (callback: (tx: typeof prismaMock) => Promise<unknown>) =>
+        callback(prismaMock)
+    );
   });
 
   it("marks a durable record dispatched after Redis accepts its stable job", async () => {
@@ -80,5 +93,62 @@ describe("ticket analysis outbox republisher", () => {
     await republishPendingTicketAnalyses({}, dependencies);
 
     expect(enqueueMock).toHaveBeenCalledOnce();
+  });
+
+  it("marks the ticket retryable after bounded dispatch attempts are exhausted", async () => {
+    prismaMock.ticketAnalysisDispatch.findUnique.mockResolvedValue({
+      ...record,
+      attempts: 7,
+    });
+    enqueueMock.mockRejectedValue(new Error("redis unavailable"));
+
+    await expect(
+      dispatchTicketAnalysisOutboxRecord(
+        { ticketId: "ticket-1", jobId: "analysis-job-1" },
+        dependencies
+      )
+    ).resolves.toEqual({ mode: "pending", jobId: "analysis-job-1" });
+
+    expect(prismaMock.$transaction).toHaveBeenCalledOnce();
+    expect(prismaMock.ticketAnalysisDispatch.updateMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: TicketAnalysisDispatchStatus.FAILED,
+          lastError: expect.stringContaining("redis unavailable"),
+        }),
+      })
+    );
+    expect(prismaMock.ticket.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "ticket-1",
+        aiProcessingJobId: "analysis-job-1",
+        aiProcessingStatus: AiProcessingStatus.PENDING,
+      },
+      data: {
+        aiProcessingStatus: AiProcessingStatus.FAILED,
+        aiProcessingError:
+          "Background analysis could not be scheduled. Retry the analysis later.",
+        aiProcessingStartedAt: null,
+        aiProcessingCompletedAt: null,
+      },
+    });
+  });
+
+  it("does not overwrite ticket state after an expired claim is lost", async () => {
+    prismaMock.ticketAnalysisDispatch.findUnique.mockResolvedValue({
+      ...record,
+      attempts: 7,
+    });
+    prismaMock.ticketAnalysisDispatch.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    enqueueMock.mockRejectedValue(new Error("redis unavailable"));
+
+    await dispatchTicketAnalysisOutboxRecord(
+      { ticketId: "ticket-1", jobId: "analysis-job-1" },
+      dependencies
+    );
+
+    expect(prismaMock.ticket.updateMany).not.toHaveBeenCalled();
   });
 });

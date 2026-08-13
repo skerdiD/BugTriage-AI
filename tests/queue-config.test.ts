@@ -19,7 +19,7 @@ describe("Redis and BullMQ configuration", () => {
     return { NODE_ENV: "test", ...values };
   }
 
-  it("selects synchronous mode when REDIS_URL is absent", () => {
+  it("reports queue publishing as disabled when REDIS_URL is absent", () => {
     const testEnv = env();
 
     expect(getRedisUrl(testEnv)).toBeNull();
