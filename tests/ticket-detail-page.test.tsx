@@ -35,7 +35,11 @@ vi.mock("@/lib/auth/session", () => ({
 }));
 
 vi.mock("@/lib/auth/authorization", () => ({
-  hasRequiredWorkspaceRole: () => true,
+  hasTicketPermission: () => true,
+  TicketPermission: {
+    MANAGE: "MANAGE",
+    EXPORT: "EXPORT",
+  },
 }));
 
 vi.mock("@/lib/data/ticket-mappers", () => ({
@@ -106,9 +110,7 @@ describe("ticket detail page", () => {
       }),
     });
 
-    expect(getTicketByCodeMock).toHaveBeenCalledWith("BUG-4242", "workspace-1", {
-      skipAccessCheck: true,
-    });
+    expect(getTicketByCodeMock).toHaveBeenCalledWith("BUG-4242", "workspace-1");
     expect(createSignedTicketFileUrlMock).toHaveBeenCalledWith(
       {
         storage: {},
@@ -134,6 +136,7 @@ describe("ticket detail page", () => {
       title: "Mapped ticket",
     });
     expect(result.props.canExportGitHub).toBe(true);
+    expect(result.props.canManageTicket).toBe(true);
   });
 
   it("stops before signed URL generation when the ticket is missing", async () => {

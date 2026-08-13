@@ -9,7 +9,6 @@ async function loadTickets() {
     workspaceId: context.workspace.id,
     projectId: context.project?.id,
     take: 100,
-    skipAccessCheck: true,
   });
 
   return {

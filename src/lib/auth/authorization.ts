@@ -48,6 +48,46 @@ type TicketAccessLookup = {
   workspaceId?: string;
 };
 
+export const TicketPermission = {
+  READ: "READ",
+  CREATE: "CREATE",
+  MODIFY: "MODIFY",
+  COLLABORATE: "COLLABORATE",
+  MANAGE: "MANAGE",
+  EXPORT: "EXPORT",
+} as const;
+
+export type TicketPermission =
+  (typeof TicketPermission)[keyof typeof TicketPermission];
+
+// Members are productively involved in triage, so ordinary workflow changes and
+// collaboration are intentional member permissions. Operations that can incur
+// external cost or materially replace triage data remain management permissions.
+const ticketPermissionsByRole = {
+  OWNER: [
+    TicketPermission.READ,
+    TicketPermission.CREATE,
+    TicketPermission.MODIFY,
+    TicketPermission.COLLABORATE,
+    TicketPermission.MANAGE,
+    TicketPermission.EXPORT,
+  ],
+  ADMIN: [
+    TicketPermission.READ,
+    TicketPermission.CREATE,
+    TicketPermission.MODIFY,
+    TicketPermission.COLLABORATE,
+    TicketPermission.MANAGE,
+    TicketPermission.EXPORT,
+  ],
+  MEMBER: [
+    TicketPermission.READ,
+    TicketPermission.CREATE,
+    TicketPermission.MODIFY,
+    TicketPermission.COLLABORATE,
+  ],
+} as const satisfies Record<WorkspaceRole, readonly TicketPermission[]>;
+
 export class AuthorizationError extends Error {
   status: number;
 
@@ -73,6 +113,25 @@ export function hasRequiredWorkspaceRole(
   minimumRole: WorkspaceRole
 ) {
   return workspaceRoleRank(role) >= workspaceRoleRank(minimumRole);
+}
+
+export function hasTicketPermission(
+  role: WorkspaceRole,
+  permission: TicketPermission
+) {
+  return (ticketPermissionsByRole[role] as readonly TicketPermission[]).includes(
+    permission
+  );
+}
+
+function assertTicketPermission(
+  role: WorkspaceRole,
+  permission: TicketPermission,
+  message: string
+) {
+  if (!hasTicketPermission(role, permission)) {
+    throw new AuthorizationError(message);
+  }
 }
 
 export function getInvitableWorkspaceRoles(
@@ -269,6 +328,12 @@ export async function assertCanCreateTicket(
     );
   }
 
+  assertTicketPermission(
+    workspaceAccess.role,
+    TicketPermission.CREATE,
+    "You do not have permission to create tickets in this workspace."
+  );
+
   return {
     userId: resolvedUserId,
     project,
@@ -295,6 +360,12 @@ export async function assertCanAccessTicket(
     resolvedUserId
   );
 
+  assertTicketPermission(
+    workspaceAccess.role,
+    TicketPermission.READ,
+    "Ticket not found or access denied."
+  );
+
   return {
     userId: resolvedUserId,
     ticket,
@@ -306,7 +377,30 @@ export async function assertCanModifyTicket(
   lookup: TicketAccessLookup,
   userId?: string
 ) {
-  return assertCanAccessTicket(lookup, userId);
+  const access = await assertCanAccessTicket(lookup, userId);
+
+  assertTicketPermission(
+    access.workspaceAccess.role,
+    TicketPermission.MODIFY,
+    "You do not have permission to modify this ticket."
+  );
+
+  return access;
+}
+
+export async function assertCanManageTicket(
+  lookup: TicketAccessLookup,
+  userId?: string
+) {
+  const access = await assertCanAccessTicket(lookup, userId);
+
+  assertTicketPermission(
+    access.workspaceAccess.role,
+    TicketPermission.MANAGE,
+    "Only workspace owners and admins can manage tickets."
+  );
+
+  return access;
 }
 
 export async function assertCanExportTicket(
@@ -315,11 +409,11 @@ export async function assertCanExportTicket(
 ) {
   const access = await assertCanAccessTicket(lookup, userId);
 
-  if (!hasRequiredWorkspaceRole(access.workspaceAccess.role, WorkspaceRole.ADMIN)) {
-    throw new AuthorizationError(
-      "Only workspace owners and admins can export tickets to GitHub."
-    );
-  }
+  assertTicketPermission(
+    access.workspaceAccess.role,
+    TicketPermission.EXPORT,
+    "Only workspace owners and admins can export tickets to GitHub."
+  );
 
   return access;
 }
@@ -328,7 +422,15 @@ export async function assertCanCommentOnTicket(
   lookup: TicketAccessLookup,
   userId?: string
 ) {
-  return assertCanAccessTicket(lookup, userId);
+  const access = await assertCanAccessTicket(lookup, userId);
+
+  assertTicketPermission(
+    access.workspaceAccess.role,
+    TicketPermission.COLLABORATE,
+    "You do not have permission to collaborate on this ticket."
+  );
+
+  return access;
 }
 
 export async function assertCanAccessTicketAttachment(
@@ -350,6 +452,12 @@ export async function assertCanAccessTicketAttachment(
   const workspaceAccess = await assertWorkspaceMember(
     attachment.ticket.workspaceId,
     resolvedUserId
+  );
+
+  assertTicketPermission(
+    workspaceAccess.role,
+    TicketPermission.READ,
+    "Attachment not found or access denied."
   );
 
   return {

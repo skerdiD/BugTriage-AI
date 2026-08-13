@@ -6,8 +6,12 @@ import { AiAnalysisFeedback, TicketStatus } from "@prisma/client";
 import { z } from "zod";
 
 import { getPublicAiTriageFailureMessage } from "@/lib/ai/bug-triage";
-import { AuthorizationError } from "@/lib/auth/authorization";
 import {
+  AuthorizationError,
+  assertCanManageTicket,
+} from "@/lib/auth/authorization";
+import {
+  AuthenticationError,
   getCurrentUserOrThrow,
   getCurrentWorkspaceContextOrThrow,
 } from "@/lib/auth/session";
@@ -18,7 +22,6 @@ import {
 } from "@/lib/demo";
 import {
   addTicketComment,
-  getTicketByCode,
   MAX_TICKET_COMMENT_LENGTH,
   setTicketAiAnalysisFeedback,
   updateTicketStatus,
@@ -106,6 +109,13 @@ export async function addTicketCommentAction(input: {
       ok: true as const,
     };
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return {
+        ok: false as const,
+        error: "You must be signed in to comment on tickets.",
+      };
+    }
+
     if (error instanceof AuthorizationError) {
       return {
         ok: false as const,
@@ -176,6 +186,13 @@ export async function updateTicketStatusAction(input: {
       ok: true as const,
     };
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return {
+        ok: false as const,
+        error: "You must be signed in to update tickets.",
+      };
+    }
+
     if (error instanceof AuthorizationError) {
       return {
         ok: false as const,
@@ -219,6 +236,14 @@ export async function regenerateTicketAiAnalysisAction(input: {
       return { ok: false as const, error: DEMO_READ_ONLY_MESSAGE };
     }
 
+    const access = await assertCanManageTicket(
+      {
+        ticketCode: parsed.data.ticketCode,
+        workspaceId: context.workspace.id,
+      },
+      user.id
+    );
+
     const arcjetRequest = await getArcjetRequest();
     const arcjetDecision = await bugSubmissionProtection.protect(arcjetRequest, {
       userId: user.id,
@@ -236,21 +261,12 @@ export async function regenerateTicketAiAnalysisAction(input: {
       };
     }
 
-    const ticket = await getTicketByCode(
-      parsed.data.ticketCode,
-      context.workspace.id
-    );
-
-    if (!ticket) {
-      return { ok: false as const, error: "Ticket was not found." };
-    }
-
     const dispatch = await dispatchTicketAnalysis({
-      ticketId: ticket.id,
+      ticketId: access.ticket.id,
       requestedById: user.id,
     });
 
-    revalidateTicketViews(ticket.code);
+    revalidateTicketViews(access.ticket.code);
 
     return {
       ok: true as const,
@@ -260,6 +276,13 @@ export async function regenerateTicketAiAnalysisAction(input: {
           : "AI analysis is pending and will run when background processing is available.",
     };
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return {
+        ok: false as const,
+        error: "You must be signed in to manage ticket analysis.",
+      };
+    }
+
     if (error instanceof AuthorizationError) {
       return { ok: false as const, error: error.message };
     }
@@ -303,6 +326,13 @@ export async function setTicketAiAnalysisFeedbackAction(input: {
 
     return { ok: true as const, message: "AI feedback saved." };
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return {
+        ok: false as const,
+        error: "You must be signed in to leave AI feedback.",
+      };
+    }
+
     if (error instanceof AuthorizationError) {
       return { ok: false as const, error: error.message };
     }

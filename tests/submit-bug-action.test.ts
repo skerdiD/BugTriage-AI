@@ -241,6 +241,23 @@ describe("analyzeAndCreateTicketAction", () => {
     expect(getCurrentWorkspaceContextOrThrowMock).not.toHaveBeenCalled();
   });
 
+  it("rejects direct unauthenticated ticket creation before uploads or persistence", async () => {
+    getCurrentWorkspaceContextOrThrowMock.mockRejectedValue(
+      new AuthenticationErrorMock("Authentication required.")
+    );
+
+    const result = await analyzeAndCreateTicketAction(buildValidFormData());
+
+    expect(result).toEqual({
+      ok: false,
+      error: "You must be signed in before creating a bug ticket.",
+    });
+    expect(protectMock).not.toHaveBeenCalled();
+    expect(uploadScreenshotFileMock).not.toHaveBeenCalled();
+    expect(uploadLogFileMock).not.toHaveBeenCalled();
+    expect(createTicketMock).not.toHaveBeenCalled();
+  });
+
   it("rejects uploads that exceed the per-type file limit", async () => {
     const formData = buildValidFormData();
 

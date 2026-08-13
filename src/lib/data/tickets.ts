@@ -20,7 +20,10 @@ import {
   assertCanCommentOnTicket,
   assertCanCreateTicket,
   assertCanExportTicket,
+  assertCanManageTicket,
   assertCanModifyTicket,
+  hasTicketPermission,
+  TicketPermission,
   assertWorkspaceMember,
 } from "@/lib/auth/authorization";
 import { getCurrentUserOrThrow } from "@/lib/auth/session";
@@ -147,7 +150,6 @@ export type GetTicketsInput = {
   search?: string;
   take?: number;
   skip?: number;
-  skipAccessCheck?: boolean;
 };
 
 export type CreateTicketInput = {
@@ -294,20 +296,17 @@ export async function getTickets(input: GetTicketsInput) {
     search,
     take = 50,
     skip = 0,
-    skipAccessCheck = false,
   } = input;
 
-  if (!skipAccessCheck) {
-    await assertWorkspaceMember(workspaceId);
+  await assertWorkspaceMember(workspaceId);
 
-    if (projectId) {
-      const projectAccess = await assertCanAccessProject(projectId);
+  if (projectId) {
+    const projectAccess = await assertCanAccessProject(projectId);
 
-      if (projectAccess.project.workspaceId !== workspaceId) {
-        throw new AuthorizationError(
-          "Project does not belong to the selected workspace."
-        );
-      }
+    if (projectAccess.project.workspaceId !== workspaceId) {
+      throw new AuthorizationError(
+        "Project does not belong to the selected workspace."
+      );
     }
   }
 
@@ -376,22 +375,9 @@ export async function getTickets(input: GetTicketsInput) {
 
 export async function getTicketByCode(
   code: string,
-  workspaceId: string,
-  options?: {
-    skipAccessCheck?: boolean;
-  }
+  workspaceId: string
 ) {
   try {
-    if (options?.skipAccessCheck) {
-      return await prisma.ticket.findFirst({
-        where: {
-          code,
-          workspaceId,
-        },
-        include: ticketDetailInclude,
-      });
-    }
-
     const access = await assertCanAccessTicket({
       ticketCode: code,
       workspaceId,
@@ -432,6 +418,17 @@ export async function createTicket(input: CreateTicketInput) {
   }
 
   if (input.assigneeId) {
+    if (
+      !hasTicketPermission(
+        access.workspaceAccess.role,
+        TicketPermission.MANAGE
+      )
+    ) {
+      throw new AuthorizationError(
+        "Only workspace owners and admins can assign tickets."
+      );
+    }
+
     await assertWorkspaceMember(input.workspaceId, input.assigneeId);
   }
 
@@ -581,7 +578,7 @@ export async function regenerateTicketAiAnalysis(input: {
   output: BugTriageAiOutput;
 }) {
   const currentUser = await getCurrentUserOrThrow();
-  const access = await assertCanModifyTicket(
+  const access = await assertCanManageTicket(
     {
       ticketCode: input.ticketCode,
       workspaceId: input.workspaceId,
@@ -694,7 +691,7 @@ export async function setTicketAiAnalysisFeedback(input: {
   feedback: AiAnalysisFeedback;
 }) {
   const currentUser = await getCurrentUserOrThrow();
-  const access = await assertCanAccessTicket(
+  const access = await assertCanCommentOnTicket(
     {
       ticketCode: input.ticketCode,
       workspaceId: input.workspaceId,
@@ -888,12 +885,19 @@ export async function failTicketGitHubExport(input: {
   ticketCode: string;
   error: string;
 }) {
+  const currentUser = await getCurrentUserOrThrow();
+  const access = await assertCanExportTicket(
+    {
+      ticketCode: input.ticketCode,
+      workspaceId: input.workspaceId,
+    },
+    currentUser.id
+  );
   const safeError = input.error.trim().slice(0, MAX_GITHUB_EXPORT_ERROR_LENGTH);
 
   return prisma.ticket.updateMany({
     where: {
-      code: input.ticketCode,
-      workspaceId: input.workspaceId,
+      id: access.ticket.id,
       githubExportStatus: GitHubExportStatus.EXPORTING,
     },
     data: {

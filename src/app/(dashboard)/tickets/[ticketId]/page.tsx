@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
-import { WorkspaceRole } from "@prisma/client";
 
-import { hasRequiredWorkspaceRole } from "@/lib/auth/authorization";
+import {
+  hasTicketPermission,
+  TicketPermission,
+} from "@/lib/auth/authorization";
 import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { TicketDetailClient } from "@/components/dashboard/ticket-detail-client";
 import { findSimilarIssuesForTicket } from "@/lib/data/similar-issues";
@@ -21,9 +23,7 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
     params,
     getCurrentWorkspaceContextOrRedirect(),
   ]);
-  const dbTicket = await getTicketByCode(ticketId, context.workspace.id, {
-    skipAccessCheck: true,
-  });
+  const dbTicket = await getTicketByCode(ticketId, context.workspace.id);
 
   if (!dbTicket) {
     notFound();
@@ -69,7 +69,14 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
 
   return (
     <TicketDetailClient
-      canExportGitHub={hasRequiredWorkspaceRole(context.role, WorkspaceRole.ADMIN)}
+      canExportGitHub={hasTicketPermission(
+        context.role,
+        TicketPermission.EXPORT
+      )}
+      canManageTicket={hasTicketPermission(
+        context.role,
+        TicketPermission.MANAGE
+      )}
       ticket={mapTicketDetailToUiTicket(
         dbTicket,
         attachmentDownloadUrls,

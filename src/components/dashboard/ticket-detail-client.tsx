@@ -69,6 +69,7 @@ import type {
 type TicketDetailClientProps = {
   ticket: Ticket;
   canExportGitHub: boolean;
+  canManageTicket: boolean;
 };
 
 const workflowStatuses: TicketStatus[] = [
@@ -90,6 +91,7 @@ const uiToDbStatus: Record<TicketStatus, DbTicketStatus> = {
 export function TicketDetailClient({
   ticket,
   canExportGitHub,
+  canManageTicket,
 }: TicketDetailClientProps) {
   const router = useRouter();
   const [status, setStatus] = useState<TicketStatus>(ticket.status);
@@ -346,24 +348,26 @@ export function TicketDetailClient({
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isAiPending || isAnalysisProcessing}
-                  onClick={handleRegenerateAiAnalysis}
-                  className="rounded-xl border-violet-400/25 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20 hover:text-white"
-                >
-                  {isAiPending ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="mr-2 size-4" />
-                  )}
-                  {isAiPending || isAnalysisProcessing
-                    ? "Processing..."
-                    : ticket.aiProcessingStatus === "FAILED"
-                      ? "Retry analysis"
-                      : "Regenerate analysis"}
-                </Button>
+                {canManageTicket ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isAiPending || isAnalysisProcessing}
+                    onClick={handleRegenerateAiAnalysis}
+                    className="rounded-xl border-violet-400/25 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20 hover:text-white"
+                  >
+                    {isAiPending ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-2 size-4" />
+                    )}
+                    {isAiPending || isAnalysisProcessing
+                      ? "Processing..."
+                      : ticket.aiProcessingStatus === "FAILED"
+                        ? "Retry analysis"
+                        : "Regenerate analysis"}
+                  </Button>
+                ) : null}
               </div>
             </CardHeader>
 

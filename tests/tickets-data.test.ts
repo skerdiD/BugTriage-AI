@@ -13,11 +13,13 @@ const {
   assertCanCommentOnTicketMock,
   assertCanCreateTicketMock,
   assertCanExportTicketMock,
+  assertCanManageTicketMock,
   assertCanModifyTicketMock,
   assertCanAccessProjectMock,
   assertWorkspaceMemberMock,
   captureServerExceptionMock,
   getCurrentUserOrThrowMock,
+  hasTicketPermissionMock,
   prismaMock,
   txMock,
   withServerSpanMock,
@@ -56,10 +58,12 @@ const {
     assertCanCommentOnTicketMock: vi.fn(),
     assertCanCreateTicketMock: vi.fn(),
     assertCanExportTicketMock: vi.fn(),
+    assertCanManageTicketMock: vi.fn(),
     assertCanModifyTicketMock: vi.fn(),
     assertWorkspaceMemberMock: vi.fn(),
     captureServerExceptionMock: vi.fn(),
     getCurrentUserOrThrowMock: vi.fn(),
+    hasTicketPermissionMock: vi.fn(),
     prismaMock: {
       ticket: {
         create: vi.fn(),
@@ -91,8 +95,18 @@ vi.mock("@/lib/auth/authorization", () => ({
   assertCanCommentOnTicket: assertCanCommentOnTicketMock,
   assertCanCreateTicket: assertCanCreateTicketMock,
   assertCanExportTicket: assertCanExportTicketMock,
+  assertCanManageTicket: assertCanManageTicketMock,
   assertCanModifyTicket: assertCanModifyTicketMock,
   assertWorkspaceMember: assertWorkspaceMemberMock,
+  hasTicketPermission: hasTicketPermissionMock,
+  TicketPermission: {
+    READ: "READ",
+    CREATE: "CREATE",
+    MODIFY: "MODIFY",
+    COLLABORATE: "COLLABORATE",
+    MANAGE: "MANAGE",
+    EXPORT: "EXPORT",
+  },
 }));
 
 vi.mock("@/lib/observability/server-monitoring", () => ({
@@ -109,6 +123,7 @@ import {
   addTicketComment,
   claimTicketGitHubExport,
   createTicket,
+  failTicketGitHubExport,
   generateUniqueTicketCode,
   getTicketByCode,
   regenerateTicketAiAnalysis,
@@ -143,6 +158,7 @@ describe("ticket data layer", () => {
         workspace: {
           id: "workspace-1",
         },
+        role: "ADMIN",
       },
     });
     assertCanExportTicketMock.mockResolvedValue({
@@ -161,6 +177,11 @@ describe("ticket data layer", () => {
         id: "ticket-1",
       },
     });
+    assertCanManageTicketMock.mockResolvedValue({
+      ticket: {
+        id: "ticket-1",
+      },
+    });
     assertCanCommentOnTicketMock.mockResolvedValue({
       ticket: {
         id: "ticket-1",
@@ -171,6 +192,7 @@ describe("ticket data layer", () => {
         id: "workspace-1",
       },
     });
+    hasTicketPermissionMock.mockReturnValue(true);
     withServerSpanMock.mockImplementation(
       async (_span: unknown, callback: () => Promise<unknown>) => callback()
     );
@@ -372,6 +394,15 @@ describe("ticket data layer", () => {
       },
     });
 
+    expect(assertCanManageTicketMock).toHaveBeenCalledWith(
+      {
+        ticketCode: "BUG-4242",
+        workspaceId: "workspace-1",
+      },
+      "user-1"
+    );
+    expect(assertCanModifyTicketMock).not.toHaveBeenCalled();
+
     expect(txMock.ticket.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -414,6 +445,14 @@ describe("ticket data layer", () => {
       feedback: AiAnalysisFeedback.HELPFUL,
     });
 
+    expect(assertCanCommentOnTicketMock).toHaveBeenCalledWith(
+      {
+        ticketCode: "BUG-4242",
+        workspaceId: "workspace-1",
+      },
+      "user-1"
+    );
+
     expect(prismaMock.ticketAiAnalysisRun.findFirst).toHaveBeenCalledWith({
       where: {
         id: "run-1",
@@ -439,6 +478,71 @@ describe("ticket data layer", () => {
     ).rejects.toThrow("current authenticated user");
 
     expect(prismaMock.ticket.create).not.toHaveBeenCalled();
+  });
+
+  it("requires ticket management permission when an assignee is supplied", async () => {
+    hasTicketPermissionMock.mockReturnValue(false);
+
+    await expect(
+      createTicket({
+        code: "BUG-1004",
+        workspaceId: "workspace-1",
+        projectId: "project-1",
+        assigneeId: "user-2",
+        title: "Attempted assignment",
+        description: "Members cannot assign tickets during creation.",
+      })
+    ).rejects.toThrow("Only workspace owners and admins can assign tickets.");
+
+    expect(assertWorkspaceMemberMock).not.toHaveBeenCalledWith(
+      "workspace-1",
+      "user-2"
+    );
+    expect(prismaMock.ticket.create).not.toHaveBeenCalled();
+  });
+
+  it("authorizes GitHub export failure-state mutations before writing", async () => {
+    prismaMock.ticket.updateMany.mockResolvedValue({ count: 1 });
+
+    await failTicketGitHubExport({
+      workspaceId: "workspace-1",
+      ticketCode: "BUG-4242",
+      error: "GitHub failed",
+    });
+
+    expect(assertCanExportTicketMock).toHaveBeenCalledWith(
+      {
+        ticketCode: "BUG-4242",
+        workspaceId: "workspace-1",
+      },
+      "user-1"
+    );
+    expect(prismaMock.ticket.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "ticket-1",
+        githubExportStatus: GitHubExportStatus.EXPORTING,
+      },
+      data: {
+        githubExportStatus: GitHubExportStatus.FAILED,
+        githubExportError: "GitHub failed",
+      },
+    });
+  });
+
+  it("blocks unauthorized GitHub export failure-state mutations", async () => {
+    assertCanExportTicketMock.mockRejectedValue(
+      new AuthorizationErrorMock("Ticket not found or access denied.")
+    );
+
+    await expect(
+      failTicketGitHubExport({
+        workspaceId: "workspace-1",
+        ticketCode: "BUG-9001",
+        error: "GitHub failed",
+      })
+    ).rejects.toBeInstanceOf(AuthorizationErrorMock);
+
+    expect(prismaMock.ticket.updateMany).not.toHaveBeenCalled();
   });
 
   it("rejects attachment paths that do not belong to the selected workspace ticket", async () => {
