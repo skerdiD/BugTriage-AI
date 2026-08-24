@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import {
+  AiProcessingStatus,
+  PrismaClient,
+  TicketAnalysisDispatchStatus,
+} from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -103,6 +107,80 @@ describe("Ticket project/workspace tenant integrity", () => {
     ).rejects.toMatchObject({
       code: "P2003",
     });
+  });
+
+  it("commits a new ticket and its analysis outbox record atomically", async () => {
+    const ticketId = `outbox-atomic-${suffix}`;
+    const dispatchId = `outbox-dispatch-${suffix}`;
+    const jobId = `ticket-analysis-${dispatchId}`;
+
+    const ticket = await prisma.ticket.create({
+      data: {
+        id: ticketId,
+        code: `OUTBOX-ATOMIC-${suffix}`,
+        workspaceId: workspaceAId,
+        projectId: projectAId,
+        title: "Atomic outbox test",
+        description: "Ticket creation must commit with its analysis dispatch.",
+        aiProcessingStatus: AiProcessingStatus.PENDING,
+        aiProcessingJobId: jobId,
+        analysisDispatches: {
+          create: {
+            id: dispatchId,
+            jobId,
+          },
+        },
+      },
+      include: { analysisDispatches: true },
+    });
+
+    expect(ticket.analysisDispatches).toEqual([
+      expect.objectContaining({
+        id: dispatchId,
+        ticketId,
+        jobId,
+        status: TicketAnalysisDispatchStatus.PENDING,
+      }),
+    ]);
+  });
+
+  it("rolls back both the ticket and outbox record when their transaction fails", async () => {
+    const ticketId = `outbox-rollback-${suffix}`;
+    const dispatchId = `outbox-rollback-dispatch-${suffix}`;
+    const jobId = `ticket-analysis-${dispatchId}`;
+
+    await expect(
+      prisma.$transaction(async (tx) => {
+        await tx.ticket.create({
+          data: {
+            id: ticketId,
+            code: `OUTBOX-ROLLBACK-${suffix}`,
+            workspaceId: workspaceAId,
+            projectId: projectAId,
+            title: "Outbox rollback test",
+            description: "Neither row may survive a failed transaction.",
+            aiProcessingStatus: AiProcessingStatus.PENDING,
+            aiProcessingJobId: jobId,
+            analysisDispatches: {
+              create: {
+                id: dispatchId,
+                jobId,
+              },
+            },
+          },
+        });
+
+        throw new Error("force rollback");
+      })
+    ).rejects.toThrow("force rollback");
+
+    const [ticketCount, dispatchCount] = await Promise.all([
+      prisma.ticket.count({ where: { id: ticketId } }),
+      prisma.ticketAnalysisDispatch.count({ where: { id: dispatchId } }),
+    ]);
+
+    expect(ticketCount).toBe(0);
+    expect(dispatchCount).toBe(0);
   });
 
   it("rejects an embedding whose workspace/project disagrees with its ticket", async () => {

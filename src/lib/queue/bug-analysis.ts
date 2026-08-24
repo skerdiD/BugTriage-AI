@@ -3,6 +3,7 @@ import "server-only";
 import { Queue, type JobsOptions } from "bullmq";
 import { z } from "zod";
 
+import { captureServerException } from "@/lib/observability/server-monitoring";
 import { createRedisConnection } from "@/lib/queue/redis";
 
 export const BUG_ANALYSIS_QUEUE_NAME = "bug-analysis";
@@ -24,6 +25,7 @@ export type BugAnalysisJobDefinition = {
 
 const globalForQueue = globalThis as unknown as {
   bugAnalysisQueue?: Queue<BugAnalysisJobData>;
+  bugAnalysisQueueConnection?: ReturnType<typeof createRedisConnection>;
 };
 
 export function buildBugAnalysisJob(input: {
@@ -54,15 +56,60 @@ export function buildBugAnalysisJob(input: {
 
 export function getBugAnalysisQueue() {
   if (!globalForQueue.bugAnalysisQueue) {
-    globalForQueue.bugAnalysisQueue = new Queue<BugAnalysisJobData>(
+    const connection = createRedisConnection("producer");
+    const queue = new Queue<BugAnalysisJobData>(
       BUG_ANALYSIS_QUEUE_NAME,
       {
-        connection: createRedisConnection("producer"),
+        connection,
       }
     );
+
+    queue.on("error", (error) => {
+      captureServerException(error, {
+        area: "bullmq-producer",
+        action: "queue-error",
+        level: "warning",
+        message: "[bug-analysis-queue] producer connection error",
+        context: { queue: BUG_ANALYSIS_QUEUE_NAME },
+      });
+    });
+
+    globalForQueue.bugAnalysisQueue = queue;
+    globalForQueue.bugAnalysisQueueConnection = connection;
   }
 
   return globalForQueue.bugAnalysisQueue;
+}
+
+export async function closeBugAnalysisQueue() {
+  const queue = globalForQueue.bugAnalysisQueue;
+  const connection = globalForQueue.bugAnalysisQueueConnection;
+
+  globalForQueue.bugAnalysisQueue = undefined;
+  globalForQueue.bugAnalysisQueueConnection = undefined;
+
+  const errors: unknown[] = [];
+
+  if (queue) {
+    try {
+      await queue.close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+
+  if (connection && connection.status !== "end") {
+    try {
+      await connection.quit();
+    } catch (error) {
+      connection.disconnect();
+      errors.push(error);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new AggregateError(errors, "Failed to close the BullMQ producer cleanly.");
+  }
 }
 
 export async function enqueueBugAnalysis(input: {

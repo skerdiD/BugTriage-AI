@@ -77,7 +77,6 @@ export function createRedisConnection(role: "producer" | "worker") {
   const options: RedisOptions = {
     connectionName: `bugtriage-${role}`,
     connectTimeout: 5_000,
-    enableReadyCheck: true,
     maxRetriesPerRequest: role === "worker" ? null : 1,
   };
 

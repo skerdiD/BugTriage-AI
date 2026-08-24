@@ -56,11 +56,11 @@ jobs:
         run: npm run typecheck
 
       - name: Run unit tests
-        if: ${{ hashFiles('vitest.config.ts', 'tests/**/*.test.ts') != '' }}
+        if: ${{ hashFiles('vitest.config.*', 'tests/**/*.test.ts') != '' }}
         run: npm run test:unit
 
       - name: Run database integrity tests
-        if: ${{ hashFiles('vitest.db.config.ts', 'tests/**/*.integration.test.ts') != '' }}
+        if: ${{ hashFiles('vitest.db.config.*', 'tests/**/*.integration.test.ts') != '' }}
         run: npm run test:db
 
       - name: Install Playwright browsers

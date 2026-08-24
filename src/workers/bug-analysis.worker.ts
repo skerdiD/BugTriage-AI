@@ -109,20 +109,48 @@ async function shutdown(signal: "SIGINT" | "SIGTERM") {
 
   console.info("[bug-analysis-worker] graceful shutdown started", { signal });
 
+  const shutdownErrors: unknown[] = [];
+
   try {
     await worker.close();
-    await redis.quit();
-    await prisma.$disconnect();
-    await Sentry.close(2_000);
+  } catch (error) {
+    shutdownErrors.push(error);
+    Sentry.captureException(error, {
+      tags: { area: "bullmq-worker", action: "shutdown", resource: "worker" },
+    });
+    redis.disconnect();
+  }
+
+  const cleanupResults = await Promise.allSettled([
+    redis.status === "end" ? Promise.resolve() : redis.quit(),
+    prisma.$disconnect(),
+  ]);
+
+  for (const [index, result] of cleanupResults.entries()) {
+    if (result.status === "fulfilled") continue;
+
+    shutdownErrors.push(result.reason);
+    const resource = index === 0 ? "redis" : "prisma";
+    Sentry.captureException(result.reason, {
+      tags: { area: "bullmq-worker", action: "shutdown", resource },
+    });
+
+    if (resource === "redis") redis.disconnect();
+  }
+
+  await Sentry.close(2_000);
+
+  if (shutdownErrors.length === 0) {
     console.info("[bug-analysis-worker] graceful shutdown completed", { signal });
     process.exitCode = 0;
-  } catch (error) {
-    Sentry.captureException(error, {
-      tags: { area: "bullmq-worker", action: "shutdown" },
-    });
-    console.error("[bug-analysis-worker] graceful shutdown failed", { signal });
-    process.exitCode = 1;
+    return;
   }
+
+  console.error("[bug-analysis-worker] graceful shutdown failed", {
+    signal,
+    failureCount: shutdownErrors.length,
+  });
+  process.exitCode = 1;
 }
 
 process.once("SIGINT", () => {

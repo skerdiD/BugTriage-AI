@@ -63,8 +63,13 @@ describe("Redis and BullMQ configuration", () => {
     expect(
       getWorkerConcurrency(env({ BULLMQ_WORKER_CONCURRENCY: "5" }))
     ).toBe(5);
-    expect(() =>
-      getWorkerConcurrency(env({ BULLMQ_WORKER_CONCURRENCY: "100" }))
-    ).toThrow(RedisConfigurationError);
+
+    for (const invalidValue of ["0", "-1", "1.5", "abc", "21", "100"]) {
+      expect(() =>
+        getWorkerConcurrency(
+          env({ BULLMQ_WORKER_CONCURRENCY: invalidValue })
+        )
+      ).toThrow(RedisConfigurationError);
+    }
   });
 });

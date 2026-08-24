@@ -384,6 +384,7 @@ export async function recordTicketAnalysisFailure(input: {
     where: {
       id: input.ticketId,
       aiProcessingJobId: input.jobId,
+      aiProcessingStatus: { not: AiProcessingStatus.COMPLETED },
     },
     data: {
       aiProcessingStatus: input.willRetry

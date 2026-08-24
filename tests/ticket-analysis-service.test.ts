@@ -166,14 +166,22 @@ describe("ticket analysis processing service", () => {
     expect(prismaMock.ticket.updateMany).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        where: { id: "ticket-1", aiProcessingJobId: "analysis-job-1" },
+        where: {
+          id: "ticket-1",
+          aiProcessingJobId: "analysis-job-1",
+          aiProcessingStatus: { not: AiProcessingStatus.COMPLETED },
+        },
         data: expect.objectContaining({ aiProcessingStatus: AiProcessingStatus.PENDING }),
       })
     );
     expect(prismaMock.ticket.updateMany).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        where: { id: "ticket-1", aiProcessingJobId: "analysis-job-1" },
+        where: {
+          id: "ticket-1",
+          aiProcessingJobId: "analysis-job-1",
+          aiProcessingStatus: { not: AiProcessingStatus.COMPLETED },
+        },
         data: expect.objectContaining({ aiProcessingStatus: AiProcessingStatus.FAILED }),
       })
     );

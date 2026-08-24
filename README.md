@@ -213,6 +213,22 @@ Bug reports stay workspace-scoped, attachments stay private, AI logic runs serve
 
 ## Background Processing — Redis + BullMQ
 
+Redis is required for AI ticket analysis. BullMQ connects through `ioredis` over
+Redis's native TCP protocol. For Upstash, copy the TLS-enabled TCP connection
+string from the database's **Connect** dialog:
+
+```env
+REDIS_URL="rediss://default:PASSWORD@HOST:6379"
+BULLMQ_WORKER_CONCURRENCY="3"
+```
+
+`rediss://` enables TLS automatically. This implementation does not use the
+Upstash REST client, so it does not need `UPSTASH_REDIS_REST_URL`,
+`UPSTASH_REDIS_REST_TOKEN`, or a BullMQ API key. Keep Upstash eviction disabled
+(the default) because BullMQ queue keys must not be evicted. BullMQ polls Redis
+even while idle, so review Upstash command usage and prefer a fixed-price plan if
+the pay-as-you-go command volume becomes material.
+
 Ticket creation writes the authorized, workspace-scoped report and a pending
 `TicketAnalysisDispatch` outbox row in the same PostgreSQL write before attempting
 to publish expensive AI work. The Next.js request adds only a minimal `{ ticketId }`
@@ -274,7 +290,11 @@ Next.js Web/API -> PostgreSQL outbox <- scheduled `npm run republish`
 Do not run the persistent BullMQ consumer inside a Vercel serverless request. Deploy
 `npm run worker` to a worker-capable Node host and schedule `npm run republish` at
 least once per minute, both with the same database, Gemini, Sentry, and Redis server
-environment variables used by the web backend.
+environment variables used by the web backend. Give the worker enough shutdown
+grace time to finish an in-flight Gemini analysis; BullMQ will recover a job as
+stalled if the process is terminated before graceful shutdown completes. Keep the
+web deployment, worker, and republisher close to the Upstash primary region to
+reduce TCP latency.
 
 ---
 
@@ -305,11 +325,19 @@ NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=bugtriage-private
 DATABASE_URL=
 DIRECT_URL=
 GOOGLE_GENERATIVE_AI_API_KEY=
+REDIS_URL=rediss://default:PASSWORD@HOST:6379
+BULLMQ_WORKER_CONCURRENCY=3
 GITHUB_TOKEN=
 ARCJET_KEY=
 NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_AUTH_TOKEN=
 ```
+
+Use `redis://localhost:6379` when running the Docker Compose Redis service. Store
+real Redis credentials only in `.env.local` and deployment secret stores;
+`.env.example` contains placeholders only. The standalone worker, republisher,
+and demo seeder load `.env` first and then `.env.local`, while injected deployment
+environment variables take precedence over both files.
 
 ### 4. Run setup
 
@@ -322,10 +350,13 @@ npm run seed:demo
 This idempotent command uses `SUPABASE_SERVICE_ROLE_KEY` to create or reset the
 Supabase Auth demo user, then refreshes only the managed demo workspace data.
 
-### 5. Start the development server
+### 5. Start the development server and worker
+
+Run these in separate terminals:
 
 ```bash
 npm run dev
+npm run worker:dev
 ```
 
 Open the app at:
