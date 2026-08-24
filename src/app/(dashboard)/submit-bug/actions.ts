@@ -293,6 +293,10 @@ export async function analyzeAndCreateTicketAction(
       };
     }
 
+    const uploadedLogText = redactSensitiveText(
+      await readLogFiles(logFiles)
+    ).slice(0, 20_000);
+
     let storageSupabase: ReturnType<typeof createSupabaseAdminClient> | null = null;
 
     if (allFiles.length > 0) {
@@ -382,11 +386,6 @@ export async function analyzeAndCreateTicketAction(
         throw error;
       }
     }
-
-    const uploadedLogText = redactSensitiveText(await readLogFiles(logFiles)).slice(
-      0,
-      20_000
-    );
 
     let createdTicket: Awaited<ReturnType<typeof createTicket>>;
 

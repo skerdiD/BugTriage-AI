@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import {
+  AuthorizationError,
   hasTicketPermission,
   TicketPermission,
 } from "@/lib/auth/authorization";
@@ -23,7 +24,17 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
     params,
     getCurrentWorkspaceContextOrRedirect(),
   ]);
-  const dbTicket = await getTicketByCode(ticketId, context.workspace.id);
+  let dbTicket: Awaited<ReturnType<typeof getTicketByCode>>;
+
+  try {
+    dbTicket = await getTicketByCode(ticketId, context.workspace.id);
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      notFound();
+    }
+
+    throw error;
+  }
 
   if (!dbTicket) {
     notFound();

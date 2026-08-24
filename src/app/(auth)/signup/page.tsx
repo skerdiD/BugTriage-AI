@@ -58,7 +58,7 @@ function SignupContent() {
         email,
         password,
         options: {
-          emailRedirectTo: `${origin}/auth/callback?next=${redirectedFrom}`,
+          emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectedFrom)}`,
           data: {
             full_name: name,
             name,

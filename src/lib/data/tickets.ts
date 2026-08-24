@@ -390,6 +390,10 @@ export async function getTicketByCode(
       include: ticketDetailInclude,
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      throw error;
+    }
+
     captureServerException(error, {
       area: "database",
       action: "get-ticket-by-code",

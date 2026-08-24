@@ -14,4 +14,10 @@ describe("getSafeRedirectPath", () => {
     expect(getSafeRedirectPath("//evil.example")).toBe("/dashboard");
     expect(getSafeRedirectPath("\\\\evil.example")).toBe("/dashboard");
   });
+
+  it("rejects control characters that URL parsers can normalize into another origin", () => {
+    expect(getSafeRedirectPath("/\n//evil.example")).toBe("/dashboard");
+    expect(getSafeRedirectPath("/\r//evil.example")).toBe("/dashboard");
+    expect(getSafeRedirectPath("/\t//evil.example")).toBe("/dashboard");
+  });
 });

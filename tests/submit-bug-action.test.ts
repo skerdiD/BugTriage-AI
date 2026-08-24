@@ -345,6 +345,31 @@ describe("analyzeAndCreateTicketAction", () => {
     expect(uploadLogFileMock).not.toHaveBeenCalled();
   });
 
+  it("reads log evidence before uploading so read failures cannot orphan files", async () => {
+    const sliceMock = vi.spyOn(File.prototype, "slice").mockReturnValue({
+      text: vi.fn().mockRejectedValue(new Error("file read failed")),
+    } as unknown as Blob);
+    const formData = buildValidFormData();
+    formData.append(
+      "logs",
+      new File(["console output"], "console.log", { type: "text/plain" })
+    );
+
+    try {
+      const result = await analyzeAndCreateTicketAction(formData);
+
+      expect(result).toEqual({
+        ok: false,
+        error: "We couldn't create the ticket right now. Please try again.",
+      });
+      expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
+      expect(uploadLogFileMock).not.toHaveBeenCalled();
+      expect(createTicketMock).not.toHaveBeenCalled();
+    } finally {
+      sliceMock.mockRestore();
+    }
+  });
+
   it("creates the ticket before dispatching its AI processing operation", async () => {
 
     const formData = buildValidFormData();

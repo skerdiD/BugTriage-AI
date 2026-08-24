@@ -8,11 +8,36 @@ function normalizeMessage(error: unknown) {
   return redactSensitiveText(error.message).toLowerCase();
 }
 
+function isServiceUnavailableError(error: unknown, message: string) {
+  if (
+    message.includes("failed to fetch") ||
+    message.includes("network request failed")
+  ) {
+    return true;
+  }
+
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const status = "status" in error ? error.status : undefined;
+  const name = "name" in error ? error.name : undefined;
+
+  return (
+    name === "AuthRetryableFetchError" ||
+    (typeof status === "number" && status >= 500)
+  );
+}
+
 export function getSafeAuthClientErrorMessage(
   error: unknown,
   action: "login" | "signup"
 ) {
   const message = normalizeMessage(error);
+
+  if (isServiceUnavailableError(error, message)) {
+    return "Authentication is temporarily unavailable. Please try again shortly.";
+  }
 
   if (
     message.includes("invalid login credentials") ||
