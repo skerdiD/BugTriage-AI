@@ -19,7 +19,7 @@ export function LandingHeader() {
               BugTriage AI
             </p>
             <p className="hidden text-xs text-slate-400 sm:block">
-              Bug reports, ready for engineering
+              From report to fix
             </p>
           </div>
         </Link>
@@ -32,19 +32,19 @@ export function LandingHeader() {
             href="#product-preview"
             className="rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
           >
-            Example
+            Example ticket
           </Link>
           <Link
             href="#features"
             className="rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
           >
-            Features
+            What it handles
           </Link>
           <Link
             href="#workflow"
             className="rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
           >
-            How it works
+            Workflow
           </Link>
         </nav>
 
@@ -62,7 +62,8 @@ export function LandingHeader() {
             className="h-9 rounded-full bg-white px-3 text-slate-950 shadow-[0_14px_32px_-18px_rgba(255,255,255,0.75)] transition active:scale-[0.98] hover:bg-slate-100 sm:px-5"
           >
             <Link href="/login">
-              Explore demo
+              <span className="sm:hidden">Sample</span>
+              <span className="hidden sm:inline">Open sample queue</span>
               <ArrowRight className="size-4" />
             </Link>
           </Button>

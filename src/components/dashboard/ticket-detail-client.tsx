@@ -7,11 +7,11 @@ import { useRouter } from "next/navigation";
 import {
   Activity,
   ArrowLeft,
-  Bot,
   BrainCircuit,
   CalendarClock,
   CheckCircle2,
   ChevronRight,
+  ClipboardList,
   Code2,
   Download,
   FileText,
@@ -25,8 +25,8 @@ import {
   RefreshCw,
   Send,
   SearchCheck,
+  ScanSearch,
   ShieldAlert,
-  Sparkles,
   Tags,
   ThumbsDown,
   ThumbsUp,
@@ -191,7 +191,7 @@ export function TicketDetailClient({
     const trimmed = commentText.trim();
 
     if (!trimmed) {
-      setCommentError("Comment cannot be empty.");
+      setCommentError("Add a note before saving.");
       return;
     }
 
@@ -304,8 +304,8 @@ export function TicketDetailClient({
             </h1>
 
             <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-              Review the original report, generated analysis, attachments, comments,
-              and ticket history in one place.
+              The report, evidence, working theory, ownership, and decisions are all
+              here. Start with what is known, then verify the draft.
             </p>
           </div>
         </div>
@@ -315,10 +315,10 @@ export function TicketDetailClient({
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex size-11 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10">
-                  <Bot className="size-5 text-violet-300" />
+                  <ScanSearch className="size-5 text-violet-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">AI confidence</p>
+                  <p className="text-sm text-muted-foreground">Draft confidence</p>
                   <p className="text-2xl font-bold text-violet-200">
                     {ticket.confidence}%
                   </p>
@@ -326,7 +326,7 @@ export function TicketDetailClient({
               </div>
 
               <Badge className="rounded-full border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
-                {ticket.confidence > 0 ? "Analysis ready" : "Pending"}
+                {ticket.confidence > 0 ? "Draft ready" : "Waiting"}
               </Badge>
             </div>
 
@@ -346,9 +346,9 @@ export function TicketDetailClient({
                   <FileText className="size-5 text-sky-300" />
                 </div>
                 <div>
-                  <CardTitle>Original bug report</CardTitle>
+                  <CardTitle>As reported</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    The report exactly as it was submitted.
+                    Kept unchanged so the team can separate evidence from interpretation.
                   </p>
                 </div>
               </div>
@@ -368,12 +368,12 @@ export function TicketDetailClient({
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex size-11 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10">
-                    <Sparkles className="size-5 text-violet-300" />
+                    <ClipboardList className="size-5 text-violet-300" />
                   </div>
                   <div>
-                    <CardTitle>AI analysis</CardTitle>
+                    <CardTitle>Triage draft</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      A structured draft for the team to review.
+                      Suggested language and leads—not confirmed findings.
                     </p>
                   </div>
                 </div>
@@ -392,10 +392,10 @@ export function TicketDetailClient({
                       <RefreshCw className="mr-2 size-4" />
                     )}
                     {isAiPending || isAnalysisProcessing
-                      ? "Processing..."
+                      ? "Building draft..."
                       : ticket.aiProcessingStatus === "FAILED"
-                        ? "Retry analysis"
-                        : "Regenerate analysis"}
+                        ? "Retry triage"
+                        : "Run triage again"}
                   </Button>
                 ) : null}
               </div>
@@ -407,8 +407,8 @@ export function TicketDetailClient({
                   role="status"
                   className="rounded-2xl border border-sky-500/20 bg-sky-500/10 px-4 py-3 text-sm text-sky-100"
                 >
-                  Analysis is running in the background. This page will refresh
-                  automatically for up to one minute.
+                  The triage draft is being built in the background. This page will
+                  check for it automatically for up to one minute.
                 </p>
               ) : null}
 
@@ -417,8 +417,8 @@ export function TicketDetailClient({
                   role="alert"
                   className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
                 >
-                  The analysis failed, but the original report is safe. Try the
-                  analysis again when you are ready.
+                  The draft could not be built, but the original report is safe. You
+                  can retry triage or continue manually.
                 </p>
               ) : null}
 
@@ -453,7 +453,7 @@ export function TicketDetailClient({
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                   <div className="mb-4 flex items-center gap-2">
                     <ShieldAlert className="size-4 text-red-300" />
-                    <p className="font-semibold">Possible root cause</p>
+                    <p className="font-semibold">Where to look first</p>
                   </div>
                   <p className="text-sm leading-7 text-muted-foreground">
                     {ticket.possibleRootCause}
@@ -463,7 +463,7 @@ export function TicketDetailClient({
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                   <div className="mb-4 flex items-center gap-2">
                     <PackageCheck className="size-4 text-emerald-300" />
-                    <p className="font-semibold">Suggested next step</p>
+                    <p className="font-semibold">First verification</p>
                   </div>
                   <p className="text-sm leading-7 text-muted-foreground">
                     {ticket.suggestedFix}
@@ -474,19 +474,19 @@ export function TicketDetailClient({
               <div className="rounded-2xl border border-sky-500/20 bg-sky-500/[0.06] p-5">
                 <div className="flex items-center gap-2">
                   <BrainCircuit className="size-4 text-sky-300" />
-                  <p className="font-semibold">Review before updating</p>
+                  <p className="font-semibold">Treat this as a lead</p>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                  Compare the suggested severity and cause with the original report.
-                  The current draft has a{" "}
+                  Check the suggested impact and cause against the original report and
+                  attached evidence. The current draft has a{" "}
                   <span className="font-semibold text-white">
-                    {ticket.priorityScore}/100 priority score
+                    {ticket.priorityScore}/100 queue score
                   </span>{" "}
                   and{" "}
                   <span className="font-semibold text-white">
                     {ticket.confidence}% confidence
                   </span>
-                  . Confirm both before changing the ticket status.
+                  . Neither score confirms the cause or the fix.
                 </p>
               </div>
 
@@ -515,7 +515,7 @@ export function TicketDetailClient({
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <p className="text-sm text-muted-foreground">Priority score</p>
+                  <p className="text-sm text-muted-foreground">Queue score</p>
                   <p className="mt-3 text-5xl font-bold tracking-tight text-red-300">
                     {ticket.priorityScore}
                   </p>
@@ -545,7 +545,7 @@ export function TicketDetailClient({
                       ))
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        No tags were suggested for this ticket.
+                        No useful tags were suggested for this draft.
                       </p>
                     )}
                   </div>
@@ -554,9 +554,9 @@ export function TicketDetailClient({
 
               <div className="grid gap-4 lg:grid-cols-[0.75fr_1.25fr]">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <p className="font-semibold">Was this analysis helpful?</p>
+                  <p className="font-semibold">Did this draft save you time?</p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Your feedback helps evaluate this version of the analysis.
+                    Rate the draft after comparing it with the actual investigation.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button
@@ -591,9 +591,9 @@ export function TicketDetailClient({
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <p className="font-semibold">Analysis history</p>
+                  <p className="font-semibold">Draft history</p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Previous versions stay available for comparison.
+                    Earlier passes stay visible so changes are easy to question.
                   </p>
                   <div className="mt-4 space-y-2">
                     {ticket.aiHistory.length > 0 ? (
@@ -615,7 +615,7 @@ export function TicketDetailClient({
                               {run.severity}
                             </Badge>
                             <Badge className="border-white/10 bg-white/[0.06] text-slate-200">
-                              {run.confidence}% confidence
+                              {run.confidence}% draft confidence
                             </Badge>
                             {run.feedback ? (
                               <Badge className="border-violet-500/25 bg-violet-500/10 text-violet-200">
@@ -629,7 +629,7 @@ export function TicketDetailClient({
                       ))
                     ) : (
                       <p className="text-sm text-muted-foreground">
-                        No preserved AI runs are available yet.
+                        No earlier triage drafts are available.
                       </p>
                     )}
                   </div>
@@ -640,7 +640,7 @@ export function TicketDetailClient({
 
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
             <CardHeader>
-              <CardTitle>Attachments</CardTitle>
+              <CardTitle>Evidence files</CardTitle>
             </CardHeader>
 
             <CardContent className="grid gap-4 md:grid-cols-2">
@@ -710,7 +710,7 @@ export function TicketDetailClient({
                 })
               ) : (
                 <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground md:col-span-2">
-                  No files were attached to this ticket.
+                  This report did not include any files.
                 </div>
               )}
             </CardContent>
@@ -721,7 +721,7 @@ export function TicketDetailClient({
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <MessageSquare className="size-5 text-violet-300" />
-                  <CardTitle>Comments</CardTitle>
+                  <CardTitle>Investigation notes</CardTitle>
                 </div>
               </CardHeader>
 
@@ -730,8 +730,8 @@ export function TicketDetailClient({
                   <Textarea
                     value={commentText}
                     onChange={(event) => setCommentText(event.target.value)}
-                    placeholder="Add an internal engineering note..."
-                    aria-label="Internal engineering note"
+                    placeholder="Add what you checked, ruled out, or plan to try next..."
+                    aria-label="Investigation note"
                     className="min-h-24 rounded-2xl border-white/10 bg-white/[0.04]"
                   />
 
@@ -753,12 +753,12 @@ export function TicketDetailClient({
                     {isCommentPending ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />
-                        Saving Comment...
+                        Saving note...
                       </>
                     ) : (
                       <>
                         <Send className="mr-2 size-4" />
-                        Add Comment
+                        Add note
                       </>
                     )}
                   </Button>
@@ -799,8 +799,8 @@ export function TicketDetailClient({
                     ))
                   ) : (
                     <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-                      No comments yet. Add the first internal note to capture the next
-                      investigation step.
+                      No investigation notes yet. Add what you plan to check first so
+                      the next person does not have to reconstruct it.
                     </div>
                   )}
                 </div>
@@ -811,7 +811,7 @@ export function TicketDetailClient({
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <Activity className="size-5 text-sky-300" />
-                  <CardTitle>Activity Timeline</CardTitle>
+                  <CardTitle>What changed</CardTitle>
                 </div>
               </CardHeader>
 
@@ -843,8 +843,7 @@ export function TicketDetailClient({
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-                    Activity will appear here as the ticket moves through triage,
-                    comments, and status changes.
+                    Changes will appear here after the first status move or note.
                   </div>
                 )}
               </CardContent>
@@ -855,13 +854,13 @@ export function TicketDetailClient({
         <aside className="space-y-6 xl:self-start">
           <Card className="sticky top-24 z-20 overflow-hidden rounded-3xl border-white/10 bg-[#15121d] shadow-[0_28px_90px_-46px_rgba(0,0,0,0.96)] supports-[backdrop-filter]:bg-[#15121d]/95">
             <CardHeader>
-              <CardTitle>Status Workflow</CardTitle>
+              <CardTitle>Move this ticket</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-6">
               <div>
                 <p className="mb-2 text-sm text-muted-foreground">
-                  Update ticket status
+                  Current status
                 </p>
                 <Select
                   value={status}
@@ -888,14 +887,14 @@ export function TicketDetailClient({
                 ) : null}
                 {isStatusPending ? (
                   <p className="mt-3 text-xs text-muted-foreground">
-                    Saving status update...
+                    Saving the new status...
                   </p>
                 ) : null}
               </div>
 
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Workflow progress</span>
+                  <span className="text-muted-foreground">Progress through the queue</span>
                   <span className="font-semibold text-violet-300">
                     {workflowProgress}%
                   </span>
@@ -930,7 +929,7 @@ export function TicketDetailClient({
                       <div>
                         <p className="text-sm font-semibold text-white">{item}</p>
                         <p className="text-xs text-muted-foreground">
-                          {isActive ? "Current status" : "Workflow stage"}
+                          {isActive ? "You are here" : "Queue stage"}
                         </p>
                       </div>
                     </div>
@@ -945,7 +944,7 @@ export function TicketDetailClient({
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <SearchCheck className="size-5 text-emerald-300" />
-                  <CardTitle>Similar Issues</CardTitle>
+                  <CardTitle>Possibly related</CardTitle>
                 </div>
               </CardHeader>
 
@@ -966,7 +965,7 @@ export function TicketDetailClient({
                         </p>
                       </div>
                       <Badge className="shrink-0 rounded-full border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
-                        {issue.matchPercent}% match
+                        {issue.matchPercent}% similar
                       </Badge>
                     </div>
 
@@ -987,7 +986,7 @@ export function TicketDetailClient({
 
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
             <CardHeader>
-              <CardTitle>Ticket Metadata</CardTitle>
+              <CardTitle>Report details</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-4">
@@ -1009,7 +1008,7 @@ export function TicketDetailClient({
               />
               <MetadataRow
                 icon={Code2}
-                label="Affected Page"
+                label="Affected page or component"
                 value={ticket.affectedPage}
               />
               <MetadataRow

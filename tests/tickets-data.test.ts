@@ -423,7 +423,7 @@ describe("ticket data layer", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI analysis regenerated",
+          title: "Triage draft updated",
         }),
       })
     );

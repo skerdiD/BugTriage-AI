@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatWorkspaceRole } from "@/lib/utils";
 
 type WorkspaceMemberControlsProps = {
   workspaceId: string;
@@ -95,7 +96,7 @@ export function WorkspaceMemberControls({
   return (
     <div className="space-y-3 rounded-2xl border border-white/10 bg-black/15 p-4">
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        Workspace Access
+        Workspace access
       </p>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -113,7 +114,7 @@ export function WorkspaceMemberControls({
           <SelectContent>
             {availableRoles.map((role) => (
               <SelectItem key={role} value={role}>
-                {role}
+                {formatWorkspaceRole(role)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -134,7 +135,7 @@ export function WorkspaceMemberControls({
             ) : (
               <>
                 <Save className="mr-2 size-4" />
-                Save Role
+                Save role
               </>
             )}
           </Button>
@@ -154,7 +155,7 @@ export function WorkspaceMemberControls({
 
       {!canChangeRole ? (
         <p className="text-sm leading-6 text-muted-foreground">
-          This teammate role is fixed from your current permission level.
+          Your current role does not allow you to change this person&apos;s access.
         </p>
       ) : null}
 

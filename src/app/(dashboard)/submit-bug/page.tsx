@@ -6,12 +6,12 @@ import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
+  ClipboardCheck,
   FileText,
   ImageIcon,
   Loader2,
-  Sparkles,
   UploadCloud,
-  WandSparkles,
+  ListChecks,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -55,28 +55,28 @@ import {
 
 const ticketDraftItems = [
   {
-    title: "A concise summary",
-    detail: "A scannable description of the problem and its impact.",
+    title: "A cleaner summary",
+    detail: "The problem and user impact in language the team can scan.",
   },
   {
-    title: "Suggested severity and category",
-    detail: "A consistent first pass for the team to confirm.",
+    title: "Impact and product area",
+    detail: "Suggested labels for the team to confirm or change.",
   },
   {
-    title: "Reproduction steps",
-    detail: "The sequence cleaned up without losing the original context.",
+    title: "A reproducible sequence",
+    detail: "The reported steps cleaned up without changing what happened.",
   },
   {
-    title: "Likely cause",
-    detail: "A practical starting point for the investigation.",
+    title: "A place to start looking",
+    detail: "A hypothesis for investigation, clearly presented as a suggestion.",
   },
   {
-    title: "Suggested next step",
-    detail: "A focused action the assignee can review and refine.",
+    title: "The next useful check",
+    detail: "One focused action an owner can verify and refine.",
   },
   {
-    title: "Priority and confidence",
-    detail: "Signals to help the team decide what to review first.",
+    title: "Priority and draft confidence",
+    detail: "Signals for ordering the queue—not a replacement for judgment.",
   },
 ];
 
@@ -117,13 +117,15 @@ export default function SubmitBugPage() {
 
   const totalUploadSizeLabel = useMemo(() => {
     if (totalUploadBytes === 0) {
-      return "No files selected yet.";
+      return "No files attached.";
     }
+
+    const fileCount = screenshotFiles.length + logFiles.length;
 
     return `${(
       totalUploadBytes /
       (1024 * 1024)
-    ).toFixed(1)} MB selected across ${screenshotFiles.length + logFiles.length} file(s).`;
+    ).toFixed(1)} MB across ${fileCount} ${fileCount === 1 ? "file" : "files"}.`;
   }, [logFiles.length, screenshotFiles.length, totalUploadBytes]);
 
   function submit(values: BugReportFormValues) {
@@ -172,9 +174,9 @@ export default function SubmitBugPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Report a bug"
-        description="Share what happened and attach any evidence you have. You can review the generated ticket before moving it through the workflow."
-        badge="Private workspace"
+        title="New bug report"
+        description="Write down what happened while the details are fresh. Attach what you have; the triage draft stays editable."
+        badge="Workspace members only"
       />
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.75fr]">
@@ -185,9 +187,9 @@ export default function SubmitBugPage() {
                 <UploadCloud className="size-5 text-violet-300" />
               </div>
               <div>
-                <CardTitle>Start with what you know</CardTitle>
+                <CardTitle>Start with what actually happened</CardTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  A clear description matters more than perfect formatting.
+                  Plain language beats perfect formatting. Missing details can be added later.
                 </p>
               </div>
             </div>
@@ -201,10 +203,10 @@ export default function SubmitBugPage() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bug title *</FormLabel>
+                      <FormLabel>Short summary *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Example: Payment form fails on Safari mobile"
+                          placeholder="Example: Checkout button stops responding on iPhone Safari"
                           className="h-11 rounded-xl border-white/10 bg-white/[0.04]"
                           {...field}
                         />
@@ -219,16 +221,16 @@ export default function SubmitBugPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description *</FormLabel>
+                      <FormLabel>What happened? *</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Describe what happened, who experienced it, and any useful context."
+                          placeholder="What did the person see, what were they trying to do, and how often did it happen?"
                           className="min-h-32 rounded-xl border-white/10 bg-white/[0.04]"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        Include what the user reported, when it happened, and how often it occurs.
+                        Quote the report when useful. It is okay if you do not know the cause.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -274,8 +276,8 @@ export default function SubmitBugPage() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="desktop">Desktop</SelectItem>
-                            <SelectItem value="ios-mobile">iOS Mobile</SelectItem>
-                            <SelectItem value="android-mobile">Android Mobile</SelectItem>
+                            <SelectItem value="ios-mobile">iPhone</SelectItem>
+                            <SelectItem value="android-mobile">Android phone</SelectItem>
                             <SelectItem value="tablet">Tablet</SelectItem>
                           </SelectContent>
                         </Select>
@@ -394,7 +396,7 @@ export default function SubmitBugPage() {
                 <div className="grid gap-5 lg:grid-cols-2">
                   <UploadDropzone
                     title="Screenshots"
-                    description="Drop image files here or click to upload"
+                    description="Drop the images here, or choose them from your device"
                     helperText="PNG, JPG, and WEBP up to 10MB each. Up to 3 files."
                     icon={ImageIcon}
                     accept={{
@@ -408,7 +410,7 @@ export default function SubmitBugPage() {
 
                   <UploadDropzone
                     title="Console logs"
-                    description="Drop log files here or click to upload"
+                    description="Drop log files here, or choose them from your device"
                     helperText="TXT, LOG, and JSON up to 10MB each. Up to 3 files."
                     icon={FileText}
                     accept={{
@@ -422,14 +424,14 @@ export default function SubmitBugPage() {
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-muted-foreground">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-medium text-white">Upload summary</span>
+                    <span className="font-medium text-white">Attached evidence</span>
                     <Badge className="border-white/10 bg-white/[0.05] text-slate-200">
-                      20MB total ticket limit
+                      20 MB per report
                     </Badge>
                   </div>
                   <p className="mt-2 leading-6">
-                    {totalUploadSizeLabel} Private files are stored securely and only
-                    surfaced back through authorized ticket views.
+                    {totalUploadSizeLabel} Files are only available to members who can
+                    open this ticket.
                   </p>
                 </div>
 
@@ -482,7 +484,7 @@ export default function SubmitBugPage() {
                     className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100"
                   >
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
-                    <p>Ticket {createdCode} created. Redirecting to ticket detail...</p>
+                    <p>Ticket {createdCode} is ready. Opening it now...</p>
                   </div>
                 ) : null}
 
@@ -494,12 +496,12 @@ export default function SubmitBugPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Creating ticket...
+                      Building the first draft...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="mr-2 size-4" />
-                      Analyze and create ticket
+                      <ClipboardCheck className="mr-2 size-4" />
+                      Create triage draft
                     </>
                   )}
                 </Button>
@@ -513,12 +515,12 @@ export default function SubmitBugPage() {
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="flex size-11 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10">
-                  <WandSparkles className="size-5 text-violet-300" />
+                  <ListChecks className="size-5 text-violet-300" />
                 </div>
                 <div>
-                  <CardTitle>Your ticket draft will include</CardTitle>
+                  <CardTitle>What you&apos;ll review next</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Review and adjust any suggestion after the ticket is created.
+                    The original report stays beside every suggested field.
                   </p>
                 </div>
               </div>
@@ -542,13 +544,12 @@ export default function SubmitBugPage() {
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <div className="flex items-center gap-3">
                   <Badge className="border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
-                    Private by default
+                    Kept with the workspace
                   </Badge>
-                  <p className="text-sm font-semibold">Workspace-only attachments</p>
+                  <p className="text-sm font-semibold">Members-only attachments</p>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  Files stay private, and generated fields are checked before the
-                  ticket is saved.
+                  Files stay private, and the draft is validated before it is saved.
                 </p>
               </div>
             </CardContent>

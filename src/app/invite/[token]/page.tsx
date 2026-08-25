@@ -19,6 +19,7 @@ import {
   normalizeInviteEmail,
 } from "@/lib/data/workspace-invites";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { formatWorkspaceRole } from "@/lib/utils";
 
 type InvitePageProps = {
   params: Promise<{
@@ -85,14 +86,14 @@ export default async function InvitePage({ params }: InvitePageProps) {
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
           <InviteStateCard
             icon={<ShieldAlert className="size-5 text-red-300" />}
-            title="Invite Not Found"
-            description="This invite link is invalid or no longer available. Ask the workspace owner or admin for a fresh link."
+            title="This invite is no longer available"
+            description="The link may be incomplete, expired, or already removed. Ask a workspace owner or admin for a new one."
             actions={
               <Button
                 asChild
                 className="h-11 rounded-xl bg-violet-600 hover:bg-violet-500"
               >
-                <Link href="/login">Back to Sign In</Link>
+                <Link href="/login">Back to sign in</Link>
               </Button>
             }
           />
@@ -111,8 +112,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
           <InviteStateCard
             icon={<ShieldAlert className="size-5 text-red-300" />}
-            title="Invite Revoked"
-            description="This invite has already been revoked. Ask the workspace owner or admin for a new link if you still need access."
+            title="This invite was revoked"
+            description="It can no longer add anyone to the workspace. Ask an owner or admin for a new link if you still need access."
           />
         </div>
       </main>
@@ -127,8 +128,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
           <InviteStateCard
             icon={<AlertTriangle className="size-5 text-amber-300" />}
-            title="Invite Expired"
-            description="This invite link has expired. Ask the workspace owner or admin to create a fresh 7-day invite."
+            title="This invite expired"
+            description="Invite links stay open for 7 days. Ask an owner or admin to create a fresh one."
           />
         </div>
       </main>
@@ -143,14 +144,14 @@ export default async function InvitePage({ params }: InvitePageProps) {
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
           <InviteStateCard
             icon={<CheckCircle2 className="size-5 text-emerald-300" />}
-            title="Invite Already Accepted"
-            description="This invite has already been used. If you already joined the workspace, head to the dashboard and switch into it from the header context selector."
+            title="This invite has already been used"
+            description="If you joined with it, open the dashboard and select the workspace from the switcher at the top."
             actions={
               <Button
                 asChild
                 className="h-11 rounded-xl bg-violet-600 hover:bg-violet-500"
               >
-                <Link href="/dashboard">Open Dashboard</Link>
+                <Link href="/dashboard">Open dashboard</Link>
               </Button>
             }
           />
@@ -172,7 +173,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 <div>
                   <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                   <p className="text-sm text-muted-foreground">
-                    Triage workspace
+                    From report to fix
                   </p>
                 </div>
               </Link>
@@ -194,8 +195,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
             <InviteStateCard
               icon={<LogIn className="size-5 text-violet-300" />}
-              title="Sign In To Continue"
-              description="Sign in with the invited email address first. Once your session is active, this page will let you review and accept the workspace invite."
+              title="Sign in to review the invite"
+              description="Use the email address this link was sent to. Once you are signed in, you can check the workspace and role before joining."
               actions={
                 <div className="space-y-3">
                   <Button
@@ -205,7 +206,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                     <Link
                       href={`/login?redirectedFrom=${encodeURIComponent(invitePath)}`}
                     >
-                      Sign In
+                      Sign in
                     </Link>
                   </Button>
                   <Button
@@ -216,7 +217,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                     <Link
                       href={`/signup?redirectedFrom=${encodeURIComponent(invitePath)}`}
                     >
-                      Create Account First
+                      Create an account first
                     </Link>
                   </Button>
                 </div>
@@ -236,8 +237,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
           <InviteStateCard
             icon={<ShieldAlert className="size-5 text-amber-300" />}
-            title="Wrong Signed-In Email"
-            description={`This invite is for ${invite.email}. You are signed in as ${user.email ?? "another account"}, so access is blocked until the invited email signs in.`}
+            title="This link belongs to another email"
+            description={`The invite is for ${invite.email}, but you are signed in as ${user.email ?? "another account"}. Sign out and use the invited address to continue.`}
             actions={
               <div className="flex flex-col gap-3 sm:flex-row">
                 <InviteSignOutButton redirectedFrom={invitePath} />
@@ -246,7 +247,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                   variant="outline"
                   className="h-11 rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
                 >
-                  <Link href="/dashboard">Go to Dashboard</Link>
+                  <Link href="/dashboard">Keep this account</Link>
                 </Button>
               </div>
             }
@@ -267,22 +268,21 @@ export default async function InvitePage({ params }: InvitePageProps) {
               <AppLogoMark className="size-12" iconClassName="size-8" />
               <div>
                 <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
-                <p className="text-sm text-muted-foreground">Triage workspace</p>
+                <p className="text-sm text-muted-foreground">From report to fix</p>
               </div>
             </Link>
 
             <Badge className="mb-5 rounded-full border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-violet-200">
-              Team access request
+              Review before joining
             </Badge>
 
             <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-white">
-              Join {invite.workspaceName} and start collaborating.
+              You&apos;ve been invited to {invite.workspaceName}.
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Accepting this invite adds your account to the shared workspace and
-              makes it available in the dashboard header switcher alongside your
-              personal workspace.
+              Accepting adds this workspace to your account. You can switch back to
+              your other workspaces at any time.
             </p>
           </div>
 
@@ -292,10 +292,10 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 <Users className="size-5 text-violet-300" />
               </div>
               <div>
-                <CardTitle className="text-2xl">Workspace Invite</CardTitle>
+                <CardTitle className="text-2xl">Workspace invite</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Review the workspace details below, then accept the invite to add
-                  this team to your account.
+                  Check the email and role below before adding this team to your
+                  account.
                 </p>
               </div>
             </CardHeader>
@@ -317,7 +317,9 @@ export default async function InvitePage({ params }: InvitePageProps) {
                     Role
                   </p>
                   <div className="mt-3">
-                    <Badge className={roleBadgeClass(invite.role)}>{invite.role}</Badge>
+                    <Badge className={roleBadgeClass(invite.role)}>
+                      {formatWorkspaceRole(invite.role)}
+                    </Badge>
                   </div>
                 </div>
 

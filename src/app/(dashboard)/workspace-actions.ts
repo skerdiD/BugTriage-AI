@@ -191,7 +191,7 @@ export async function createProjectAction(input: {
       ok: true as const,
       projectId: project.id,
       projectName: project.name,
-      message: `${project.name} is ready for incoming bug tickets.`,
+      message: `${project.name} is ready for incoming reports.`,
     };
   } catch (error) {
     if (error instanceof AuthorizationError) {

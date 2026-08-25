@@ -265,10 +265,10 @@ async function persistTicketAnalysis(input: {
         actorId:
           input.ticket.aiProcessingRequestedById ?? input.ticket.reporterId ?? null,
         type: TicketActivityType.AI_ANALYZED,
-        title: isReanalysis ? "AI analysis regenerated" : "AI analysis completed",
+        title: isReanalysis ? "Triage draft updated" : "Triage draft ready",
         description: isReanalysis
-          ? "AI triage was regenerated and the previous analysis was preserved in history."
-          : "Background AI triage completed successfully.",
+          ? "A new triage draft was saved, and the previous version remains in history."
+          : "The first triage draft is ready for review.",
         metadata: {
           processingJobId: input.jobId,
           confidenceScore: input.output.confidenceScore,

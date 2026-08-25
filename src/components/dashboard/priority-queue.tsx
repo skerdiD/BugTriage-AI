@@ -1,4 +1,4 @@
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle, Flag } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,8 +34,8 @@ export function PriorityQueue({
           <div>
             <h3 className="font-semibold text-white">Needs attention</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Open critical and high-severity issues, ordered by their current
-              priority score.
+              Open critical and high-severity work, ordered by the current priority
+              score. Confirm the evidence before reshuffling the queue.
             </p>
           </div>
         </div>
@@ -56,19 +56,18 @@ export function PriorityQueue({
           </div>
         ) : (
           <div className="relative mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
-            No critical or high-severity open tickets are waiting in this workspace
-            right now.
+            Nothing critical or high severity is waiting right now. Enjoy the quiet.
           </div>
         )}
 
         <div className="relative mt-6 grid gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <Sparkles className="size-4 text-violet-300" />
-            <p className="mt-3 text-sm font-semibold">Recommended action</p>
+            <Flag className="size-4 text-violet-300" />
+            <p className="mt-3 text-sm font-semibold">Where to start</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {items.length > 0
-                ? "Work from top priority downward so the most severe open tickets are reviewed first."
-                : "New urgent tickets will appear here automatically."}
+                ? "Open the first ticket, verify the impact, and make sure somebody owns the next step."
+                : "Any newly reported urgent work will land here."}
             </p>
           </div>
 
@@ -79,7 +78,7 @@ export function PriorityQueue({
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <p className="text-2xl font-bold text-orange-300">{highCount}</p>
-            <p className="mt-1 text-sm text-muted-foreground">High priority issues</p>
+            <p className="mt-1 text-sm text-muted-foreground">High-severity issues</p>
           </div>
         </div>
       </CardContent>

@@ -9,6 +9,7 @@ import {
   getCurrentDashboardUser,
   getCurrentWorkspaceContextOrRedirect,
 } from "@/lib/auth/session";
+import { formatWorkspaceRole } from "@/lib/utils";
 
 export default async function ProfilePage() {
   const [user, context] = await Promise.all([
@@ -20,8 +21,8 @@ export default async function ProfilePage() {
     <div className="space-y-8">
       <PageHeader
         title="Profile"
-        description="Update your name and review your current workspace access."
-        badge="Account"
+        description="Update how your name appears to teammates and check your current access."
+        badge="Signed-in account"
       />
 
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -42,7 +43,7 @@ export default async function ProfilePage() {
                   {user.name}
                 </p>
                 <p className="mt-1 truncate text-sm text-muted-foreground">
-                  Manage your profile and check where you have access.
+                  This is how you appear on reports, notes, and activity.
                 </p>
               </div>
             </div>
@@ -52,7 +53,7 @@ export default async function ProfilePage() {
                 Active account
               </Badge>
               <Badge className="border-violet-500/25 bg-violet-500/10 text-violet-200">
-                {context.role}
+                {formatWorkspaceRole(context.role)}
               </Badge>
             </div>
 
@@ -64,7 +65,7 @@ export default async function ProfilePage() {
 
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
-            <CardTitle>Account details</CardTitle>
+            <CardTitle>Access details</CardTitle>
           </CardHeader>
 
           <CardContent className="grid gap-4 md:grid-cols-2">
@@ -89,7 +90,7 @@ export default async function ProfilePage() {
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <Users className="size-5 text-fuchsia-300" />
               <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Current Workspace
+                Current workspace
               </p>
               <p className="mt-2 truncate font-semibold text-white">
                 {context.workspace.name}
@@ -102,10 +103,10 @@ export default async function ProfilePage() {
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <ShieldCheck className="size-5 text-emerald-300" />
               <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Workspace Role
+                Workspace role
               </p>
               <p className="mt-2 truncate font-semibold text-white">
-                {context.role}
+                {formatWorkspaceRole(context.role)}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {context.workspace.memberCount} members

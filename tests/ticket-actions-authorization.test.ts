@@ -139,7 +139,7 @@ describe("ticket server-action authorization", () => {
       name: "comment",
       invoke: () =>
         addTicketCommentAction({ ticketCode: "BUG-1001", body: "Investigating." }),
-      expectedError: "You must be signed in to comment on tickets.",
+      expectedError: "Sign in before adding an investigation note.",
     },
     {
       name: "status update",
@@ -153,7 +153,7 @@ describe("ticket server-action authorization", () => {
     {
       name: "AI regeneration",
       invoke: () => regenerateTicketAiAnalysisAction({ ticketCode: "BUG-1001" }),
-      expectedError: "You must be signed in to manage ticket analysis.",
+      expectedError: "Sign in before requesting another triage pass.",
     },
     {
       name: "AI feedback",
@@ -163,7 +163,7 @@ describe("ticket server-action authorization", () => {
           analysisRunId: "analysis-run-1",
           feedback: AiAnalysisFeedback.HELPFUL,
         }),
-      expectedError: "You must be signed in to leave AI feedback.",
+      expectedError: "Sign in before rating this draft.",
     },
   ])("rejects direct unauthenticated $name invocation", async ({ invoke, expectedError }) => {
     getCurrentUserOrThrowMock.mockRejectedValue(

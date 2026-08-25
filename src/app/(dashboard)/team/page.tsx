@@ -1,9 +1,9 @@
 import {
   Clock3,
+  ClipboardList,
   Crown,
   Mail,
   MailPlus,
-  Sparkles,
   TicketCheck,
   Users,
 } from "lucide-react";
@@ -25,6 +25,7 @@ import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { listPendingWorkspaceInvites } from "@/lib/data/workspace-invites";
 import { getWorkspaceMembers } from "@/lib/data/workspaces";
 import { getAppBaseUrl } from "@/lib/security/app-url";
+import { formatWorkspaceRole } from "@/lib/utils";
 
 function roleBadgeClass(role: string) {
   if (role === "OWNER") {
@@ -81,8 +82,8 @@ export default async function TeamPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Team"
-        description="Invite teammates, review access, and see how bug ownership is shared."
+        title="People and access"
+        description="Invite the people doing the work, check permissions, and see how ownership is distributed."
         badge={`${members.length} members`}
       />
 
@@ -93,7 +94,7 @@ export default async function TeamPage() {
               <Users className="size-5 text-violet-300" />
             </div>
             <p className="mt-6 text-3xl font-bold">{members.length}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Workspace Members</p>
+            <p className="mt-1 text-sm text-muted-foreground">People with access</p>
           </CardContent>
         </Card>
 
@@ -103,17 +104,17 @@ export default async function TeamPage() {
               <TicketCheck className="size-5 text-emerald-300" />
             </div>
             <p className="mt-6 text-3xl font-bold">{totalOpenAssignments}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Open Assigned Tickets</p>
+            <p className="mt-1 text-sm text-muted-foreground">Open assignments</p>
           </CardContent>
         </Card>
 
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardContent className="p-6">
             <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
-              <Sparkles className="size-5 text-sky-300" />
+              <ClipboardList className="size-5 text-sky-300" />
             </div>
             <p className="mt-6 text-3xl font-bold">{totalReportedTickets}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Reported Tickets</p>
+            <p className="mt-1 text-sm text-muted-foreground">Reports submitted</p>
           </CardContent>
         </Card>
       </section>
@@ -128,12 +129,13 @@ export default async function TeamPage() {
                 </div>
                 <h2 className="mt-6 text-xl font-semibold">Invite teammates</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Create a secure shareable invite link for this workspace. The
-                  invited person must sign in with the same email before the link
-                  can add them to your team.
+                  Create a link tied to one email address and role. The recipient
+                  must sign in with that same address before joining.
                 </p>
               </div>
-              <Badge className={roleBadgeClass(context.role)}>{context.role}</Badge>
+              <Badge className={roleBadgeClass(context.role)}>
+                {formatWorkspaceRole(context.role)}
+              </Badge>
             </div>
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
@@ -155,8 +157,8 @@ export default async function TeamPage() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-black/10 p-4 text-sm leading-6 text-muted-foreground">
-              Email delivery is not wired yet. Share the generated invite link in
-              Slack, email, or your team chat while you choose an email provider.
+              Invite email delivery is not connected yet. Copy the generated link
+              into Slack, email, or your team chat.
             </div>
 
             <div className="mt-6">
@@ -167,8 +169,7 @@ export default async function TeamPage() {
                 />
               ) : (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
-                  Invite controls stay with the workspace leadership team. Ask an owner
-                  or admin if someone else needs access.
+                  Ask a workspace owner or admin to create the invite.
                 </div>
               )}
             </div>
@@ -184,8 +185,8 @@ export default async function TeamPage() {
                 </div>
                 <h2 className="mt-6 text-xl font-semibold">Pending invites</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Pending access stays open for 7 days unless it is accepted or
-                  revoked first.
+                  Links expire after 7 days, or earlier if someone accepts or revokes
+                  them.
                 </p>
               </div>
               <Badge className="border-white/10 bg-white/[0.04] text-white/80">
@@ -209,11 +210,11 @@ export default async function TeamPage() {
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-medium">{invite.email}</p>
                               <Badge className={roleBadgeClass(invite.role)}>
-                                {invite.role}
+                                {formatWorkspaceRole(invite.role)}
                               </Badge>
                             </div>
                             <p className="text-sm leading-6 text-muted-foreground">
-                              Invited by {invite.invitedByName} - Expires{" "}
+                              Invited by {invite.invitedByName} · expires{" "}
                               {invite.expiresAt.toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
@@ -241,8 +242,7 @@ export default async function TeamPage() {
                 </div>
               ) : (
                 <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-                  No pending invites yet. Create one when you are ready to bring another
-                  teammate into this workspace.
+                  No open invites. Create one when somebody needs access.
                 </div>
               )
             ) : (
@@ -300,7 +300,9 @@ export default async function TeamPage() {
                       </div>
                     </div>
 
-                    <Badge className={roleBadgeClass(member.role)}>{member.role}</Badge>
+                    <Badge className={roleBadgeClass(member.role)}>
+                      {formatWorkspaceRole(member.role)}
+                    </Badge>
                   </div>
 
                   <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -312,13 +314,13 @@ export default async function TeamPage() {
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <p className="text-xs text-muted-foreground">Open Assigned</p>
+                      <p className="text-xs text-muted-foreground">Open assignments</p>
                       <p className="mt-2 text-2xl font-bold">
                         {member.openAssignedTicketCount}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <p className="text-xs text-muted-foreground">Reported</p>
+                      <p className="text-xs text-muted-foreground">Reports submitted</p>
                       <p className="mt-2 text-2xl font-bold">
                         {member.reportedTicketCount}
                       </p>
@@ -328,7 +330,11 @@ export default async function TeamPage() {
                   <div className="mt-6 flex gap-2">
                     <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
                       <Mail className="size-4 text-sky-300" />
-                      <span>{member.isOwner ? "Workspace owner" : `Role: ${member.role}`}</span>
+                      <span>
+                        {member.isOwner
+                          ? "Workspace owner"
+                          : `Role: ${formatWorkspaceRole(member.role)}`}
+                      </span>
                     </div>
                   </div>
 
@@ -351,8 +357,8 @@ export default async function TeamPage() {
         </section>
       ) : (
         <EmptyState
-          title="No team members yet"
-          description="This workspace does not have any members yet. Create an invite link when you are ready to add another teammate."
+          title="Nobody else is here yet"
+          description="Create an invite link when another teammate needs access to this workspace."
         />
       )}
     </div>

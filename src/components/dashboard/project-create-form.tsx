@@ -62,7 +62,7 @@ export function ProjectCreateForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-2">
         <label htmlFor="project-name" className="text-sm font-medium">
-          Project Name
+          Project name
         </label>
         <Input
           id="project-name"
@@ -77,13 +77,13 @@ export function ProjectCreateForm({
 
       <div className="grid gap-2">
         <label htmlFor="project-description" className="text-sm font-medium">
-          Project Description
+          What belongs in this project?
         </label>
         <Textarea
           id="project-description"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          placeholder="What area of the product should this team route bugs into?"
+          placeholder="Example: Checkout, billing, and post-purchase payment issues."
           className="min-h-24 rounded-xl border-white/10 bg-white/[0.04]"
           maxLength={220}
         />
@@ -121,7 +121,7 @@ export function ProjectCreateForm({
         ) : (
           <>
             <FolderPlus className="mr-2 size-4" />
-            Create Project
+            Create project
           </>
         )}
       </Button>

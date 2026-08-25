@@ -132,46 +132,46 @@ function LoginContent() {
               <div>
                 <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                 <p className="text-sm text-muted-foreground">
-                  Triage workspace
+                  From report to fix
                 </p>
               </div>
             </Link>
 
             <Badge className="mb-5 rounded-full border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-violet-200">
-              Private by default
+              A calmer bug queue
             </Badge>
 
             <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-white">
-              Keep every bug report moving.
+              Pick up where the team left off.
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Bring reports, screenshots, logs, ownership, and status updates into
-              one workspace your whole team can follow.
+              The evidence, decisions, and next move are still here—without asking
+              support or QA to explain the same issue again.
             </p>
 
             <div className="mt-8 grid max-w-2xl gap-4 md:grid-cols-3">
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <ShieldCheck className="size-5 text-emerald-300" />
-                <p className="mt-4 font-semibold">Protected routes</p>
+                <p className="mt-4 font-semibold">Workspace access</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Dashboard access requires authentication.
+                  Only signed-in members can open your team&apos;s queue.
                 </p>
               </div>
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <LockKeyhole className="size-5 text-violet-300" />
-                <p className="mt-4 font-semibold">Private uploads</p>
+                <p className="mt-4 font-semibold">Evidence stays private</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Screenshots and logs stay in private storage.
+                  Screenshots and logs stay attached to the workspace.
                 </p>
               </div>
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <Sparkles className="size-5 text-sky-300" />
-                <p className="mt-4 font-semibold">Structured drafts</p>
+                <p className="mt-4 font-semibold">Drafts, not verdicts</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Turn uneven reports into a consistent starting point.
+                  The first pass is there to review, correct, and hand off.
                 </p>
               </div>
             </div>
@@ -184,7 +184,7 @@ function LoginContent() {
               <div>
                 <CardTitle className="text-2xl">Welcome back</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Sign in with your account, or look around using the sample workspace.
+                  Use your account, or open the sample queue and look around first.
                 </p>
               </div>
             </CardHeader>
@@ -192,9 +192,9 @@ function LoginContent() {
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-5">
                 <div className="rounded-2xl border border-violet-400/20 bg-violet-500/[0.08] p-4">
-                  <p className="text-sm font-semibold text-white">Just looking around?</p>
+                  <p className="text-sm font-semibold text-white">Want to poke around first?</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Open the read-only demo with sample tickets. No signup needed.
+                    Open a realistic, read-only queue. No signup and no blank dashboard.
                   </p>
                   <Button
                     type="button"
@@ -202,7 +202,7 @@ function LoginContent() {
                     onClick={handleDemoLogin}
                     className="mt-3 h-11 w-full rounded-xl bg-violet-600 font-semibold shadow-lg shadow-violet-500/20 hover:bg-violet-500"
                   >
-                    Explore demo workspace
+                    Open sample queue
                     <ArrowRight className="ml-2 size-4" />
                   </Button>
                 </div>
@@ -270,12 +270,12 @@ function LoginContent() {
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
-                  No workspace yet?{" "}
+                  Starting a new team queue?{" "}
                   <Link
                     href="/signup"
                     className="font-semibold text-violet-300 hover:text-violet-200"
                   >
-                    Create account
+                    Set up an account
                   </Link>
                 </p>
               </form>

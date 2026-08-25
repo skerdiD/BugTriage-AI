@@ -238,17 +238,17 @@ describe("GitHub Issues export", () => {
     const body = formatTicketAsGitHubIssueBody(createTicket());
 
     expect(body).toContain("# BUG-4242: Checkout payment form fails on Safari");
-    expect(body).toContain("## AI Summary");
+    expect(body).toContain("## Triage summary");
     expect(body).toContain("## Original Bug Report");
     expect(body).toContain("| Priority score | 88 |");
-    expect(body).toContain("| AI confidence | 91 |");
+    expect(body).toContain("| Draft confidence | 91 |");
     expect(body).toContain("| Affected page | /checkout |");
     expect(body).toContain("## Steps to Reproduce");
     expect(body).toContain("1. Open checkout on Safari.");
     expect(body).toContain("## Likely Cause");
     expect(body).toContain("## Suggested Fix");
     expect(body).toContain("## Additional Context");
-    expect(body).toContain("Generated from BugTriage AI ticket `BUG-4242`.");
+    expect(body).toContain("Exported from BugTriage ticket `BUG-4242`.");
   });
 
   it("formats missing optional ticket fields without empty sections", () => {

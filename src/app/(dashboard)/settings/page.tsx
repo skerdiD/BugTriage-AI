@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasRequiredWorkspaceRole } from "@/lib/auth/authorization";
 import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
+import { formatWorkspaceRole } from "@/lib/utils";
 
 export default async function SettingsPage() {
   const context = await getCurrentWorkspaceContextOrRedirect();
@@ -24,15 +25,15 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Workspace settings"
-        description="Manage workspace access and choose where new bug reports should go."
+        title="Workspace setup"
+        description="See how this workspace is organized and decide where incoming reports should land."
         badge={context.workspace.slug}
       />
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
-            <CardTitle>Workspace profile</CardTitle>
+            <CardTitle>At a glance</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-5">
@@ -45,14 +46,14 @@ export default async function SettingsPage() {
                   </p>
                 </div>
                 <Badge className="border-violet-500/25 bg-violet-500/10 text-violet-200">
-                  {context.role}
+                  {formatWorkspaceRole(context.role)}
                 </Badge>
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl border border-white/10 bg-black/15 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Workspace Owner
+                    Workspace owner
                   </p>
                   <p className="mt-2 font-semibold text-white">
                     {context.workspace.ownerName}
@@ -64,7 +65,7 @@ export default async function SettingsPage() {
 
                 <div className="rounded-2xl border border-white/10 bg-black/15 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Team Snapshot
+                    Queue snapshot
                   </p>
                   <p className="mt-2 font-semibold text-white">
                     {context.workspace.memberCount} members
@@ -101,7 +102,9 @@ export default async function SettingsPage() {
               <Card className="rounded-2xl border-white/10 bg-white/[0.03] shadow-none">
                 <CardContent className="p-4">
                   <Shield className="size-5 text-emerald-300" />
-                  <p className="mt-4 text-2xl font-bold">{context.role}</p>
+                  <p className="mt-4 text-2xl font-bold">
+                    {formatWorkspaceRole(context.role)}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">Your role</p>
                 </CardContent>
               </Card>
@@ -112,7 +115,7 @@ export default async function SettingsPage() {
         <div className="space-y-5">
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
             <CardHeader>
-            <CardTitle>Project routing</CardTitle>
+            <CardTitle>Where reports go</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-5">
@@ -130,16 +133,16 @@ export default async function SettingsPage() {
                           <div>
                             <p className="font-semibold text-white">{project.name}</p>
                             <p className="mt-1 text-sm text-muted-foreground">
-                              {project.description ?? "No project description yet."}
+                              {project.description ?? "No routing note has been added."}
                             </p>
                           </div>
                           {isActiveProject ? (
                             <Badge className="border-emerald-500/25 bg-emerald-500/15 text-emerald-200">
-                              Active
+                              Selected
                             </Badge>
                           ) : (
                             <Badge className="border-white/10 bg-white/[0.05] text-muted-foreground">
-                              Ready
+                              Available
                             </Badge>
                           )}
                         </div>
@@ -154,8 +157,8 @@ export default async function SettingsPage() {
                 </div>
               ) : (
                 <EmptyState
-                  title="No projects yet"
-                  description="Create the first project for this workspace so new bug reports have a clear product area and ownership destination."
+                  title="Reports have nowhere to land yet"
+                  description="Create the first project and describe which product area belongs there."
                 />
               )}
             </CardContent>
@@ -163,7 +166,7 @@ export default async function SettingsPage() {
 
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
             <CardHeader>
-            <CardTitle>Create a project</CardTitle>
+            <CardTitle>Add a project</CardTitle>
             </CardHeader>
 
             <CardContent>
@@ -179,7 +182,7 @@ export default async function SettingsPage() {
       <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
-            <CardTitle>Your workspaces</CardTitle>
+            <CardTitle>Workspaces you can access</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -202,7 +205,7 @@ export default async function SettingsPage() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <Badge className="border-white/10 bg-white/[0.05] text-white/80">
-                            {workspace.role}
+                            {formatWorkspaceRole(workspace.role)}
                           </Badge>
                           <Badge
                             className={
@@ -229,7 +232,7 @@ export default async function SettingsPage() {
             ) : (
               <EmptyState
                 title="No workspaces yet"
-                description="Create your first workspace to separate teams, projects, and ticket routing."
+                description="Create one to give a team its own members, projects, and bug queue."
               />
             )}
           </CardContent>
@@ -237,13 +240,13 @@ export default async function SettingsPage() {
 
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
-            <CardTitle>Create a workspace</CardTitle>
+            <CardTitle>Add another workspace</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Use a separate workspace for another team, client, or product. A
-              default intake project will be created with it.
+              Use a separate workspace when the people or access boundaries change.
+              We&apos;ll create a default intake project with it.
             </p>
             <WorkspaceCreateForm />
           </CardContent>

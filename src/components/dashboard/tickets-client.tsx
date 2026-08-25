@@ -59,8 +59,8 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Tickets"
-        description="Search the queue, check ownership, and move the right bugs forward."
+        title="The queue"
+        description="Find a report, check who owns it, and make the next move obvious."
       >
         <Button
           asChild
@@ -68,7 +68,7 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
         >
           <Link href="/submit-bug">
             <Plus className="size-4" />
-            Report a bug
+            Add a report
           </Link>
         </Button>
       </PageHeader>
@@ -91,15 +91,15 @@ export function TicketsClient({ initialTickets }: TicketsClientProps) {
         <TicketTable tickets={filteredTickets} />
       ) : initialTickets.length === 0 ? (
         <EmptyState
-          title="No tickets yet"
-          description="No bugs have been reported in this project yet. Add the first one when you are ready."
-          actionLabel="Report the first bug"
+          title="No reports in this project"
+          description="When something breaks, add what you know. The first ticket does not need to be perfect."
+          actionLabel="Add the first report"
           actionHref="/submit-bug"
         />
       ) : (
         <EmptyState
-          title="No tickets found"
-          description="Try changing your search query or switching to another status tab."
+          title="Nothing matches those filters"
+          description="Try a shorter search, clear the status filter, or look in another project."
         />
       )}
     </div>

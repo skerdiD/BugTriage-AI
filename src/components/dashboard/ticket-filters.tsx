@@ -59,7 +59,7 @@ export function TicketFilters({
                 id="ticket-search"
                 value={searchQuery}
                 onChange={(event) => onSearchQueryChange(event.target.value)}
-                placeholder="Search by ID, title, or category"
+                placeholder="Search ticket ID, title, or product area"
                 className="h-11 rounded-xl border-white/10 bg-white/[0.04] pl-10 text-sm"
               />
             </div>
@@ -103,7 +103,7 @@ export function TicketFilters({
         </Tabs>
 
         <p aria-live="polite" className="text-sm text-muted-foreground">
-          Showing <span className="font-semibold text-white">{visibleCount}</span> of{" "}
+          <span className="font-semibold text-white">{visibleCount}</span> of{" "}
           {totalCount} {totalCount === 1 ? "ticket" : "tickets"}
         </p>
       </div>

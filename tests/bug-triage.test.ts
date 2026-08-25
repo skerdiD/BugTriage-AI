@@ -122,7 +122,7 @@ ${"trace-line ".repeat(3_000)}`;
     expect(
       getPublicAiTriageFailureMessage(new Error("Request timed out after 12000ms"))
     ).toBe(
-      "AI analysis timed out, so the ticket was saved for manual review."
+      "The triage draft timed out, so the ticket was saved for manual review."
     );
   });
 
@@ -134,7 +134,7 @@ ${"trace-line ".repeat(3_000)}`;
         )
       )
     ).toBe(
-      "AI analysis is temporarily rate limited, so the ticket was saved for manual review."
+      "Triage is temporarily rate limited, so the ticket was saved for manual review."
     );
   });
 
@@ -157,7 +157,7 @@ ${"trace-line ".repeat(3_000)}`;
         new Error("AI returned an invalid bug triage response.")
       )
     ).toBe(
-      "AI analysis returned an unreliable result, so the ticket was saved for manual review."
+      "The triage draft did not pass validation, so the ticket was saved for manual review."
     );
   });
 });

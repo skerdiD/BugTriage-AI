@@ -11,14 +11,14 @@ export function FeatureGrid({ features }: { features: FeatureCard[] }) {
         <div className="mx-auto max-w-7xl">
           <div className="max-w-3xl">
             <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">
-              Built for the handoff
+              Built around real bug work
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Keep the report, evidence, and next steps together.
+              Keep the useful context. Lose the archaeology.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-300">
-              One place for support and QA to share what happened, and for
-              engineering to decide what happens next.
+              Support and QA can hand over what they know. Engineering can see what
+              is fact, what is suggested, and who owns the next move.
             </p>
           </div>
 
@@ -52,10 +52,10 @@ export function FeatureGrid({ features }: { features: FeatureCard[] }) {
           <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
             <div>
               <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">
-                Workflow
+                A short, reviewable loop
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                From report to next step.
+                From &ldquo;something broke&rdquo; to a ticket someone owns.
               </h2>
             </div>
 

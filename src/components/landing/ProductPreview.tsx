@@ -40,14 +40,14 @@ export function ProductPreview() {
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">
-            A real example
+            One report, before and after
           </p>
           <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-            The context engineers need, without the back-and-forth.
+            Less detective work before the real debugging starts.
           </h2>
           <p className="mt-4 text-base leading-8 text-slate-300">
-            Here is what happens when a short complaint, a screenshot, and a log
-            are brought together in one ticket.
+            This is the sort of report every team recognizes: useful, urgent, and
+            missing half the details. The original stays intact beside the draft.
           </p>
         </div>
 
@@ -60,7 +60,7 @@ export function ProductPreview() {
                     What came in
                   </p>
                   <h3 className="mt-2 text-xl font-semibold text-white">
-                    Support report
+                    Message from support
                   </h3>
                 </div>
                 <span className="flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
@@ -70,9 +70,9 @@ export function ProductPreview() {
 
               <div className="mt-5 rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
                 <p className="text-sm leading-7 text-slate-200">
-                  Checkout freezes on iPhone Safari after card details are entered.
-                  User says the payment form stops responding and the submit button
-                  never completes.
+                  Customer on an iPhone says checkout hangs after they enter their
+                  card. The button stops responding. They tried twice and sent a
+                  screenshot from production.
                 </p>
               </div>
 
@@ -91,19 +91,19 @@ export function ProductPreview() {
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.03] p-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-white">
                     <Camera className="size-4 text-cyan-100" />
-                    Screenshot attached
+                    checkout-stuck.png
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Payment form stuck after validation.
+                    Submit button is disabled with valid card details.
                   </p>
                 </div>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.03] p-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-white">
                     <TerminalSquare className="size-4 text-emerald-100" />
-                    Console log attached
+                    payment-errors.txt
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Includes client-side payment event errors.
+                    Two failed payment-state events from the same session.
                   </p>
                 </div>
               </div>
@@ -113,10 +113,10 @@ export function ProductPreview() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium tracking-[0.2em] text-cyan-100/70 uppercase">
-                    What the team gets
+                    Draft after triage
                   </p>
                   <h3 className="mt-2 text-xl font-semibold text-white">
-                    Safari mobile checkout freezes after card entry
+                    Checkout submit stalls after card validation on iOS Safari
                   </h3>
                 </div>
                 <span className="flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06]">
@@ -148,17 +148,17 @@ export function ProductPreview() {
 
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-sm font-semibold text-white">Likely cause</p>
+                  <p className="text-sm font-semibold text-white">Where to look first</p>
                   <p className="mt-2 text-sm leading-6 text-slate-300">
-                    Safari-specific payment state handling fails after card
-                    validation completes.
+                    The Safari payment callback may leave submit state locked after
+                    validation succeeds.
                   </p>
                 </div>
                 <div className="rounded-[18px] border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-sm font-semibold text-white">Suggested fix</p>
+                  <p className="text-sm font-semibold text-white">First verification</p>
                   <p className="mt-2 text-sm leading-6 text-slate-300">
-                    Reproduce on iPhone Safari and harden post-validation submit
-                    state transitions.
+                    Reproduce on the reported Safari version and trace the enabled
+                    state after the card callback.
                   </p>
                 </div>
               </div>

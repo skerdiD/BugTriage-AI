@@ -49,8 +49,9 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Overview"
-        description="See what needs attention, what changed, and how work is moving across this project."
+        title="Project pulse"
+        description="Start with the high-impact work, then catch up on what changed since your last pass."
+        badge={context.project?.name ?? context.workspace.name}
       >
         <Button
           asChild
@@ -84,11 +85,11 @@ export default async function DashboardPage() {
 
       <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Tickets by status</CardTitle>
+          <CardTitle className="text-lg">Where the queue stands</CardTitle>
           <p className="text-sm text-muted-foreground">
             {data.confidenceSampleCount > 0
-              ? `AI confidence averages ${data.averageConfidenceLabel} across ${data.confidenceSampleCount} analyzed tickets.`
-              : "Confidence scores will appear after the first ticket is analyzed."}
+              ? `Draft confidence averages ${data.averageConfidenceLabel} across ${data.confidenceSampleCount} reviewed reports.`
+              : "Draft confidence will appear after the first report has been triaged."}
           </p>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -118,8 +119,8 @@ export default async function DashboardPage() {
 
       {!data.hasTickets ? (
         <EmptyState
-          title="Nothing to show yet"
-          description="Report the first bug and this overview will start tracking severity, status, and recent activity."
+          title="The queue is empty"
+          description="Add the first report and this page will start showing impact, status, ownership, and recent changes."
           actionLabel="Report the first bug"
           actionHref="/submit-bug"
         />

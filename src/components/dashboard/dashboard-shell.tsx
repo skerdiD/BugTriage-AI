@@ -96,7 +96,7 @@ export function DashboardShell({
           <AppLogoMark className="size-9 rounded-xl" iconClassName="size-6" />
           <div>
             <p className="font-bold leading-none">BugTriage AI</p>
-            <p className="mt-1 text-xs text-muted-foreground">Triage workspace</p>
+            <p className="mt-1 text-xs text-muted-foreground">From report to fix</p>
           </div>
         </Link>
 
@@ -133,9 +133,9 @@ export function DashboardShell({
               <div className="flex items-start gap-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.08] px-4 py-3 text-sm text-sky-100">
                 <Eye className="mt-0.5 size-4 shrink-0 text-sky-300" />
                 <div>
-                  <p className="font-semibold">Read-only demo</p>
+                  <p className="font-semibold">You&apos;re in the sample workspace</p>
                   <p className="mt-0.5 text-xs leading-5 text-sky-100/65">
-                    Explore the sample data freely. Changes and uploads are disabled.
+                    Everything is real except the edits—changes and uploads are switched off.
                   </p>
                 </div>
               </div>

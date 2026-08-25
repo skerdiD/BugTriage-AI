@@ -222,7 +222,7 @@ export function formatTicketAsGitHubIssueBody(ticket: TicketDetail) {
       : formatSteps(ticket.stepsToReproduce);
   const body = [
     `# ${ticket.code}: ${buildIssueTitle(ticket)}`,
-    section("AI Summary", ticket.aiAnalysis?.summary ?? ticket.description),
+    section("Triage summary", ticket.aiAnalysis?.summary ?? ticket.description),
     section("Original Bug Report", ticket.description),
     "## Triage Metadata",
     [
@@ -232,7 +232,7 @@ export function formatTicketAsGitHubIssueBody(ticket: TicketDetail) {
       metadataRow("Status", ticket.status.toLowerCase().replaceAll("_", " ")),
       metadataRow("Priority score", ticket.priorityScore),
       metadataRow(
-        "AI confidence",
+        "Draft confidence",
         ticket.aiAnalysis?.confidenceScore ?? ticket.aiConfidence
       ),
       metadataRow("Category", ticket.category),
@@ -262,7 +262,7 @@ export function formatTicketAsGitHubIssueBody(ticket: TicketDetail) {
     ),
     "## Additional Context",
     [
-      `Generated from BugTriage AI ticket \`${ticket.code}\`.`,
+      `Exported from BugTriage ticket \`${ticket.code}\`.`,
       `Created: ${ticket.createdAt.toISOString()}`,
       `Updated: ${ticket.updatedAt.toISOString()}`,
     ].join("\n"),

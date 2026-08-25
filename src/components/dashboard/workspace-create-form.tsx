@@ -38,7 +38,7 @@ export function WorkspaceCreateForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-2">
         <label htmlFor="workspace-name" className="text-sm font-medium">
-          Workspace Name
+          Workspace name
         </label>
         <Input
           id="workspace-name"
@@ -78,12 +78,12 @@ export function WorkspaceCreateForm() {
         {isPending ? (
           <>
             <Loader2 className="mr-2 size-4 animate-spin" />
-            Creating Workspace...
+            Creating workspace...
           </>
         ) : (
           <>
             <PlusCircle className="mr-2 size-4" />
-            Create Workspace
+            Create workspace
           </>
         )}
       </Button>

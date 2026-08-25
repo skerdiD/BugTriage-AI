@@ -162,7 +162,7 @@ describe("workspace member management", () => {
         name: "Bug Intake",
         slug: "bug-intake",
         description:
-          "Primary project for incoming bug reports, AI triage, screenshots, and engineering follow-up.",
+          "Default home for incoming reports, private evidence, triage drafts, and engineering follow-up.",
       },
     });
   });

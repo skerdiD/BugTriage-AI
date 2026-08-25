@@ -112,7 +112,7 @@ export async function addTicketCommentAction(input: {
     if (error instanceof AuthenticationError) {
       return {
         ok: false as const,
-        error: "You must be signed in to comment on tickets.",
+        error: "Sign in before adding an investigation note.",
       };
     }
 
@@ -146,7 +146,7 @@ export async function addTicketCommentAction(input: {
 
     return {
       ok: false as const,
-      error: "We couldn't save that comment right now. Please try again.",
+      error: "We couldn't save that note right now. Please try again.",
     };
   }
 }
@@ -224,7 +224,7 @@ export async function regenerateTicketAiAnalysisAction(input: {
     const parsed = regenerateSchema.safeParse(input);
 
     if (!parsed.success) {
-      return { ok: false as const, error: "That AI regeneration request was invalid." };
+      return { ok: false as const, error: "That triage request was invalid." };
     }
 
     const [user, context] = await Promise.all([
@@ -256,7 +256,7 @@ export async function regenerateTicketAiAnalysisAction(input: {
         ok: false as const,
         error: getArcjetDeniedMessage(
           arcjetDecision,
-          "AI regeneration blocked by application security."
+          "A new triage pass was blocked by application security."
         ),
       };
     }
@@ -272,14 +272,14 @@ export async function regenerateTicketAiAnalysisAction(input: {
       ok: true as const,
       message:
         dispatch.mode === "queued"
-          ? "AI analysis was queued and will update shortly."
-          : "AI analysis is pending and will run when background processing is available.",
+          ? "A new triage pass is queued and should appear shortly."
+          : "The triage pass is pending and will run when background processing is available.",
     };
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return {
         ok: false as const,
-        error: "You must be signed in to manage ticket analysis.",
+        error: "Sign in before requesting another triage pass.",
       };
     }
 
@@ -303,7 +303,7 @@ export async function setTicketAiAnalysisFeedbackAction(input: {
     const parsed = feedbackSchema.safeParse(input);
 
     if (!parsed.success) {
-      return { ok: false as const, error: "That AI feedback request was invalid." };
+      return { ok: false as const, error: "That draft-feedback request was invalid." };
     }
 
     const [user, context] = await Promise.all([
@@ -324,12 +324,12 @@ export async function setTicketAiAnalysisFeedbackAction(input: {
 
     revalidatePath(`/tickets/${parsed.data.ticketCode}`);
 
-    return { ok: true as const, message: "AI feedback saved." };
+    return { ok: true as const, message: "Draft feedback saved." };
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return {
         ok: false as const,
-        error: "You must be signed in to leave AI feedback.",
+        error: "Sign in before rating this draft.",
       };
     }
 
@@ -349,7 +349,7 @@ export async function setTicketAiAnalysisFeedbackAction(input: {
 
     return {
       ok: false as const,
-      error: "We couldn't save that AI feedback right now. Please try again.",
+      error: "We couldn't save that feedback right now. Please try again.",
     };
   }
 }

@@ -33,6 +33,7 @@ import {
   type UiTicketStatus,
   type WeeklyInsight,
 } from "@/lib/dashboard/types";
+import { presentTicketActivityCopy } from "@/lib/dashboard/activity-copy";
 import {
   mapDbSeverityToUiSeverity,
   mapDbStatusToUiStatus,
@@ -201,10 +202,12 @@ async function queryRecentActivities(input: ReportingScopeInput, take = 6) {
 }
 
 function mapRecentActivityRecord(activity: RecentActivityRecord): RecentActivityItem {
+  const copy = presentTicketActivityCopy(activity.title, activity.description);
+
   return {
     id: activity.id,
-    title: activity.title,
-    description: activity.description ?? "Ticket activity recorded.",
+    title: copy.title,
+    description: copy.description,
     time: formatRelativeDate(activity.createdAt),
     ticketId: activity.ticket.code,
     ticketTitle: activity.ticket.title,
@@ -344,15 +347,15 @@ function buildDashboardStats(tickets: ReportingTicket[]): DashboardStat[] {
     {
       icon: "bugs",
       value: totalTickets.toLocaleString(),
-      label: "Total Tickets",
-      trend: `${newInLastWeek} in 7d`,
+      label: "All tickets",
+      trend: `${newInLastWeek} new this week`,
       trendType: "positive",
       accent: "blue",
     },
     {
       icon: "reports",
       value: openTickets.toLocaleString(),
-      label: "Open Tickets",
+      label: "Still open",
       trend: formatPercent(percentage(openTickets, totalTickets)),
       trendType: "positive",
       accent: "violet",
@@ -360,7 +363,7 @@ function buildDashboardStats(tickets: ReportingTicket[]): DashboardStat[] {
     {
       icon: "critical",
       value: criticalHighTickets.toLocaleString(),
-      label: "Critical / High",
+      label: "High impact",
       trend: formatPercent(percentage(criticalHighTickets, totalTickets)),
       trendType: criticalHighTickets > 0 ? "negative" : "positive",
       accent: "red",
@@ -368,8 +371,8 @@ function buildDashboardStats(tickets: ReportingTicket[]): DashboardStat[] {
     {
       icon: "fixed",
       value: resolvedTickets.toLocaleString(),
-      label: "Resolved / Closed",
-      trend: `${resolvedInLastWeek} in 7d`,
+      label: "Fixed or closed",
+      trend: `${resolvedInLastWeek} this week`,
       trendType: "positive",
       accent: "green",
     },
@@ -588,48 +591,48 @@ function buildWeeklyInsights(
   return [
     {
       type: "focus",
-      label: "Focus Area",
+      label: "Where work is clustering",
       title: topCategory
-        ? `${topCategory.category} is driving the most tickets`
-        : "Triage focus is still emerging",
+          ? `${topCategory.category} is showing up most often`
+          : "No clear cluster yet",
       description: topCategory
-        ? `${topCategory.bugs} tickets in this workspace are currently grouped under ${topCategory.category}, making it the strongest signal in the backlog.`
-        : "As more tickets arrive, this workspace will surface its clearest issue cluster automatically.",
+          ? `${topCategory.bugs} tickets are grouped under ${topCategory.category}. That makes it the first place worth checking for shared causes.`
+          : "A few more reports will make recurring categories and affected areas easier to trust.",
       recommendation: topPage
-        ? `Start review with ${topPage.path}, because it is the most affected surface tied to the current ticket volume.`
-        : "Review new tickets as they arrive and watch for a recurring category or page cluster.",
+          ? `Start with ${topPage.path}; it is attached to more reports than any other surface right now.`
+          : "Keep routes and feature areas specific on new reports so the first useful cluster is easy to spot.",
     },
     {
       type: "browser",
-      label: "Browser Priority",
+      label: "Browser signal",
       title:
         mentionSafari > 0
-          ? "Safari is appearing in AI triage signals"
-          : "Cross-browser signals are limited right now",
+          ? "Safari keeps appearing in the drafts"
+          : "No browser stands out yet",
       description:
         mentionSafari > 0
-          ? `${mentionSafari} AI summaries mention Safari-specific behavior, which is a strong hint to validate browser-specific edge cases first.`
-          : "There are not enough browser-specific clues in the current workspace data to prioritize one browser family yet.",
+          ? `${mentionSafari} triage drafts mention Safari-specific behavior. Treat that as a lead for verification, not a confirmed cause.`
+          : "The current reports do not contain enough repeated browser detail to justify a browser-specific regression pass.",
       recommendation:
         mentionSafari > 0
-          ? "Run a focused Safari regression pass on the highest-severity open tickets this week."
-          : "Capture browser details consistently in new bug reports so future insights are sharper.",
+          ? "Run a short Safari pass against the highest-impact open tickets and record what reproduces."
+          : "Keep capturing the exact browser and version so this signal becomes useful.",
     },
     {
       type: "velocity",
-      label: "Team Velocity",
+      label: "Closing the loop",
       title:
         resolvedTickets.length > 0
-          ? `${resolvedTickets.length} tickets have already been resolved`
-          : "Resolution velocity is still building",
+          ? `${resolvedTickets.length} tickets made it to done`
+          : "No resolution baseline yet",
       description:
         resolvedTickets.length > 0
-          ? `Resolved tickets in this workspace are averaging ${formatHours(avgResolutionHours)} from report to closure, with AI confidence averaging ${formatPercent(averageConfidence, 0)} when available.`
-          : "No tickets have been fixed or closed yet, so resolution-time insights will appear after the first completed issues.",
+          ? `Resolved tickets are averaging ${formatHours(avgResolutionHours)} from report to closure. Draft confidence averages ${formatPercent(averageConfidence, 0)} where a triage draft is available.`
+          : "Nothing has been fixed or closed yet, so there is not enough history for a useful time-to-resolution number.",
       recommendation:
         resolvedTickets.length > 0
-          ? "Keep status updates and comments flowing so the activity log stays useful for future triage and retrospectives."
-          : "Close the loop on early tickets and keep comment history up to date to establish a reliable baseline for analytics.",
+          ? "Keep status changes and investigation notes current; that history is what makes the next retrospective useful."
+          : "Close the loop on the first few tickets and leave a short note about the outcome.",
     },
   ];
 }
@@ -706,9 +709,9 @@ export function buildAnalyticsPageData(
     metrics: [
       {
         icon: "clock",
-        label: "Avg Resolution Time",
+        label: "Typical time to done",
         value: formatHours(avgResolutionHours),
-        helper: "Average time from ticket creation to fixed or closed status.",
+        helper: "Average time between the report and a fixed or closed status.",
         trend: `${resolvedTickets.length} resolved`,
         trendDirection: "down",
         trendTone: resolvedTickets.length > 0 ? "positive" : "warning",
@@ -716,9 +719,9 @@ export function buildAnalyticsPageData(
       },
       {
         icon: "resolved",
-        label: "Resolved in 7 Days",
+        label: "Closed this week",
         value: resolvedThisWeek.toLocaleString(),
-        helper: "Tickets moved to fixed or closed in the last 7 days.",
+        helper: "Tickets moved to fixed or closed during the last 7 days.",
         trend: `${formatPercent(percentage(resolvedThisWeek, tickets.length), 0)}`,
         trendDirection: "up",
         trendTone: resolvedThisWeek > 0 ? "positive" : "warning",
@@ -726,9 +729,9 @@ export function buildAnalyticsPageData(
       },
       {
         icon: "critical",
-        label: "Critical / High Rate",
+        label: "High-impact share",
         value: formatPercent(percentage(criticalHighCount, tickets.length)),
-        helper: "Share of tickets currently marked high or critical severity.",
+        helper: "Share of the queue currently marked high or critical.",
         trend: criticalHighCount.toLocaleString(),
         trendDirection: criticalHighCount > 0 ? "up" : "down",
         trendTone: criticalHighCount > 0 ? "negative" : "positive",
@@ -736,10 +739,10 @@ export function buildAnalyticsPageData(
       },
       {
         icon: "accuracy",
-        label: "Average AI Confidence",
+        label: "Draft confidence",
         value: confidenceValues.length > 0 ? formatPercent(avgConfidence, 0) : "N/A",
-        helper: "Average confidence across tickets with AI-generated triage data.",
-        trend: `${confidenceValues.length} scored`,
+        helper: "Average model confidence across tickets with a triage draft.",
+        trend: `${confidenceValues.length} drafts`,
         trendDirection: "up",
         trendTone: confidenceValues.length > 0 ? "positive" : "warning",
         accent: "blue",

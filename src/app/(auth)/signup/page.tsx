@@ -114,46 +114,46 @@ function SignupContent() {
               <div>
                 <p className="text-2xl font-bold tracking-tight">BugTriage AI</p>
                 <p className="text-sm text-muted-foreground">
-                  Triage workspace
+                  From report to fix
                 </p>
               </div>
             </Link>
 
             <Badge className="mb-5 rounded-full border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-violet-200">
-              Your team&apos;s shared bug queue
+              Set up the queue once
             </Badge>
 
             <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-white">
-              Give bug reports a clear place to go.
+              Make the handoff easier from day one.
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Set up a workspace where support, QA, and engineering can share
-              evidence, ownership, and progress.
+              Give support, QA, and engineering one place for the report, the
+              evidence, the owner, and the next decision.
             </p>
 
             <div className="mt-8 grid max-w-2xl gap-4 md:grid-cols-3">
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <ShieldCheck className="size-5 text-emerald-300" />
-                <p className="mt-4 font-semibold">Secure by default</p>
+                <p className="mt-4 font-semibold">Clear boundaries</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Dashboard routes are protected after signup.
+                  Each workspace keeps its own members, projects, and tickets.
                 </p>
               </div>
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <LockKeyhole className="size-5 text-violet-300" />
-                <p className="mt-4 font-semibold">Private files</p>
+                <p className="mt-4 font-semibold">Files stay with the report</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Upload screenshots and logs to private storage.
+                  Screenshots and logs are stored privately for workspace members.
                 </p>
               </div>
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <Sparkles className="size-5 text-sky-300" />
-                <p className="mt-4 font-semibold">Structured drafts</p>
+                <p className="mt-4 font-semibold">A useful first pass</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Turn rough reports into a consistent first pass.
+                  Suggested fields are easy to scan, question, and correct.
                 </p>
               </div>
             </div>
@@ -166,7 +166,7 @@ function SignupContent() {
               <div>
                 <CardTitle className="text-2xl">Create account</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Create your profile, then set up your first workspace.
+                  Add your profile now. You&apos;ll name the workspace next.
                 </p>
               </div>
             </CardHeader>
@@ -215,8 +215,8 @@ function SignupContent() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use at least 6 characters. We may ask you to confirm your email
-                    before signing in.
+                    Use at least 6 characters. If email confirmation is enabled,
+                    we&apos;ll send the next step there.
                   </p>
                 </div>
 
@@ -260,7 +260,7 @@ function SignupContent() {
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
-                  Already have an account?{" "}
+                  Already part of a workspace?{" "}
                   <Link
                     href="/login"
                     className="font-semibold text-violet-300 hover:text-violet-200"

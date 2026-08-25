@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s | BugTriage AI",
   },
   description:
-    "Turn rough bug reports, screenshots, and logs into clear tickets your engineering team can act on.",
+    "Bring the rough report, evidence, and engineering follow-up together in one reviewable bug queue.",
 };
 
 export default function RootLayout({

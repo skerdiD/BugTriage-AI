@@ -45,9 +45,9 @@ export function AnalyticsCharts({
       <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
         <CardHeader className="pb-0">
           <div>
-            <CardTitle className="text-lg">Bug Reports Over Time</CardTitle>
+            <CardTitle className="text-lg">New reports by week</CardTitle>
             <p className="mt-2 text-sm text-muted-foreground">
-              Weekly report volume across the currently selected workspace scope.
+              How many reports entered the selected project each week.
             </p>
           </div>
         </CardHeader>
@@ -102,9 +102,9 @@ export function AnalyticsCharts({
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader className="pb-0">
             <div>
-              <CardTitle className="text-lg">Bugs by Category</CardTitle>
+              <CardTitle className="text-lg">Where reports are landing</CardTitle>
               <p className="mt-2 text-sm text-muted-foreground">
-                Where issues are concentrated across product areas.
+                The product areas carrying the most reported problems.
               </p>
             </div>
           </CardHeader>
@@ -152,9 +152,9 @@ export function AnalyticsCharts({
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader className="pb-0">
             <div>
-              <CardTitle className="text-lg">Average Resolution Time</CardTitle>
+              <CardTitle className="text-lg">Time to resolution</CardTitle>
               <p className="mt-2 text-sm text-muted-foreground">
-                How fast the team closes bugs week over week.
+                Average hours from first report to fixed or closed.
               </p>
             </div>
           </CardHeader>

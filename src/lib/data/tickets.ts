@@ -545,8 +545,8 @@ export async function createTicket(input: CreateTicketInput) {
                 type: TicketActivityType.CREATED,
                 title: "Bug submitted",
                 description: input.aiAnalysis
-                  ? "Ticket created after AI triage completed."
-                  : "Ticket created successfully. AI analysis is pending.",
+                  ? "Ticket created with a triage draft ready for review."
+                  : "Ticket created. The triage draft is still pending.",
                 metadata: {
                   code: input.code,
                   aiAnalyzed: Boolean(input.aiAnalysis),
@@ -661,9 +661,9 @@ export async function regenerateTicketAiAnalysis(input: {
           ticketId: access.ticket.id,
           actorId: input.actorId ?? currentUser.id,
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI analysis regenerated",
+          title: "Triage draft updated",
           description:
-            "AI triage was regenerated and the previous analysis was preserved in history.",
+            "A new triage draft was saved, and the previous version remains in history.",
           metadata: {
             confidenceScore: input.output.confidenceScore,
             severity: input.output.severity,
@@ -715,7 +715,7 @@ export async function setTicketAiAnalysisFeedback(input: {
     });
 
     if (!run) {
-      throw new AuthorizationError("AI analysis run not found or access denied.");
+      throw new AuthorizationError("Triage draft not found or access denied.");
     }
 
     return await prisma.ticketAiAnalysisRun.update({

@@ -12,6 +12,7 @@ import type {
   ProjectSummary,
   WorkspaceSummary,
 } from "@/lib/data/workspaces";
+import { formatWorkspaceRole } from "@/lib/utils";
 
 type WorkspaceContextSwitcherProps = {
   roleLabel: string;
@@ -115,7 +116,7 @@ export function WorkspaceContextSwitcher({
               roleLabel
             )}`}
           >
-            {roleLabel}
+            {formatWorkspaceRole(roleLabel)}
           </span>
           <div className="flex size-7 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-muted-foreground">
             {isPending ? (

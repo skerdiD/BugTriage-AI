@@ -60,9 +60,9 @@ export function AnalyticsClient({
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Analytics"
-        description="Spot recurring problem areas and see how quickly the team is resolving them."
-        badge="Project health"
+        title="Patterns and pace"
+        description="See where reports are clustering, how long they stay open, and which signals are worth checking next."
+        badge="Project history"
       />
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -96,8 +96,8 @@ export function AnalyticsClient({
 
       {!hasTickets ? (
         <EmptyState
-          title="No analytics yet"
-          description="Charts will appear once this project has a few tickets and status changes to learn from."
+          title="Not enough history yet"
+          description="Once a few reports move through the queue, this page will show recurring areas and time-to-resolution trends."
           actionLabel="Report a bug"
           actionHref="/submit-bug"
         />

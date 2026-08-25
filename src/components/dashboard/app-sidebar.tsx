@@ -41,32 +41,32 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   {
-    title: "Dashboard",
+    title: "Overview",
     href: "/dashboard",
     icon: LayoutDashboard,
   },
   {
-    title: "Report a bug",
+    title: "New report",
     href: "/submit-bug",
     icon: UploadCloud,
   },
   {
-    title: "Tickets",
+    title: "All tickets",
     href: "/tickets",
     icon: Ticket,
   },
   {
-    title: "Analytics",
+    title: "Trends",
     href: "/analytics",
     icon: BarChart3,
   },
   {
-    title: "Team",
+    title: "People",
     href: "/team",
     icon: Users,
   },
   {
-    title: "Settings",
+    title: "Workspace",
     href: "/settings",
     icon: Settings,
   },
@@ -135,7 +135,7 @@ export function AppSidebar({
           >
             <Link
               href="/dashboard"
-              aria-label="BugTriage AI Dashboard"
+              aria-label="BugTriage overview"
               className={cn(
                 "group flex min-w-0 items-center transition-all",
                 isDesktopCollapsed ? "justify-center" : "gap-3"
@@ -155,7 +155,7 @@ export function AppSidebar({
                   BugTriage AI
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  Triage workspace
+                  From report to fix
                 </p>
               </div>
             </Link>
@@ -256,7 +256,7 @@ export function AppSidebar({
                   )}
                 >
                   <span className="block truncate text-sm font-semibold leading-5">
-                    Account
+                    {user.name}
                   </span>
                 </span>
 
@@ -277,10 +277,10 @@ export function AppSidebar({
             >
               <DropdownMenuLabel className="px-2 py-2">
                 <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
-                  Account
+                  {user.name}
                 </span>
                 <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                  Profile and sign-in settings
+                  {user.email}
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/10" />

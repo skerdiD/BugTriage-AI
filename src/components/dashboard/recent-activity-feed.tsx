@@ -17,9 +17,9 @@ export function RecentActivityFeed({ items }: RecentActivityFeedProps) {
             <Activity className="size-5 text-sky-300" />
           </div>
           <div>
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <CardTitle className="text-lg">What changed</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              The latest updates in this project.
+              Status moves, notes, and decisions from this project.
             </p>
           </div>
         </div>
@@ -62,8 +62,7 @@ export function RecentActivityFeed({ items }: RecentActivityFeedProps) {
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-            Ticket activity will appear here once teammates start submitting bugs,
-            changing statuses, or adding comments.
+            Changes will appear here after the first report, status move, or note.
           </div>
         )}
       </CardContent>

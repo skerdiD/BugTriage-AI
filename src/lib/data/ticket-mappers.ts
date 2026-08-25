@@ -13,6 +13,7 @@ import type {
   UiTicketSeverity,
   UiTicketStatus,
 } from "@/lib/dashboard/types";
+import { presentTicketActivityCopy } from "@/lib/dashboard/activity-copy";
 import type { SimilarIssue } from "@/lib/data/similar-issues";
 import type { TicketDetail, TicketListItem } from "@/lib/data/tickets";
 
@@ -183,12 +184,19 @@ export function mapTicketDetailToUiTicket(
       createdAt: relativeDate(comment.createdAt),
       body: comment.body,
     })),
-    activity: ticket.activities.map((activity) => ({
-      id: activity.id,
-      title: activity.title,
-      description: activity.description ?? "Ticket activity recorded.",
-      time: relativeDate(activity.createdAt),
-    })),
+    activity: ticket.activities.map((activity) => {
+      const copy = presentTicketActivityCopy(
+        activity.title,
+        activity.description
+      );
+
+      return {
+        id: activity.id,
+        title: copy.title,
+        description: copy.description,
+        time: relativeDate(activity.createdAt),
+      };
+    }),
     similarIssues: similarIssues.map(mapSimilarIssueToUiIssue),
   };
 }

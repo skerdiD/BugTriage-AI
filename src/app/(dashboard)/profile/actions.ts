@@ -72,7 +72,7 @@ export async function updateProfileNameAction(formData: FormData) {
 
     return {
       ok: true as const,
-      message: "Profile name updated.",
+      message: "Your display name is updated.",
     };
   } catch (error) {
     captureServerException(error, {

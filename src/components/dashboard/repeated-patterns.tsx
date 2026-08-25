@@ -51,20 +51,19 @@ export function RepeatedPatterns({ patterns }: RepeatedPatternsProps) {
 
               <div className="mt-4 flex items-end justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Repetition count</p>
+                  <p className="text-xs text-muted-foreground">Reports in this cluster</p>
                   <p className="mt-1 text-2xl font-bold text-white">{pattern.count}x</p>
                 </div>
 
                 <p className="max-w-xs text-right text-xs leading-5 text-muted-foreground">
-                  Similar reports grouped by category, browser, component, and root-cause hints.
+                  Grouped from shared category, browser, component, and cause hints.
                 </p>
               </div>
             </div>
           ))
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-            Repeated issue clusters will appear here after the workspace has enough
-            tickets to reveal recurring patterns.
+            Clusters will appear after enough reports share meaningful details.
           </div>
         )}
       </CardContent>

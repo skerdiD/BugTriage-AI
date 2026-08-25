@@ -3,7 +3,7 @@ import {
   Activity,
   Compass,
   Gauge,
-  Sparkles,
+  Telescope,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,12 +31,12 @@ export function WeeklyInsights({ insights }: WeeklyInsightsProps) {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="flex size-11 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10">
-            <Sparkles className="size-5 text-violet-300" />
+            <Telescope className="size-5 text-violet-300" />
           </div>
           <div>
-            <CardTitle className="text-lg">This week at a glance</CardTitle>
+            <CardTitle className="text-lg">Signals worth a second look</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Suggested focus areas based on volume, severity, and resolution patterns.
+              Leads pulled from volume, impact, and resolution history—not conclusions.
             </p>
           </div>
         </div>
@@ -69,7 +69,7 @@ export function WeeklyInsights({ insights }: WeeklyInsightsProps) {
                 </p>
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs font-medium text-violet-200">Recommendation</p>
+                  <p className="text-xs font-medium text-violet-200">A useful next check</p>
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
                     {insight.recommendation}
                   </p>
@@ -79,7 +79,7 @@ export function WeeklyInsights({ insights }: WeeklyInsightsProps) {
           })
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground md:col-span-3">
-            Add a little more ticket history before looking for weekly patterns.
+            A little more ticket history is needed before these signals are reliable.
           </div>
         )}
       </CardContent>

@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatWorkspaceRole } from "@/lib/utils";
 
 type InviteMemberFormProps = {
   workspaceId: string;
@@ -72,7 +73,7 @@ export function InviteMemberForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-2">
         <label htmlFor={emailInputId} className="text-sm font-medium">
-          Teammate Email
+          Teammate email
         </label>
         <Input
           id={emailInputId}
@@ -89,7 +90,7 @@ export function InviteMemberForm({
 
       <div className="grid gap-2">
         <label id={roleLabelId} className="text-sm font-medium">
-          Workspace Role
+          Workspace role
         </label>
         <Select value={role} onValueChange={(value) => setRole(value as WorkspaceRole)}>
           <SelectTrigger
@@ -101,7 +102,7 @@ export function InviteMemberForm({
           <SelectContent>
             {roleOptions.map((option) => (
               <SelectItem key={option} value={option}>
-                {option}
+                {formatWorkspaceRole(option)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -149,12 +150,12 @@ export function InviteMemberForm({
         {isPending ? (
           <>
             <Loader2 className="mr-2 size-4 animate-spin" />
-            Creating Invite...
+            Creating invite...
           </>
         ) : (
           <>
             <MailPlus className="mr-2 size-4" />
-            Create Invite Link
+            Create invite link
           </>
         )}
       </Button>

@@ -80,7 +80,7 @@ export function ProfileNameForm({ currentName }: ProfileNameFormProps) {
         ) : (
           <>
             <Save className="mr-2 size-4" />
-            Save Name
+            Save name
           </>
         )}
       </Button>

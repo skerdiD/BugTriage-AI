@@ -10,13 +10,14 @@ export function FinalCta() {
         <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">
-              Try the full workflow
+              No pitch deck required
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              See how a rough report becomes a useful ticket.
+              Take the sample queue for a spin.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-300">
-              Open the sample workspace—no setup or account creation required.
+              Open a read-only workspace with realistic reports, decisions, and
+              follow-up. No setup or account creation required.
             </p>
           </div>
 
@@ -26,8 +27,8 @@ export function FinalCta() {
               size="lg"
               className="h-11 rounded-full bg-white px-6 text-sm text-slate-950 transition active:scale-[0.98] hover:bg-slate-100"
             >
-              <Link href="/login" aria-label="Explore the demo workspace">
-                Explore the demo
+              <Link href="/login" aria-label="Open the sample bug queue">
+                Open sample queue
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -39,7 +40,7 @@ export function FinalCta() {
               className="h-11 rounded-full border-white/12 bg-white/[0.035] px-6 text-sm text-white transition active:scale-[0.98] hover:bg-white/[0.08]"
             >
               <Link href="/signup" aria-label="Create a BugTriage AI account">
-                Create account
+                Set up a workspace
               </Link>
             </Button>
           </div>

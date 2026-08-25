@@ -30,16 +30,17 @@ export function LandingPage() {
               BugTriage AI
             </p>
             <p className="mt-2 text-slate-400">
-              A clearer handoff from bug report to engineering ticket.
+              Built for the awkward handoff between the person who saw the bug and
+              the person fixing it.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-4">
             <Link href="#product-preview" className="transition hover:text-white">
-              See an example
+              Example ticket
             </Link>
             <Link href="/login" className="transition hover:text-white">
-              Explore demo
+              Sample queue
             </Link>
             <Link href="/login" className="transition hover:text-white">
               Sign in

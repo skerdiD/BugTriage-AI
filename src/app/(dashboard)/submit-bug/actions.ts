@@ -419,7 +419,7 @@ export async function analyzeAndCreateTicketAction(
             affectedPage: parsed.data.affectedPage,
             severity: TicketSeverity.MEDIUM,
             status: TicketStatus.NEW,
-            category: "Pending AI triage",
+            category: "Triage pending",
             priorityScore: null,
             aiConfidence: null,
             aiInputContext: {

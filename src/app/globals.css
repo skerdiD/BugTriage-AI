@@ -100,6 +100,9 @@
 
   body {
     @apply min-h-screen bg-background text-foreground antialiased;
+    font-family:
+      "Segoe UI Variable", "Aptos", "Inter", ui-sans-serif, system-ui,
+      -apple-system, BlinkMacSystemFont, sans-serif;
     background:
       radial-gradient(circle at top left, rgba(139, 92, 246, 0.12), transparent 34rem),
       radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 32rem),
@@ -175,8 +178,7 @@
   }
 
   .render-deferred {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 760px;
+    content-visibility: visible;
   }
 
   @media (prefers-reduced-motion: reduce) {

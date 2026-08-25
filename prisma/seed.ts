@@ -176,8 +176,8 @@ export function buildDemoTickets(): DemoTicketSeed[] {
         },
         {
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI triage completed",
-          description: "Severity classified as Critical with high confidence.",
+          title: "Triage draft ready",
+          description: "The draft marked this as Critical with high confidence.",
           createdAt: hoursAfter(loginCreatedAt, 0.5),
           metadata: {
             confidence: 95,
@@ -245,8 +245,8 @@ export function buildDemoTickets(): DemoTicketSeed[] {
         },
         {
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI triage completed",
-          description: "AI suggested a stale client-state issue in the chart rendering flow.",
+          title: "Triage draft ready",
+          description: "The triage draft suggested stale client state in the chart rendering flow.",
           createdAt: hoursAfter(chartFreezeCreatedAt, 0.4),
           metadata: {
             confidence: 91,
@@ -314,8 +314,8 @@ export function buildDemoTickets(): DemoTicketSeed[] {
         },
         {
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI triage completed",
-          description: "AI suggested mismatched validation between client and server upload paths.",
+          title: "Triage draft ready",
+          description: "The triage draft suggested mismatched validation between the client and server upload paths.",
           createdAt: hoursAfter(uploadCreatedAt, 0.35),
           metadata: {
             confidence: 88,
@@ -373,8 +373,8 @@ export function buildDemoTickets(): DemoTicketSeed[] {
         },
         {
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI triage completed",
-          description: "AI highlighted redirect precedence and cookie state as likely causes.",
+          title: "Triage draft ready",
+          description: "The triage draft highlighted redirect precedence and cookie state as possible causes.",
           createdAt: hoursAfter(inviteCreatedAt, 0.25),
           metadata: {
             confidence: 87,
@@ -445,8 +445,8 @@ export function buildDemoTickets(): DemoTicketSeed[] {
         },
         {
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI triage completed",
-          description: "AI classified the issue as performance-related with high confidence.",
+          title: "Triage draft ready",
+          description: "The triage draft marked the issue as performance-related with high confidence.",
           createdAt: hoursAfter(analyticsSlowCreatedAt, 0.3),
           metadata: {
             confidence: 90,
@@ -514,8 +514,8 @@ export function buildDemoTickets(): DemoTicketSeed[] {
         },
         {
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI triage completed",
-          description: "AI suggested stale pending form state as the likely culprit.",
+          title: "Triage draft ready",
+          description: "The triage draft suggested stale pending form state as a place to investigate.",
           createdAt: hoursAfter(commentButtonCreatedAt, 0.2),
           metadata: {
             confidence: 83,
@@ -573,8 +573,8 @@ export function buildDemoTickets(): DemoTicketSeed[] {
         },
         {
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI triage completed",
-          description: "AI pointed to downstream email delivery visibility rather than form validation.",
+          title: "Triage draft ready",
+          description: "The triage draft pointed to downstream email delivery rather than form validation.",
           createdAt: hoursAfter(passwordResetCreatedAt, 0.15),
           metadata: {
             confidence: 86,
@@ -642,8 +642,8 @@ export function buildDemoTickets(): DemoTicketSeed[] {
         },
         {
           type: TicketActivityType.AI_ANALYZED,
-          title: "AI triage completed",
-          description: "AI suggested a route revalidation gap after status mutation.",
+          title: "Triage draft ready",
+          description: "The triage draft suggested a route revalidation gap after the status update.",
           createdAt: hoursAfter(activityFeedCreatedAt, 0.2),
           metadata: {
             confidence: 89,

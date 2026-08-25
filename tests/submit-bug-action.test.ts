@@ -396,7 +396,7 @@ describe("analyzeAndCreateTicketAction", () => {
         title: defaultBugReportValues.title,
         severity: TicketSeverity.MEDIUM,
         status: TicketStatus.NEW,
-        category: "Pending AI triage",
+        category: "Triage pending",
         aiInputContext: expect.objectContaining({
           uploadedLogText: expect.stringContaining("File: console.log"),
         }),
@@ -441,7 +441,7 @@ describe("analyzeAndCreateTicketAction", () => {
       expect.objectContaining({
         title: defaultBugReportValues.title,
         severity: TicketSeverity.MEDIUM,
-        category: "Pending AI triage",
+        category: "Triage pending",
       })
     );
   });

@@ -68,7 +68,7 @@ export function GitHubIssueExportDialog({
         >
           <a href={issueUrl} target="_blank" rel="noreferrer">
             <ExternalLink className="mr-2 size-4" />
-            View GitHub Issue{issueNumber ? ` #${issueNumber}` : ""}
+            View GitHub issue{issueNumber ? ` #${issueNumber}` : ""}
           </a>
         </Button>
         <span className="text-xs text-emerald-200/80">
@@ -137,17 +137,17 @@ export function GitHubIssueExportDialog({
           {isPersistedExporting
             ? "Export in progress"
             : status === "FAILED"
-              ? "Retry GitHub Export"
-              : "Export to GitHub Issue"}
+              ? "Retry GitHub export"
+              : "Send to GitHub"}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="border-white/10 bg-[#15121d] text-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Export to GitHub Issue</DialogTitle>
+          <DialogTitle>Create a GitHub issue</DialogTitle>
           <DialogDescription>
-            Create an issue in the server-configured GitHub repository. Credentials
-            remain on the server and are never sent to the browser.
+            Copy this ticket into the connected repository. The original report,
+            triage draft, and useful metadata will be formatted for GitHub.
           </DialogDescription>
         </DialogHeader>
 
@@ -163,8 +163,8 @@ export function GitHubIssueExportDialog({
           <div className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
             <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
             <p>
-              Only workspace owners and admins can export. Duplicate exports are
-              blocked once this ticket is claimed.
+              Only workspace owners and admins can do this. Once GitHub accepts the
+              issue, this ticket keeps the link and will not create a duplicate.
             </p>
           </div>
         )}
@@ -193,7 +193,7 @@ export function GitHubIssueExportDialog({
               ) : (
                 <>
                   <GitPullRequest className="mr-2 size-4" />
-                  {status === "FAILED" ? "Retry Export" : "Create GitHub Issue"}
+                  {status === "FAILED" ? "Try again" : "Create GitHub issue"}
                 </>
               )}
             </Button>

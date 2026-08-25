@@ -56,7 +56,7 @@ export function TopAffectedPages({ pages }: TopAffectedPagesProps) {
           ))
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-            Affected pages will appear here once tickets start capturing page or route
+            Routes will appear here once reports include specific page or component
             details.
           </div>
         )}
