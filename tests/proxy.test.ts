@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 
-import { config } from "../proxy";
+import { config } from "../src/proxy";
 
 describe("proxy matcher", () => {
   it("runs for application routes that need auth/session handling", () => {

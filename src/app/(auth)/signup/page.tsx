@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSafeAuthClientErrorMessage } from "@/lib/security/public-errors";
-import { getSafeRedirectPath } from "@/lib/security/urls";
+import { getAuthPageHref, getSafeRedirectPath } from "@/lib/security/urls";
 import { captureClientException } from "@/lib/observability/client-monitoring";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -262,7 +262,7 @@ function SignupContent() {
                 <p className="text-center text-sm text-muted-foreground">
                   Already part of a workspace?{" "}
                   <Link
-                    href="/login"
+                    href={getAuthPageHref("/login", redirectedFrom)}
                     className="font-semibold text-violet-300 hover:text-violet-200"
                   >
                     Sign in

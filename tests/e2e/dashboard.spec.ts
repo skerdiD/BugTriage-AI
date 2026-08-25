@@ -43,6 +43,31 @@ for (const route of ["/login", "/signup"]) {
   });
 }
 
+test("@smoke authentication page switching keeps the invite destination", async ({
+  page,
+}) => {
+  const invitePath = "/invite/invite_token_1234567890";
+
+  await page.goto(`/login?redirectedFrom=${encodeURIComponent(invitePath)}`);
+  await page.getByRole("link", { name: /set up an account/i }).click();
+
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname === "/signup" &&
+      url.searchParams.get("redirectedFrom") === invitePath
+    );
+  });
+
+  await page.getByRole("link", { name: /^sign in$/i }).click();
+
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname === "/login" &&
+      url.searchParams.get("redirectedFrom") === invitePath
+    );
+  });
+});
+
 for (const route of [
   "/dashboard",
   "/tickets",
@@ -64,3 +89,15 @@ for (const route of [
     await expect(page.getByRole("button", { name: /^sign in$/i })).toBeVisible();
   });
 }
+
+test("@smoke protected route login redirect preserves query state", async ({
+  page,
+}) => {
+  await page.goto("/tickets?status=NEW&severity=HIGH");
+
+  const url = new URL(page.url());
+  expect(url.pathname).toBe("/login");
+  expect(url.searchParams.get("redirectedFrom")).toBe(
+    "/tickets?status=NEW&severity=HIGH"
+  );
+});

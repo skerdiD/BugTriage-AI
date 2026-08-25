@@ -22,6 +22,17 @@ function isProtectedRoute(pathname: string) {
   );
 }
 
+function redirectToLogin(request: NextRequest) {
+  const redirectUrl = request.nextUrl.clone();
+  const redirectedFrom = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+
+  redirectUrl.pathname = "/login";
+  redirectUrl.search = "";
+  redirectUrl.searchParams.set("redirectedFrom", redirectedFrom);
+
+  return NextResponse.redirect(redirectUrl);
+}
+
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   let supabaseResponse = NextResponse.next({
@@ -42,7 +53,7 @@ export async function updateSession(request: NextRequest) {
     supabaseUrl = getSupabaseUrl();
     supabaseAnonKey = getSupabasePublishableKey();
   } catch {
-    return supabaseResponse;
+    return redirectToLogin(request);
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -78,10 +89,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!hasValidSession) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("redirectedFrom", pathname);
-    return NextResponse.redirect(redirectUrl);
+    return redirectToLogin(request);
   }
 
   return supabaseResponse;

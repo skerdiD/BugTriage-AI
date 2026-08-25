@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSafeAuthClientErrorMessage } from "@/lib/security/public-errors";
-import { getSafeRedirectPath } from "@/lib/security/urls";
+import { getAuthPageHref, getSafeRedirectPath } from "@/lib/security/urls";
 import { captureClientException } from "@/lib/observability/client-monitoring";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "@/lib/demo";
@@ -272,7 +272,7 @@ function LoginContent() {
                 <p className="text-center text-sm text-muted-foreground">
                   Starting a new team queue?{" "}
                   <Link
-                    href="/signup"
+                    href={getAuthPageHref("/signup", redirectedFrom)}
                     className="font-semibold text-violet-300 hover:text-violet-200"
                   >
                     Set up an account

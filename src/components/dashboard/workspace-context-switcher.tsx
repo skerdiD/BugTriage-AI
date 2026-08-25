@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
-import { FolderKanban, Loader2, Orbit, Users } from "lucide-react";
+import { useState, useTransition } from "react";
+import { AlertCircle, FolderKanban, Loader2, Orbit, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -43,18 +43,49 @@ export function WorkspaceContextSwitcher({
 }: WorkspaceContextSwitcherProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [errorMessage, setErrorMessage] = useState("");
 
   function handleWorkspaceChange(nextWorkspaceId: string) {
+    setErrorMessage("");
+
     startTransition(async () => {
-      await setCurrentWorkspaceAction(nextWorkspaceId);
-      router.refresh();
+      try {
+        const result = await setCurrentWorkspaceAction(nextWorkspaceId);
+
+        if (!result.ok) {
+          setErrorMessage(
+            "That workspace is no longer available. Refreshing your access..."
+          );
+        }
+      } catch {
+        setErrorMessage(
+          "We couldn't switch workspaces. Your previous selection is still active."
+        );
+      } finally {
+        router.refresh();
+      }
     });
   }
 
   function handleProjectChange(nextProjectId: string) {
+    setErrorMessage("");
+
     startTransition(async () => {
-      await setCurrentProjectAction(nextProjectId);
-      router.refresh();
+      try {
+        const result = await setCurrentProjectAction(nextProjectId);
+
+        if (!result.ok) {
+          setErrorMessage(
+            "That project is no longer available. Refreshing your access..."
+          );
+        }
+      } catch {
+        setErrorMessage(
+          "We couldn't switch projects. Your previous selection is still active."
+        );
+      } finally {
+        router.refresh();
+      }
     });
   }
 
@@ -127,6 +158,16 @@ export function WorkspaceContextSwitcher({
           </div>
         </div>
       </div>
+
+      {errorMessage ? (
+        <p
+          role="alert"
+          className="mt-2 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </p>
+      ) : null}
     </div>
   );
 }

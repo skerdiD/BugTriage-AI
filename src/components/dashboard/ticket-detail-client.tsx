@@ -864,6 +864,7 @@ export function TicketDetailClient({
                 </p>
                 <Select
                   value={status}
+                  disabled={isStatusPending}
                   onValueChange={(value) => handleStatusChange(value as TicketStatus)}
                 >
                   <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">

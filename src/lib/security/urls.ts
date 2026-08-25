@@ -19,3 +19,14 @@ export function getSafeRedirectPath(
 
   return value;
 }
+
+export function getAuthPageHref(
+  page: "/login" | "/signup",
+  redirectedFrom: string | null | undefined
+) {
+  const params = new URLSearchParams({
+    redirectedFrom: getSafeRedirectPath(redirectedFrom),
+  });
+
+  return `${page}?${params.toString()}`;
+}
