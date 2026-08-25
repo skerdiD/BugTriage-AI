@@ -9,10 +9,15 @@ test("@smoke home page renders primary product CTAs", async ({ page }) => {
     })
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /open the sample/i }).first()
+    page.getByRole("link", { name: /open live demo/i }).first()
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /follow one report/i }).first()
+    page.getByRole("link", { name: /see a report transform/i }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByRole("img", {
+      name: /engineering dashboard showing ticket health/i,
+    })
   ).toBeVisible();
 });
 

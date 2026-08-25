@@ -37,10 +37,10 @@ export function LandingPage() {
 
           <div className="flex flex-wrap gap-4">
             <Link href="#product-preview" className="transition hover:text-white">
-              Example ticket
+              Product tour
             </Link>
             <Link href="/login" className="transition hover:text-white">
-              Sample queue
+              Live demo
             </Link>
             <Link href="/login" className="transition hover:text-white">
               Sign in

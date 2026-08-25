@@ -35,23 +35,23 @@ export function ProductPreview() {
   return (
     <section
       id="product-preview"
-      className="render-deferred scroll-mt-24 px-5 py-12 sm:px-6 md:py-16"
+      className="render-deferred scroll-mt-24 border-t border-white/[0.06] px-5 py-12 sm:px-6 md:py-16"
     >
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">
+          <p className="text-xs font-semibold tracking-[0.22em] text-cyan-100/85 uppercase">
             One report, before and after
           </p>
           <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
             Less detective work before the real debugging starts.
           </h2>
-          <p className="mt-4 text-base leading-8 text-slate-300">
+          <p className="mt-4 text-base leading-8 text-slate-200">
             This is the sort of report every team recognizes: useful, urgent, and
             missing half the details. The original stays intact beside the draft.
           </p>
         </div>
 
-        <div className="group mt-9 rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.045),rgba(8,145,178,0.08),rgba(15,23,42,0.72))] p-3 shadow-[0_34px_110px_-72px_rgba(0,0,0,0.96)] transition duration-500 hover:border-cyan-200/20 hover:shadow-[0_42px_130px_-72px_rgba(34,211,238,0.3)]">
+        <div className="group mt-9 rounded-[30px] border border-white/12 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(8,145,178,0.09),rgba(15,23,42,0.78))] p-3 shadow-[0_34px_110px_-72px_rgba(0,0,0,0.96)] transition duration-500 hover:border-cyan-200/25 hover:shadow-[0_42px_130px_-72px_rgba(34,211,238,0.3)]">
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-5 md:p-6">
               <div className="flex items-center justify-between gap-4">

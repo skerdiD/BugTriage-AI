@@ -177,6 +177,40 @@
     animation-delay: 120ms;
   }
 
+  .landing-pipeline-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .landing-pipeline-card::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    content: "";
+    background: linear-gradient(
+      105deg,
+      transparent 20%,
+      rgba(34, 211, 238, 0.07) 46%,
+      rgba(167, 139, 250, 0.07) 54%,
+      transparent 80%
+    );
+    transform: translateX(-120%);
+    animation: landing-pipeline-scan 7s ease-in-out infinite;
+  }
+
+  .landing-pipeline-card-2::before {
+    animation-delay: 600ms;
+  }
+
+  .landing-pipeline-card-3::before {
+    animation-delay: 1200ms;
+  }
+
+  .landing-pipeline-connector {
+    animation: landing-pipeline-pulse 2.4s ease-in-out infinite;
+  }
+
   .render-deferred {
     content-visibility: visible;
   }
@@ -196,7 +230,9 @@
     }
 
     .landing-fade-up,
-    .landing-delay-2 {
+    .landing-delay-2,
+    .landing-pipeline-card::before,
+    .landing-pipeline-connector {
       animation: none;
     }
   }
@@ -211,5 +247,30 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes landing-pipeline-scan {
+  0%,
+  52% {
+    transform: translateX(-120%);
+  }
+
+  72%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes landing-pipeline-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
   }
 }

@@ -12,12 +12,6 @@ import {
   UserCheck,
 } from "lucide-react";
 
-export type ProofCard = {
-  title: string;
-  value: string;
-  description: string;
-};
-
 export type FeatureCard = {
   icon: LucideIcon;
   title: string;
@@ -33,27 +27,6 @@ export type SecurityItem = {
   icon: LucideIcon;
   label: string;
 };
-
-export const proofCards: ProofCard[] = [
-  {
-    title: "Start where the report starts",
-    value: "Bring the messy version",
-    description:
-      "Paste the support thread or QA note as-is. Nobody has to rewrite it for the form.",
-  },
-  {
-    title: "Keep judgment with the team",
-    value: "Get a draft, not a verdict",
-    description:
-      "Severity, cause, and priority are suggestions your team can check against the evidence.",
-  },
-  {
-    title: "Keep the paper trail",
-    value: "One ticket, full context",
-    description:
-      "Screenshots, logs, comments, status changes, and ownership stay with the issue.",
-  },
-];
 
 export const features: FeatureCard[] = [
   {
