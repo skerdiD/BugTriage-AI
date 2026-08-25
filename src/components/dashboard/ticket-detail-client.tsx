@@ -113,16 +113,46 @@ export function TicketDetailClient({
     if (!isAnalysisProcessing) return;
 
     let pollCount = 0;
-    const interval = window.setInterval(() => {
+    let timeoutId: number | undefined;
+
+    const schedulePoll = (delay: number) => {
+      timeoutId = window.setTimeout(poll, delay);
+    };
+
+    const poll = () => {
+      if (document.visibilityState !== "visible") {
+        schedulePoll(15_000);
+        return;
+      }
+
       pollCount += 1;
       router.refresh();
 
-      if (pollCount >= 12) {
-        window.clearInterval(interval);
+      if (pollCount < 8) {
+        const nextDelay = Math.min(4_000 * 1.5 ** pollCount, 15_000);
+        schedulePoll(nextDelay);
       }
-    }, 5_000);
+    };
 
-    return () => window.clearInterval(interval);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible" || pollCount >= 8) return;
+
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+
+      schedulePoll(500);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    schedulePoll(4_000);
+
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [isAnalysisProcessing, router]);
 
   const statusIndex = workflowStatuses.indexOf(status);

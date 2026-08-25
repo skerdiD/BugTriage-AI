@@ -146,16 +146,38 @@ export type CurrentWorkspaceContext = {
 export const getCurrentWorkspaceContextOrThrow = cache(async () => {
   try {
     const user = await getCurrentUserOrThrow();
-    const cookieStore = await cookies();
-    const ensuredContext = await ensureUserWorkspace({
-      authUserId: user.id,
-      email: user.email,
-      name: normalizeNameFromUserMetadata(user.user_metadata),
-    });
-    const availableWorkspaces = await listUserWorkspaces(user.id);
+    const normalizedEmail = user.email ?? `${user.id}@local.bugtriage.ai`;
+    const normalizedName =
+      normalizeNameFromUserMetadata(user.user_metadata) ??
+      normalizedEmail.split("@")[0]?.replace(/[._-]/g, " ") ??
+      "BugTriage User";
+    const [cookieStore, existingWorkspaces] = await Promise.all([
+      cookies(),
+      listUserWorkspaces(user.id),
+    ]);
+    let currentUser = {
+      id: user.id,
+      email: normalizedEmail,
+      name: normalizedName,
+    };
+    let availableWorkspaces = existingWorkspaces;
+
+    // Workspace creation and identity recovery are onboarding concerns. Avoid
+    // running their repair queries on every authenticated page request.
+    if (availableWorkspaces.length === 0) {
+      const ensuredContext = await ensureUserWorkspace({
+        authUserId: user.id,
+        email: user.email,
+        name: normalizeNameFromUserMetadata(user.user_metadata),
+      });
+
+      currentUser = ensuredContext.user;
+      availableWorkspaces = await listUserWorkspaces(user.id);
+    }
+
     const selectedWorkspace = pickCurrentWorkspace(
       availableWorkspaces,
-      cookieStore.get(WORKSPACE_COOKIE_NAME)?.value ?? ensuredContext.workspace.id
+      cookieStore.get(WORKSPACE_COOKIE_NAME)?.value
     );
 
     if (!selectedWorkspace) {
@@ -183,7 +205,7 @@ export const getCurrentWorkspaceContextOrThrow = cache(async () => {
     );
 
     return {
-      user: ensuredContext.user,
+      user: currentUser,
       workspace: selectedWorkspace,
       project: selectedProject,
       role: selectedWorkspace.role,

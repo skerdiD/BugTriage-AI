@@ -33,7 +33,10 @@ function MetaBadge({
 
 export function ProductPreview() {
   return (
-    <section id="product-preview" className="scroll-mt-24 px-5 py-12 sm:px-6 md:py-16">
+    <section
+      id="product-preview"
+      className="render-deferred scroll-mt-24 px-5 py-12 sm:px-6 md:py-16"
+    >
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-medium tracking-[0.22em] text-cyan-100/75 uppercase">

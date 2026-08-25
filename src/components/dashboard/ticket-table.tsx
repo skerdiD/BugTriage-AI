@@ -25,10 +25,6 @@ type TicketTableProps = {
 export function TicketTable({ tickets }: TicketTableProps) {
   const router = useRouter();
 
-  function prefetchTicket(ticketId: string) {
-    router.prefetch(`/tickets/${ticketId}`);
-  }
-
   return (
     <Card className="overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
       <div className="overflow-x-auto">
@@ -59,14 +55,12 @@ export function TicketTable({ tickets }: TicketTableProps) {
                 tabIndex={0}
                 aria-label={`Open ticket ${ticket.id}: ${ticket.title}`}
                 onClick={() => router.push(`/tickets/${ticket.id}`)}
-                onFocus={() => prefetchTicket(ticket.id)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     router.push(`/tickets/${ticket.id}`);
                   }
                 }}
-                onMouseEnter={() => prefetchTicket(ticket.id)}
                 className="group cursor-pointer border-white/10 transition hover:bg-violet-500/[0.045] focus-visible:bg-violet-500/[0.045] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 focus-visible:ring-inset"
               >
                 <TableCell className="px-5 py-4">

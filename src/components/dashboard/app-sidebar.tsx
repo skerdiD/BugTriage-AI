@@ -111,7 +111,7 @@ export function AppSidebar({
     <TooltipProvider delayDuration={120}>
       <aside
         className={cn(
-          "z-40 flex flex-col border-r border-white/10 bg-[#101017]/95 backdrop-blur-xl transition-[width] duration-300 ease-out",
+          "z-40 flex flex-col border-r border-white/10 bg-[#101017] transition-[width] duration-300 ease-out",
           isMobile
             ? "h-full w-full"
             : cn(

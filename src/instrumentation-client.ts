@@ -1,25 +1,33 @@
-import * as Sentry from "@sentry/nextjs";
+import { getSentryDsn } from "@/lib/observability/sentry";
 
-import {
-  getSentryReplayConfig,
-  getSharedSentryOptions,
-  getSentryTracesSampleRate,
-} from "@/lib/observability/sentry";
+let sentryClientPromise:
+  | Promise<typeof import("./sentry-client.config")>
+  | undefined;
 
-Sentry.init({
-  ...getSharedSentryOptions("client"),
-  tracesSampleRate: getSentryTracesSampleRate(),
-  ...getSentryReplayConfig(),
-  integrations: [
-    Sentry.replayIntegration({
-      maskAllText: true,
-      blockAllMedia: true,
-      maskAllInputs: true,
-    }),
-    Sentry.consoleLoggingIntegration({
-      levels: ["warn", "error"],
-    }),
-  ],
-});
+function loadSentryClient() {
+  sentryClientPromise ??= import("./sentry-client.config");
+  return sentryClientPromise;
+}
 
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+if (typeof window !== "undefined" && getSentryDsn("client")) {
+  const initializeMonitoring = () => {
+    void loadSentryClient();
+  };
+
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(initializeMonitoring, { timeout: 2_000 });
+  } else {
+    globalThis.setTimeout(initializeMonitoring, 2_000);
+  }
+}
+
+export function onRouterTransitionStart(
+  href: string,
+  navigationType: string
+) {
+  if (!getSentryDsn("client")) return;
+
+  void loadSentryClient().then(({ captureRouterTransition }) => {
+    captureRouterTransition(href, navigationType);
+  });
+}

@@ -16,6 +16,33 @@ test("@smoke home page renders primary product CTAs", async ({ page }) => {
   ).toBeVisible();
 });
 
+for (const route of ["/login", "/signup"]) {
+  test(`@smoke authentication page ${route} opens without auth fetch errors`, async ({
+    page,
+  }) => {
+    const authFetchErrors: string[] = [];
+
+    page.on("console", (message) => {
+      if (
+        message.type() === "error" &&
+        message.text().includes("AuthRetryableFetchError")
+      ) {
+        authFetchErrors.push(message.text());
+      }
+    });
+    page.on("pageerror", (error) => {
+      if (error.message.includes("AuthRetryableFetchError")) {
+        authFetchErrors.push(error.message);
+      }
+    });
+
+    await page.goto(route);
+
+    await expect(page.getByLabel("Email address")).toBeVisible();
+    expect(authFetchErrors).toEqual([]);
+  });
+}
+
 for (const route of [
   "/dashboard",
   "/tickets",

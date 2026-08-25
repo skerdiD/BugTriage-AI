@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export function FinalCta() {
   return (
-    <section className="px-5 py-12 sm:px-6 md:py-16">
+    <section className="render-deferred px-5 py-12 sm:px-6 md:py-16">
       <div className="mx-auto max-w-6xl rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(34,211,238,0.1),rgba(15,23,42,0.9))] p-7 shadow-[0_36px_120px_-78px_rgba(0,0,0,0.98)] md:p-10">
         <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">

@@ -101,7 +101,14 @@ export default withSentryConfig(nextConfig, {
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: !process.env.CI,
   telemetry: false,
-  widenClientFileUpload: true,
+  // Upload application source maps only. Including framework and dependency
+  // maps adds substantial build time and does not improve app runtime errors.
+  widenClientFileUpload: false,
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+  },
   sourcemaps: {
     disable: !hasSentrySourceMapConfig,
     deleteSourcemapsAfterUpload: true,

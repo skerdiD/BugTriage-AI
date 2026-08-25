@@ -81,14 +81,6 @@ const workspaceQuerySelect = {
     select: {
       userId: true,
       role: true,
-      joinedAt: true,
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
     },
   },
   _count: {

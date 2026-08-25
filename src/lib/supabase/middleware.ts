@@ -16,22 +16,24 @@ const protectedRoutes = [
   "/settings",
 ];
 
-const authRoutes = ["/login", "/signup"];
-
 function isProtectedRoute(pathname: string) {
   return protectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 }
 
-function isAuthRoute(pathname: string) {
-  return authRoutes.some((route) => pathname === route);
-}
-
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
   let supabaseResponse = NextResponse.next({
     request,
   });
+
+  // Public pages, especially login and signup, must stay available when the
+  // external Auth service is degraded. Session verification is only needed at
+  // the protected-route boundary.
+  if (!isProtectedRoute(pathname)) {
+    return supabaseResponse;
+  }
 
   let supabaseUrl: string;
   let supabaseAnonKey: string;
@@ -64,31 +66,21 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  let user = null;
+  let hasValidSession = false;
 
   try {
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-
-    user = authUser;
+    // getClaims verifies the JWT signature and caches asymmetric signing keys,
+    // avoiding a Supabase Auth network round-trip on most navigations.
+    const { data, error } = await supabase.auth.getClaims();
+    hasValidSession = Boolean(data?.claims.sub && !error);
   } catch {
-    user = null;
+    hasValidSession = false;
   }
 
-  const pathname = request.nextUrl.pathname;
-
-  if (!user && isProtectedRoute(pathname)) {
+  if (!hasValidSession) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("redirectedFrom", pathname);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  if (user && isAuthRoute(pathname)) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }
 

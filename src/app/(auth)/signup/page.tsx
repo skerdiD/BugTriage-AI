@@ -3,7 +3,6 @@
 import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import * as Sentry from "@sentry/nextjs";
 import {
   AlertCircle,
   ArrowRight,
@@ -27,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSafeAuthClientErrorMessage } from "@/lib/security/public-errors";
 import { getSafeRedirectPath } from "@/lib/security/urls";
+import { captureClientException } from "@/lib/observability/client-monitoring";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function SignupContent() {
@@ -67,7 +67,7 @@ function SignupContent() {
       });
 
       if (error) {
-        Sentry.captureException(error, {
+        captureClientException(error, {
           tags: {
             area: "auth",
             action: "signup",
@@ -87,7 +87,7 @@ function SignupContent() {
         "Account created. Check your email to confirm your account before signing in."
       );
     } catch (error) {
-      Sentry.captureException(error, {
+      captureClientException(error, {
         tags: {
           area: "auth",
           action: "signup",

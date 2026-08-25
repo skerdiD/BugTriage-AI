@@ -1,7 +1,8 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+
+import { captureClientException } from "@/lib/observability/client-monitoring";
 
 import "./globals.css";
 
@@ -13,7 +14,7 @@ export default function GlobalError({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    captureClientException(error);
   }, [error]);
 
   return (

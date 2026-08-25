@@ -54,5 +54,31 @@ describe("proxy matcher", () => {
         url: "/robots.txt",
       })
     ).toBe(false);
+
+    expect(
+      unstable_doesMiddlewareMatch({
+        config,
+        nextConfig: {},
+        url: "/",
+      })
+    ).toBe(false);
+  });
+
+  it("keeps authentication pages independent of remote session checks", () => {
+    expect(
+      unstable_doesMiddlewareMatch({
+        config,
+        nextConfig: {},
+        url: "/login",
+      })
+    ).toBe(false);
+
+    expect(
+      unstable_doesMiddlewareMatch({
+        config,
+        nextConfig: {},
+        url: "/signup",
+      })
+    ).toBe(false);
   });
 });
