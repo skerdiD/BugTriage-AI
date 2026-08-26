@@ -3,9 +3,26 @@ import type { Metadata } from "next";
 import { LandingPage } from "@/components/landing/landing-page";
 
 export const metadata: Metadata = {
-  title: "Bug reports engineers can act on",
+  alternates: {
+    canonical: "/",
+  },
+  title: "AI bug triage for engineering teams",
   description:
-    "Turn rough bug reports, screenshots, and logs into clear tickets with impact, reproduction steps, and a practical place to start.",
+    "Turn rough bug reports, screenshots, and logs into structured, engineering-ready tickets with AI analysis, similar-issue search, analytics, and GitHub export.",
+  openGraph: {
+    title: "BugTriage AI — From rough report to engineering-ready ticket",
+    description:
+      "AI-assisted bug triage with structured analysis, duplicate discovery, team workflows, and GitHub export.",
+    images: ["/landing-page-hero.png"],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BugTriage AI — AI bug triage for engineering teams",
+    description:
+      "Turn messy bug reports into structured, reviewable engineering tickets.",
+    images: ["/landing-page-hero.png"],
+  },
 };
 
 export default function HomePage() {

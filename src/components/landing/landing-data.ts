@@ -1,13 +1,15 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart3,
   Bug,
   CheckCircle2,
   FileSearch,
   FileStack,
   FolderKanban,
+  GitBranch,
   LockKeyhole,
   Route,
-  ShieldCheck,
+  Search,
   Sparkles,
   UserCheck,
 } from "lucide-react";
@@ -31,27 +33,39 @@ export type SecurityItem = {
 export const features: FeatureCard[] = [
   {
     icon: Sparkles,
-    title: "A reliable first pass",
+    title: "Structured AI analysis",
     description:
-      "Turn inconsistent reports into a clear, scannable format without losing the original wording.",
+      "Generate a scannable summary, severity, category, reproduction steps, likely cause, and suggested fix.",
+  },
+  {
+    icon: Search,
+    title: "Semantic duplicate search",
+    description:
+      "Surface related tickets by meaning, not just exact wording, before the team repeats investigation work.",
+  },
+  {
+    icon: GitBranch,
+    title: "Clean GitHub handoff",
+    description:
+      "Export reviewed reports to GitHub Issues with the useful context already organized for engineering.",
+  },
+  {
+    icon: BarChart3,
+    title: "Patterns you can act on",
+    description:
+      "Track severity, report volume, affected pages, repeated patterns, and resolution trends in one view.",
   },
   {
     icon: FileStack,
-    title: "Evidence that stays attached",
+    title: "Evidence stays attached",
     description:
-      "Keep screenshots, logs, browser details, and the affected route beside the report.",
+      "Keep screenshots, logs, browser details, environment, and affected routes beside the original report.",
   },
   {
     icon: FolderKanban,
-    title: "Familiar statuses, clear owners",
+    title: "Ownership stays visible",
     description:
-      "Move tickets from new to investigating, in progress, fixed, and closed without changing your workflow.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Workspace boundaries that hold",
-    description:
-      "Scope every ticket and upload to workspace members, with project-level routing built in.",
+      "Route by workspace and project, move through familiar statuses, and keep the next owner clear.",
   },
 ];
 
@@ -101,15 +115,18 @@ export const pipelineCards = [
     icon: Bug,
     title: "Raw report",
     detail: "Customer says checkout just hangs on their iPhone",
+    shortDetail: "Report, screenshot, and logs",
   },
   {
     icon: FileSearch,
     title: "AI triage draft",
     detail: "Safari checkout failure, high impact, needs confirmation",
+    shortDetail: "Impact, steps, and likely cause",
   },
   {
     icon: CheckCircle2,
     title: "Ticket ready for review",
     detail: "Evidence, reproduction steps, and next step stay together",
+    shortDetail: "Review, assign, or export",
   },
 ] as const;

@@ -1,95 +1,236 @@
+import Image from "next/image";
+import { Check, GitBranch, ShieldCheck } from "lucide-react";
+
+import analyticsDeepDive from "../../../public/analytics-deep-dive.png";
+import submitBugReport from "../../../public/submit-bug-report.png";
+
 import { securityItems, workflowSteps } from "@/components/landing/landing-data";
 import type { FeatureCard } from "@/components/landing/landing-data";
 
+const generatedFields = [
+  "Summary and severity",
+  "Reproduction steps",
+  "Likely root cause",
+  "Suggested fix",
+] as const;
+
 export function FeatureGrid({ features }: { features: FeatureCard[] }) {
+  const PrimaryFeatureIcon = features[0].icon;
+  const AnalyticsFeatureIcon = features[3].icon;
+
   return (
     <>
       <section
         id="features"
-        className="render-deferred scroll-mt-24 px-5 py-12 sm:px-6 md:py-16"
+        className="render-deferred scroll-mt-24 px-5 py-16 sm:px-6 md:py-24"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold tracking-[0.22em] text-cyan-100/85 uppercase">
-              Built around real bug work
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-semibold tracking-[0.22em] text-violet-200 uppercase">
+              Everything around the fix
             </p>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Keep useful context. Reduce investigation overhead.
+            <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.035em] text-white md:text-5xl">
+              Less triage overhead. More useful engineering context.
             </h2>
-            <p className="mt-4 text-base leading-8 text-slate-200">
-              Support and QA can submit what they know. Engineering can distinguish
-              source evidence from AI suggestions and see who owns the next step.
+            <p className="mt-5 text-pretty text-base leading-8 text-slate-300">
+              Capture what the reporter knows, preserve the evidence, and give the
+              team a practical place to begin—without treating AI suggestions as
+              unquestionable answers.
             </p>
           </div>
 
-          <div className="mt-9 grid gap-4 md:grid-cols-2">
-            {features.map((feature, index) => (
-              <div
-                key={feature.title}
-                className="landing-fade-up rounded-[26px] border border-white/12 bg-white/[0.04] p-6 shadow-[0_28px_80px_-62px_rgba(0,0,0,0.95)] transition duration-300 hover:-translate-y-1 hover:border-cyan-200/20 hover:bg-white/[0.06] md:min-h-48"
-                style={{ animationDelay: `${index * 70}ms` }}
-              >
-                <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.055]">
-                  <feature.icon className="size-5 text-cyan-100" />
-                </div>
-                <h3 className="mt-5 text-xl font-semibold tracking-tight text-white">
-                  {feature.title}
+          <div className="mt-12 grid gap-4 lg:grid-cols-12">
+            <article className="group relative overflow-hidden rounded-[28px] border border-white/[0.1] bg-[linear-gradient(145deg,rgba(139,92,246,0.12),rgba(255,255,255,0.035)_48%,rgba(255,255,255,0.02))] p-6 lg:col-span-7 lg:min-h-[34rem] lg:p-8">
+              <div className="relative z-10 max-w-xl">
+                <span className="flex size-11 items-center justify-center rounded-2xl border border-violet-300/15 bg-violet-300/[0.08]">
+                  <PrimaryFeatureIcon className="size-5 text-violet-200" />
+                </span>
+                <h3 className="mt-5 text-2xl font-semibold tracking-tight text-white">
+                  Raw context goes in. A useful first pass comes out.
                 </h3>
-                <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
-                  {feature.description}
+                <p className="mt-3 text-sm leading-7 text-slate-300">
+                  Submit the report once with browser, device, environment,
+                  screenshots, and logs. The analysis is validated before it is
+                  saved to the ticket.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {generatedFields.map((field) => (
+                    <span
+                      key={field}
+                      className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-black/20 px-3 py-1.5 text-xs text-slate-200"
+                    >
+                      <Check className="size-3 text-emerald-300" />
+                      {field}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative mt-8 aspect-[1.85/1] overflow-hidden rounded-t-[20px] border border-white/10 bg-[#08080d] shadow-2xl shadow-black/50 lg:absolute lg:inset-x-8 lg:bottom-0 lg:mt-0">
+                <Image
+                  src={submitBugReport}
+                  alt="BugTriage AI submit bug form and the list of structured fields generated by AI"
+                  fill
+                  sizes="(max-width: 1024px) 90vw, 700px"
+                  placeholder="blur"
+                  className="object-cover object-left-top transition duration-700 group-hover:scale-[1.015]"
+                />
+              </div>
+            </article>
+
+            <div className="grid gap-4 lg:col-span-5">
+              {features.slice(1, 3).map((feature, index) => (
+                <article
+                  key={feature.title}
+                  className="group rounded-[28px] border border-white/[0.1] bg-white/[0.035] p-6 transition duration-300 hover:-translate-y-1 hover:border-violet-300/20 hover:bg-white/[0.05] lg:p-7"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="flex size-11 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.05]">
+                      <feature.icon
+                        className={`size-5 ${index === 0 ? "text-cyan-200" : "text-emerald-200"}`}
+                      />
+                    </span>
+                    <span className="font-mono text-xs text-slate-600">0{index + 2}</span>
+                  </div>
+                  <h3 className="mt-7 text-xl font-semibold tracking-tight text-white">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-300">
+                    {feature.description}
+                  </p>
+
+                  {index === 0 ? (
+                    <div className="mt-6 rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] p-3.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-white">Related ticket found</span>
+                        <span className="rounded-full bg-violet-300/10 px-2 py-1 text-violet-200">89% match</span>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Payment form stalls after card validation on Safari
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.04] p-3.5">
+                      <GitBranch className="size-4 text-emerald-200" />
+                      <span className="text-xs font-medium text-slate-200">
+                        Reviewed ticket → GitHub Issue
+                      </span>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:col-span-5">
+              {features.slice(4, 6).map((feature) => (
+                <article
+                  key={feature.title}
+                  className="rounded-[26px] border border-white/[0.1] bg-white/[0.035] p-6 transition duration-300 hover:border-violet-300/20 hover:bg-white/[0.05]"
+                >
+                  <span className="flex size-10 items-center justify-center rounded-2xl bg-white/[0.05]">
+                    <feature.icon className="size-4.5 text-violet-200" />
+                  </span>
+                  <h3 className="mt-5 text-lg font-semibold text-white">{feature.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    {feature.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+
+            <article className="group relative overflow-hidden rounded-[28px] border border-white/[0.1] bg-[linear-gradient(145deg,rgba(34,211,238,0.07),rgba(255,255,255,0.035))] p-6 lg:col-span-7 lg:min-h-[32rem] lg:p-8">
+              <div className="relative z-10 max-w-xl">
+                <span className="flex size-11 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07]">
+                  <AnalyticsFeatureIcon className="size-5 text-cyan-200" />
+                </span>
+                <h3 className="mt-5 text-2xl font-semibold tracking-tight text-white">
+                  See recurring patterns—not just a growing queue.
+                </h3>
+                <p className="mt-3 max-w-lg text-sm leading-7 text-slate-300">
+                  Follow severity mix, affected product areas, repeated issue
+                  patterns, and resolution trends across the selected workspace.
                 </p>
               </div>
-            ))}
+              <div className="relative mt-8 aspect-[1.95/1] overflow-hidden rounded-t-[20px] border border-white/10 bg-[#08080d] lg:absolute lg:bottom-0 lg:left-8 lg:right-[-10%] lg:mt-0 lg:h-[17rem] lg:aspect-auto">
+                <Image
+                  src={analyticsDeepDive}
+                  alt="BugTriage AI analytics showing bugs by category, resolution time, affected pages, and repeated issue patterns"
+                  fill
+                  sizes="(max-width: 1024px) 90vw, 760px"
+                  placeholder="blur"
+                  className="object-cover object-left-top transition duration-700 group-hover:scale-[1.015]"
+                />
+              </div>
+            </article>
           </div>
         </div>
       </section>
 
       <section
         id="workflow"
-        className="render-deferred scroll-mt-24 px-5 py-10 sm:px-6 md:py-14"
+        className="render-deferred scroll-mt-24 border-y border-white/[0.07] bg-white/[0.018] px-5 py-16 sm:px-6 md:py-24"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.22em] text-cyan-100/85 uppercase">
-                A short, reviewable loop
+          <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <p className="text-xs font-semibold tracking-[0.22em] text-violet-200 uppercase">
+                A reviewable workflow
               </p>
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                From an incomplete report to an assigned ticket.
+              <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.035em] text-white md:text-5xl">
+                AI does the first pass. Your team makes the call.
               </h2>
+              <p className="mt-5 text-base leading-8 text-slate-300">
+                The source report stays visible beside the generated analysis, so
+                every suggestion can be checked, corrected, and assigned.
+              </p>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-3">
+            <ol className="relative space-y-4 before:absolute before:bottom-8 before:left-6 before:top-8 before:w-px before:bg-gradient-to-b before:from-violet-300/50 before:via-cyan-300/30 before:to-transparent">
               {workflowSteps.map((step, index) => (
-                <div
+                <li
                   key={step.title}
-                  className="landing-fade-up rounded-[22px] border border-white/12 bg-white/[0.04] p-5 transition duration-300 hover:-translate-y-1 hover:border-cyan-200/20 hover:bg-white/[0.055]"
-                  style={{ animationDelay: `${index * 70}ms` }}
+                  className="relative grid grid-cols-[3rem_1fr] gap-4 rounded-[24px] border border-white/[0.09] bg-[#0d0d15] p-5 sm:p-6"
                 >
-                  <span className="flex size-8 items-center justify-center rounded-full bg-cyan-300/10 text-sm font-semibold text-cyan-100">
-                    {index + 1}
+                  <span className="z-10 flex size-12 items-center justify-center rounded-2xl border border-violet-300/15 bg-[#171326] text-sm font-semibold text-violet-100">
+                    0{index + 1}
                   </span>
-                  <h3 className="mt-4 text-base font-semibold text-white">
-                    {step.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {step.description}
-                  </p>
-                </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-7 text-slate-400">
+                      {step.description}
+                    </p>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
 
-          <div className="mt-8 grid gap-3 rounded-[26px] border border-white/10 bg-white/[0.03] p-3 md:grid-cols-4">
-            {securityItems.map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center gap-3 rounded-[18px] bg-slate-950/35 px-4 py-3 text-sm text-slate-200"
-              >
-                <item.icon className="size-4 text-emerald-200" />
-                <span>{item.label}</span>
+          <div className="mt-14 rounded-[28px] border border-emerald-300/10 bg-[linear-gradient(120deg,rgba(16,185,129,0.07),rgba(255,255,255,0.025))] p-5 sm:p-7">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-4">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-300/10">
+                  <ShieldCheck className="size-5 text-emerald-200" />
+                </span>
+                <div>
+                  <p className="font-semibold text-white">Security is part of the workflow</p>
+                  <p className="mt-1 max-w-xl text-sm leading-6 text-slate-400">
+                    Ticket data, files, and access stay scoped to the workspace that owns them.
+                  </p>
+                </div>
               </div>
-            ))}
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                {securityItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-2.5 rounded-xl border border-white/[0.07] bg-black/20 px-3.5 py-2.5 text-xs text-slate-200"
+                  >
+                    <item.icon className="size-3.5 text-emerald-200" />
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>

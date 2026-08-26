@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://bug-triage-ai.vercel.app"),
   title: {
     default: "BugTriage AI",
     template: "%s | BugTriage AI",
