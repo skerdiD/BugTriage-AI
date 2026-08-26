@@ -10,10 +10,10 @@ export function FinalCta() {
         <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold tracking-[0.22em] text-cyan-100/85 uppercase">
-              No pitch deck required
+              Explore the product
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              See the complete workflow with real sample data.
+              See the complete workflow with realistic demo data.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-300">
               Open the read-only demo, follow a report from intake to resolution,
@@ -27,8 +27,8 @@ export function FinalCta() {
               size="lg"
               className="h-12 w-full rounded-full bg-white px-7 text-sm font-semibold text-slate-950 transition active:scale-[0.98] hover:bg-cyan-50 sm:w-auto"
             >
-              <Link href="/login" aria-label="Open the BugTriage AI live demo">
-                Open live demo
+              <Link href="/login" aria-label="Explore the BugTriage AI demo">
+                Explore demo
                 <ArrowRight className="size-4" />
               </Link>
             </Button>

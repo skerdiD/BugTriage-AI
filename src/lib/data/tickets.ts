@@ -545,8 +545,8 @@ export async function createTicket(input: CreateTicketInput) {
                 type: TicketActivityType.CREATED,
                 title: "Bug submitted",
                 description: input.aiAnalysis
-                  ? "Ticket created with a triage draft ready for review."
-                  : "Ticket created. The triage draft is still pending.",
+                  ? "Ticket created with AI triage ready for review."
+                  : "Ticket created. AI triage is still pending.",
                 metadata: {
                   code: input.code,
                   aiAnalyzed: Boolean(input.aiAnalysis),
@@ -661,9 +661,9 @@ export async function regenerateTicketAiAnalysis(input: {
           ticketId: access.ticket.id,
           actorId: input.actorId ?? currentUser.id,
           type: TicketActivityType.AI_ANALYZED,
-          title: "Triage draft updated",
+          title: "AI triage updated",
           description:
-            "A new triage draft was saved, and the previous version remains in history.",
+            "New AI triage was saved, and the previous version remains in history.",
           metadata: {
             confidenceScore: input.output.confidenceScore,
             severity: input.output.severity,
@@ -715,7 +715,7 @@ export async function setTicketAiAnalysisFeedback(input: {
     });
 
     if (!run) {
-      throw new AuthorizationError("Triage draft not found or access denied.");
+      throw new AuthorizationError("AI triage not found or access denied.");
     }
 
     return await prisma.ticketAiAnalysisRun.update({
@@ -1012,12 +1012,12 @@ export async function addTicketComment(input: AddTicketCommentInput) {
   const body = input.body.trim();
 
   if (!body) {
-    throw new Error("Comment body cannot be empty.");
+    throw new Error("Note cannot be empty.");
   }
 
   if (body.length > MAX_TICKET_COMMENT_LENGTH) {
     throw new Error(
-      `Comment must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or less.`
+      `Note must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or fewer.`
     );
   }
 

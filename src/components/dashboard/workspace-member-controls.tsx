@@ -67,7 +67,7 @@ export function WorkspaceMemberControls({
 
   function handleRemove() {
     const confirmed = window.confirm(
-      `Remove ${memberName} from this workspace? They will lose access immediately.`
+      `Remove ${memberName} from this workspace? They will immediately lose access.`
     );
 
     if (!confirmed) {
@@ -148,7 +148,7 @@ export function WorkspaceMemberControls({
             className="h-10 rounded-xl border-red-500/20 bg-red-500/10 text-red-100 hover:bg-red-500/20 hover:text-red-50"
           >
             <UserMinus className="mr-2 size-4" />
-            Remove
+            Remove member
           </Button>
         </div>
       </div>

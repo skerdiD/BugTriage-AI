@@ -9,10 +9,10 @@ test("@smoke home page renders primary product CTAs", async ({ page }) => {
     })
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /open live demo/i }).first()
+    page.getByRole("link", { name: /explore demo/i }).first()
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /see a report transform/i }).first()
+    page.getByRole("link", { name: /see report-to-ticket workflow/i }).first()
   ).toBeVisible();
   await expect(
     page.getByRole("img", {
@@ -54,7 +54,7 @@ test("@smoke authentication page switching keeps the invite destination", async 
   const invitePath = "/invite/invite_token_1234567890";
 
   await page.goto(`/login?redirectedFrom=${encodeURIComponent(invitePath)}`);
-  await page.getByRole("link", { name: /set up an account/i }).click();
+  await page.getByRole("link", { name: /create an account/i }).click();
 
   await expect(page).toHaveURL((url) => {
     return (

@@ -28,7 +28,7 @@ export function SeverityChart({ data }: SeverityChartProps) {
     <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
       <CardHeader className="pb-2">
         <div>
-          <CardTitle className="text-lg">Impact across the queue</CardTitle>
+          <CardTitle className="text-lg">Tickets by severity</CardTitle>
           <p className="mt-2 text-sm text-muted-foreground">
             A quick check on how much high-impact work is still in the mix.
           </p>

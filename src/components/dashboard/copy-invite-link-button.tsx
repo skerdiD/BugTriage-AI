@@ -56,7 +56,7 @@ export function CopyInviteLinkButton({
       </Button>
       {feedback === "error" ? (
         <p role="alert" className="text-xs text-red-200">
-          Copy failed on this browser. You can still copy the link manually.
+          Copying is not available in this browser. You can copy the link manually.
         </p>
       ) : null}
     </div>

@@ -58,31 +58,31 @@ export const bugReportFormSchema = z.object({
     5,
     120,
     "Bug title must be at least 5 characters.",
-    "Bug title must be less than 120 characters."
+    "Bug title must be 120 characters or fewer."
   ),
   description: multilineField(
     20,
     2000,
     "Description must be at least 20 characters.",
-    "Description must be less than 2000 characters."
+    "Description must be 2,000 characters or fewer."
   ),
   stepsToReproduce: multilineField(
     10,
     1500,
     "Add at least one clear reproduction step.",
-    "Steps must be less than 1500 characters."
+    "Steps must be 1,500 characters or fewer."
   ),
   expectedBehavior: multilineField(
     8,
     800,
     "Expected behavior must be at least 8 characters.",
-    "Expected behavior must be less than 800 characters."
+    "Expected behavior must be 800 characters or fewer."
   ),
   actualBehavior: multilineField(
     8,
     800,
     "Actual behavior must be at least 8 characters.",
-    "Actual behavior must be less than 800 characters."
+    "Actual behavior must be 800 characters or fewer."
   ),
   browser: z.enum(supportedBugReportBrowsers, {
     error: () => ({ message: "Select a browser." }),
@@ -97,13 +97,13 @@ export const bugReportFormSchema = z.object({
     2,
     180,
     "Affected page or component is required.",
-    "Affected page must be less than 180 characters."
+    "Affected page must be 180 characters or fewer."
   ),
   consoleLogs: z
     .string()
     .transform(normalizeMultilineText)
     .pipe(
-      z.string().max(8000, "Console logs must be less than 8000 characters.")
+      z.string().max(8000, "Console logs must be 8,000 characters or fewer.")
     ),
 });
 

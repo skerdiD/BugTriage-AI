@@ -163,7 +163,7 @@ describe("ticket server-action authorization", () => {
           analysisRunId: "analysis-run-1",
           feedback: AiAnalysisFeedback.HELPFUL,
         }),
-      expectedError: "Sign in before rating this draft.",
+      expectedError: "Sign in before rating AI triage.",
     },
   ])("rejects direct unauthenticated $name invocation", async ({ invoke, expectedError }) => {
     getCurrentUserOrThrowMock.mockRejectedValue(

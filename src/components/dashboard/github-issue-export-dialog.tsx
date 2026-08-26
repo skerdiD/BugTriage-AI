@@ -138,16 +138,16 @@ export function GitHubIssueExportDialog({
             ? "Export in progress"
             : status === "FAILED"
               ? "Retry GitHub export"
-              : "Send to GitHub"}
+              : "Export to GitHub"}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="border-white/10 bg-[#15121d] text-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Create a GitHub issue</DialogTitle>
+          <DialogTitle>Export to GitHub</DialogTitle>
           <DialogDescription>
-            Copy this ticket into the connected repository. The original report,
-            triage draft, and useful metadata will be formatted for GitHub.
+            Create a GitHub issue from this ticket in the connected repository. The
+            original report, AI triage draft, and relevant metadata will be included.
           </DialogDescription>
         </DialogHeader>
 
@@ -163,8 +163,9 @@ export function GitHubIssueExportDialog({
           <div className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
             <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
             <p>
-              Only workspace owners and admins can do this. Once GitHub accepts the
-              issue, this ticket keeps the link and will not create a duplicate.
+              Only workspace owners and admins can export tickets. Once GitHub
+              accepts the issue, this ticket keeps the link and will not create a
+              duplicate.
             </p>
           </div>
         )}
@@ -188,12 +189,12 @@ export function GitHubIssueExportDialog({
               {isExporting ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
-                  Exporting...
+                  Exporting to GitHub...
                 </>
               ) : (
                 <>
                   <GitPullRequest className="mr-2 size-4" />
-                  {status === "FAILED" ? "Try again" : "Create GitHub issue"}
+                  {status === "FAILED" ? "Retry export" : "Export to GitHub"}
                 </>
               )}
             </Button>

@@ -19,7 +19,7 @@ export function TopAffectedPages({ pages }: TopAffectedPagesProps) {
           <div>
             <CardTitle className="text-lg">Most affected pages</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              The routes and product areas with the most reports.
+              The routes and product areas linked to the most tickets.
             </p>
           </div>
         </div>
@@ -46,7 +46,7 @@ export function TopAffectedPages({ pages }: TopAffectedPagesProps) {
                   </div>
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {page.bugCount} bugs reported
+                    {page.bugCount} {page.bugCount === 1 ? "ticket" : "tickets"}
                   </p>
                 </div>
               </div>
@@ -56,7 +56,7 @@ export function TopAffectedPages({ pages }: TopAffectedPagesProps) {
           ))
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-            Routes will appear here once reports include specific page or component
+            Routes will appear here once tickets include specific page or component
             details.
           </div>
         )}

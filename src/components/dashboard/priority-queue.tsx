@@ -34,8 +34,8 @@ export function PriorityQueue({
           <div>
             <h3 className="font-semibold text-white">Needs attention</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Open critical and high-severity work, ordered by the current priority
-              score. Confirm the evidence before reshuffling the queue.
+              Open critical and high-severity tickets, ordered by the current
+              priority score. Verify the evidence before acting on the ranking.
             </p>
           </div>
         </div>
@@ -56,7 +56,7 @@ export function PriorityQueue({
           </div>
         ) : (
           <div className="relative mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
-            Nothing critical or high severity is waiting right now. Enjoy the quiet.
+            No critical or high-severity tickets need attention right now.
           </div>
         )}
 
@@ -66,19 +66,19 @@ export function PriorityQueue({
             <p className="mt-3 text-sm font-semibold">Where to start</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {items.length > 0
-                ? "Open the first ticket, verify the impact, and make sure somebody owns the next step."
-                : "Any newly reported urgent work will land here."}
+                ? "Open the first ticket, verify the impact, and confirm an assignee owns the next step."
+                : "Newly reported urgent tickets will appear here."}
             </p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <p className="text-2xl font-bold text-red-300">{criticalCount}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Critical issues</p>
+            <p className="mt-1 text-sm text-muted-foreground">Critical tickets</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <p className="text-2xl font-bold text-orange-300">{highCount}</p>
-            <p className="mt-1 text-sm text-muted-foreground">High-severity issues</p>
+            <p className="mt-1 text-sm text-muted-foreground">High-severity tickets</p>
           </div>
         </div>
       </CardContent>

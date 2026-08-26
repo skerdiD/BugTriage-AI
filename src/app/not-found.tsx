@@ -41,7 +41,7 @@ export default function NotFound() {
             variant="outline"
             className="h-11 rounded-xl border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
           >
-            <Link href="/tickets">Search the queue</Link>
+            <Link href="/tickets">Search tickets</Link>
           </Button>
         </div>
       </section>

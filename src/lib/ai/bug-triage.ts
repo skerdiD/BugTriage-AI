@@ -220,7 +220,7 @@ function buildPromptWithBudget({
   if (prompt.length > AI_TRIAGE_MAX_PROMPT_CHARS) {
     throw new AiTriageError(
       "input_too_large",
-      "The triage draft was skipped because the diagnostic payload was too large. The ticket was saved for manual review."
+      "AI triage was skipped because the diagnostic payload was too large. The ticket was saved for manual review."
     );
   }
 
@@ -240,7 +240,7 @@ function normalizeAiError(error: unknown) {
   if (error instanceof z.ZodError) {
     return new AiTriageError(
       "input_too_large",
-      "The triage draft was skipped because the diagnostic payload was too large. The ticket was saved for manual review.",
+      "AI triage was skipped because the diagnostic payload was too large. The ticket was saved for manual review.",
       "AI analysis input failed validation."
     );
   }
@@ -252,7 +252,7 @@ function normalizeAiError(error: unknown) {
   if (normalizedMessage.includes("google_generative_ai_api_key")) {
     return new AiTriageError(
       "configuration",
-      "The triage draft is temporarily unavailable, so the ticket was saved for manual review.",
+      "AI triage is temporarily unavailable, so the ticket was saved for manual review.",
       safeMessage
     );
   }
@@ -278,7 +278,7 @@ function normalizeAiError(error: unknown) {
   ) {
     return new AiTriageError(
       "timeout",
-      "The triage draft timed out, so the ticket was saved for manual review.",
+      "AI triage timed out, so the ticket was saved for manual review.",
       safeMessage
     );
   }
@@ -286,14 +286,14 @@ function normalizeAiError(error: unknown) {
   if (normalizedMessage.includes("invalid bug triage response")) {
     return new AiTriageError(
       "invalid_output",
-      "The triage draft did not pass validation, so the ticket was saved for manual review.",
+      "AI triage did not pass validation, so the ticket was saved for manual review.",
       safeMessage
     );
   }
 
   return new AiTriageError(
     "service_unavailable",
-    "The triage draft is temporarily unavailable, so the ticket was saved for manual review.",
+    "AI triage is temporarily unavailable, so the ticket was saved for manual review.",
     safeMessage
   );
 }
@@ -309,7 +309,7 @@ export async function analyzeBugReportWithGemini(
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     throw new AiTriageError(
       "configuration",
-      "The triage draft is temporarily unavailable, so the ticket was saved for manual review.",
+      "AI triage is temporarily unavailable, so the ticket was saved for manual review.",
       "Missing GOOGLE_GENERATIVE_AI_API_KEY."
     );
   }
@@ -372,7 +372,7 @@ export async function analyzeBugReportWithGemini(
     if (!parsed.success) {
       throw new AiTriageError(
         "invalid_output",
-        "The triage draft did not pass validation, so the ticket was saved for manual review.",
+        "AI triage did not pass validation, so the ticket was saved for manual review.",
         "AI returned an invalid bug triage response."
       );
     }

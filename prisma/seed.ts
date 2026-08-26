@@ -27,11 +27,12 @@ export const DEFAULT_DEMO_USER_EMAIL = DEMO_USER_EMAIL;
 export const DEMO_TICKET_CODE_PREFIX = "DEMO-";
 export const DEMO_WORKSPACE_SLUG = "bugtriage-ai-demo";
 export const LEGACY_DEMO_WORKSPACE_SLUG = "portfolio-demo-mirejemi";
-export const DEMO_WORKSPACE_NAME = "BugTriage AI Portfolio Demo";
-export const DEMO_PROJECT_SLUG = "saas-demo-workspace";
-export const DEMO_PROJECT_NAME = "SaaS Demo Workspace";
+export const DEMO_WORKSPACE_NAME = "BugTriage Demo";
+export const DEMO_PROJECT_SLUG = "saas-platform";
+export const LEGACY_DEMO_PROJECT_SLUG = "saas-demo-workspace";
+export const DEMO_PROJECT_NAME = "SaaS Platform";
 export const DEMO_PROJECT_DESCRIPTION =
-  "Demo-only project seeded for portfolio screenshots, walkthroughs, and realistic dashboard footage.";
+  "Demo project with realistic tickets and AI triage results.";
 
 const DEMO_TEAM_MEMBERS = [
   {
@@ -728,18 +729,50 @@ async function ensureDemoWorkspace(user: { id: string; name: string }) {
 }
 
 async function ensureDemoProject(workspaceId: string) {
-  return prisma.project.upsert({
+  const currentProject = await prisma.project.findUnique({
     where: {
       workspaceId_slug: {
         workspaceId,
         slug: DEMO_PROJECT_SLUG,
       },
     },
-    update: {
-      name: DEMO_PROJECT_NAME,
-      description: DEMO_PROJECT_DESCRIPTION,
+    select: {
+      id: true,
     },
-    create: {
+  });
+  const existingProject =
+    currentProject ??
+    (await prisma.project.findUnique({
+      where: {
+        workspaceId_slug: {
+          workspaceId,
+          slug: LEGACY_DEMO_PROJECT_SLUG,
+        },
+      },
+      select: {
+        id: true,
+      },
+    }));
+
+  if (existingProject) {
+    return prisma.project.update({
+      where: {
+        id: existingProject.id,
+      },
+      data: {
+        slug: DEMO_PROJECT_SLUG,
+        name: DEMO_PROJECT_NAME,
+        description: DEMO_PROJECT_DESCRIPTION,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+  }
+
+  return prisma.project.create({
+    data: {
       workspaceId,
       name: DEMO_PROJECT_NAME,
       slug: DEMO_PROJECT_SLUG,

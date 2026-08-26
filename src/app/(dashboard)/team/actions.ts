@@ -19,6 +19,7 @@ import {
 import { captureServerException } from "@/lib/observability/server-monitoring";
 import { buildAppUrl } from "@/lib/security/app-url";
 import { resourceIdSchema } from "@/lib/validation/resource-identifiers";
+import { formatWorkspaceRole } from "@/lib/utils";
 
 const inviteInputSchema = z.object({
   workspaceId: resourceIdSchema,
@@ -76,7 +77,7 @@ export async function createWorkspaceInviteAction(input: {
     return {
       ok: true as const,
       inviteLink: await buildAppUrl(`/invite/${invite.token}`),
-      message: `Invite ready for ${invite.email}. Share the link anywhere you coordinate with your team.`,
+      message: `Invite link created for ${invite.email}.`,
     };
   } catch (error) {
     if (error instanceof AuthorizationError) {
@@ -197,7 +198,7 @@ export async function updateWorkspaceMemberRoleAction(input: {
 
     return {
       ok: true as const,
-      message: `${updatedMember.memberName} is now ${updatedMember.role}.`,
+      message: `${updatedMember.memberName} is now ${formatWorkspaceRole(updatedMember.role)}.`,
     };
   } catch (error) {
     if (error instanceof AuthorizationError) {

@@ -91,8 +91,8 @@ export async function acceptWorkspaceInviteAction(input: { token: string }) {
       ok: true as const,
       alreadyMember: result.alreadyMember,
       message: result.alreadyMember
-        ? "You already had access to this workspace, so we switched you into it."
-        : "Invite accepted. Your workspace access is ready.",
+        ? "You already had access to this workspace, so we selected it for you."
+        : "Invite accepted. You now have access to the workspace.",
     };
   } catch (error) {
     captureServerException(error, {

@@ -62,7 +62,7 @@ export function RecentActivityFeed({ items }: RecentActivityFeedProps) {
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-            Changes will appear here after the first report, status move, or note.
+            Changes will appear here after the first ticket update or note.
           </div>
         )}
       </CardContent>

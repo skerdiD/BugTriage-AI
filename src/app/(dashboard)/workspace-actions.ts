@@ -35,11 +35,11 @@ const createProjectInputSchema = z.object({
     .string()
     .trim()
     .min(3, "Project name must be at least 3 characters.")
-    .max(80, "Project name must be less than 80 characters."),
+    .max(80, "Project name must be 80 characters or fewer."),
   description: z
     .string()
     .trim()
-    .max(220, "Project description must be less than 220 characters.")
+    .max(220, "Project description must be 220 characters or fewer.")
     .optional()
     .or(z.literal("")),
 });
@@ -49,7 +49,7 @@ const createWorkspaceInputSchema = z.object({
     .string()
     .trim()
     .min(3, "Workspace name must be at least 3 characters.")
-    .max(80, "Workspace name must be less than 80 characters."),
+    .max(80, "Workspace name must be 80 characters or fewer."),
 });
 
 export async function setCurrentWorkspaceAction(workspaceId: string) {

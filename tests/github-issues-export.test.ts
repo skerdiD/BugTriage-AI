@@ -168,7 +168,7 @@ describe("GitHub Issues export", () => {
     );
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
       title: "Checkout payment form fails on Safari",
-      body: expect.stringContaining("## Suggested Fix"),
+      body: expect.stringContaining("## Suggested fix"),
     });
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
       labels: [
@@ -239,15 +239,15 @@ describe("GitHub Issues export", () => {
 
     expect(body).toContain("# BUG-4242: Checkout payment form fails on Safari");
     expect(body).toContain("## Triage summary");
-    expect(body).toContain("## Original Bug Report");
+    expect(body).toContain("## Original bug report");
     expect(body).toContain("| Priority score | 88 |");
-    expect(body).toContain("| Draft confidence | 91 |");
+    expect(body).toContain("| AI confidence | 91 |");
     expect(body).toContain("| Affected page | /checkout |");
-    expect(body).toContain("## Steps to Reproduce");
+    expect(body).toContain("## Steps to reproduce");
     expect(body).toContain("1. Open checkout on Safari.");
-    expect(body).toContain("## Likely Cause");
-    expect(body).toContain("## Suggested Fix");
-    expect(body).toContain("## Additional Context");
+    expect(body).toContain("## Likely cause");
+    expect(body).toContain("## Suggested fix");
+    expect(body).toContain("## Additional context");
     expect(body).toContain("Exported from BugTriage ticket `BUG-4242`.");
   });
 
@@ -265,7 +265,7 @@ describe("GitHub Issues export", () => {
     );
 
     expect(body).toContain("Not provided.");
-    expect(body).toContain("## Steps to Reproduce\nNot provided.");
+    expect(body).toContain("## Steps to reproduce\nNot provided.");
   });
 
   it("escapes table separators and preserves code fences around untrusted text", () => {

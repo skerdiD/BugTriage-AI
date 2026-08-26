@@ -289,7 +289,7 @@ export async function analyzeAndCreateTicketAction(
 
       return {
         ok: false,
-        error: "Combined uploads must be 20MB or smaller per ticket.",
+        error: "Combined uploads must be 20 MB or smaller per ticket.",
       };
     }
 
@@ -508,7 +508,7 @@ export async function analyzeAndCreateTicketAction(
 
       return {
         ok: false,
-        error: "You must be signed in before creating a bug ticket.",
+        error: "You must be signed in before submitting a bug report.",
       };
     }
 

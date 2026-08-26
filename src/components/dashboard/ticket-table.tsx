@@ -56,7 +56,7 @@ function AiConfidence({ confidence }: { confidence: number }) {
   return (
     <div
       className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-1"
-      title={`Draft confidence: ${confidence}%`}
+      title={`AI confidence: ${confidence}%`}
     >
       <Bot className="size-3.5 text-violet-300" />
       <span className="text-xs font-bold text-violet-200">{confidence}%</span>
@@ -72,7 +72,7 @@ export function TicketTable({ tickets }: TicketTableProps) {
       <Card className="hidden overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20 md:block">
         <Table className="table-fixed">
           <TableCaption className="sr-only">
-            Ticket list with impact, status, owner, created date, and triage-draft
+            Ticket list with severity, status, assignee, created date, and AI
             confidence for the selected project.
           </TableCaption>
           <TableHeader>
@@ -94,7 +94,7 @@ export function TicketTable({ tickets }: TicketTableProps) {
                 Created
               </TableHead>
               <TableHead className="hidden w-[118px] px-3 py-2.5 text-right text-xs xl:table-cell">
-                Draft confidence
+                AI confidence
               </TableHead>
             </TableRow>
           </TableHeader>

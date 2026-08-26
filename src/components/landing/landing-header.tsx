@@ -63,7 +63,7 @@ export function LandingHeader() {
           >
             <Link href="/login">
               <span className="sm:hidden">Demo</span>
-              <span className="hidden sm:inline">Open live demo</span>
+              <span className="hidden sm:inline">Explore demo</span>
               <ArrowRight className="size-4" />
             </Link>
           </Button>

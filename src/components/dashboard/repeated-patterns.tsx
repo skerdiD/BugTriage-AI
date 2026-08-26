@@ -20,7 +20,7 @@ export function RepeatedPatterns({ patterns }: RepeatedPatternsProps) {
           <div>
             <CardTitle className="text-lg">Recurring patterns</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Similar failures showing up across multiple reports.
+              Similar failures appearing across multiple tickets.
             </p>
           </div>
         </div>
@@ -51,7 +51,7 @@ export function RepeatedPatterns({ patterns }: RepeatedPatternsProps) {
 
               <div className="mt-4 flex items-end justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Reports in this cluster</p>
+                  <p className="text-xs text-muted-foreground">Tickets in this cluster</p>
                   <p className="mt-1 text-2xl font-bold text-white">{pattern.count}x</p>
                 </div>
 
@@ -63,7 +63,7 @@ export function RepeatedPatterns({ patterns }: RepeatedPatternsProps) {
           ))
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-            Clusters will appear after enough reports share meaningful details.
+            Clusters will appear after enough tickets share meaningful details.
           </div>
         )}
       </CardContent>

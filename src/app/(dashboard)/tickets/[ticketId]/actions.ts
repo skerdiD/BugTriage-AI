@@ -46,7 +46,7 @@ const commentSchema = z.object({
     .min(1, "Comment cannot be empty.")
     .max(
       MAX_TICKET_COMMENT_LENGTH,
-      `Comment must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or less.`
+      `Note must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or fewer.`
     ),
 });
 
@@ -84,7 +84,7 @@ export async function addTicketCommentAction(input: {
         ok: false as const,
         error:
           parsed.error.issues[0]?.message ??
-          "Comment could not be submitted. Please try again.",
+          "The note could not be saved. Please try again.",
       };
     }
 
@@ -125,9 +125,9 @@ export async function addTicketCommentAction(input: {
 
     if (
       error instanceof Error &&
-      (error.message === "Comment body cannot be empty." ||
+      (error.message === "Note cannot be empty." ||
         error.message ===
-          `Comment must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or less.`)
+          `Note must be ${MAX_TICKET_COMMENT_LENGTH.toLocaleString()} characters or fewer.`)
     ) {
       return {
         ok: false as const,
@@ -272,8 +272,8 @@ export async function regenerateTicketAiAnalysisAction(input: {
       ok: true as const,
       message:
         dispatch.mode === "queued"
-          ? "A new triage pass is queued and should appear shortly."
-          : "The triage pass is pending and will run when background processing is available.",
+          ? "AI triage has been scheduled and should appear shortly."
+          : "AI triage is pending and will run when background processing is available.",
     };
   } catch (error) {
     if (error instanceof AuthenticationError) {
@@ -303,7 +303,10 @@ export async function setTicketAiAnalysisFeedbackAction(input: {
     const parsed = feedbackSchema.safeParse(input);
 
     if (!parsed.success) {
-      return { ok: false as const, error: "That draft-feedback request was invalid." };
+      return {
+        ok: false as const,
+        error: "That feedback request was invalid. Please refresh and try again.",
+      };
     }
 
     const [user, context] = await Promise.all([
@@ -324,12 +327,12 @@ export async function setTicketAiAnalysisFeedbackAction(input: {
 
     revalidatePath(`/tickets/${parsed.data.ticketCode}`);
 
-    return { ok: true as const, message: "Draft feedback saved." };
+    return { ok: true as const, message: "AI feedback saved." };
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return {
         ok: false as const,
-        error: "Sign in before rating this draft.",
+        error: "Sign in before rating AI triage.",
       };
     }
 

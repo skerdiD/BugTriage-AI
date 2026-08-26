@@ -193,7 +193,7 @@ export function validateTicketFile(
   if (file.size > MAX_TICKET_FILE_SIZE_BYTES) {
     return {
       valid: false,
-      message: "File must be 10MB or smaller.",
+      message: "File must be 10 MB or smaller.",
     };
   }
 

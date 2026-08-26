@@ -49,8 +49,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Project pulse"
-        description="Start with the high-impact work, then catch up on what changed since your last pass."
+        title="Project overview"
+        description="Review ticket status, high-impact work, and recent activity."
         badge={context.project?.name ?? context.workspace.name}
       >
         <Button
@@ -85,11 +85,11 @@ export default async function DashboardPage() {
 
       <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Where the queue stands</CardTitle>
+          <CardTitle className="text-lg">Ticket status</CardTitle>
           <p className="text-sm text-muted-foreground">
             {data.confidenceSampleCount > 0
-              ? `Draft confidence averages ${data.averageConfidenceLabel} across ${data.confidenceSampleCount} reviewed reports.`
-              : "Draft confidence will appear after the first report has been triaged."}
+              ? `AI confidence averages ${data.averageConfidenceLabel} across ${data.confidenceSampleCount} triaged tickets.`
+              : "AI confidence will appear after the first ticket is triaged."}
           </p>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -119,9 +119,9 @@ export default async function DashboardPage() {
 
       {!data.hasTickets ? (
         <EmptyState
-          title="The queue is empty"
-          description="Add the first report and this page will start showing impact, status, ownership, and recent changes."
-          actionLabel="Report the first bug"
+          title="No tickets yet"
+          description="Report the first bug to start tracking severity, status, ownership, and activity."
+          actionLabel="Report a bug"
           actionHref="/submit-bug"
         />
       ) : null}

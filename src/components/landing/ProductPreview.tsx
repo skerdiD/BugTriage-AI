@@ -113,7 +113,7 @@ export function ProductPreview() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium tracking-[0.2em] text-cyan-100/70 uppercase">
-                    Draft after triage
+                    AI triage draft
                   </p>
                   <h3 className="mt-2 text-xl font-semibold text-white">
                     Checkout submit stalls after card validation on iOS Safari

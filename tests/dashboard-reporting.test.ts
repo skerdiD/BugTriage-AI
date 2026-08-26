@@ -226,7 +226,7 @@ describe("dashboard and analytics reporting", () => {
     });
     expect(analytics.repeatedPatterns).toEqual([
       {
-        name: "Authentication issues on /login",
+        name: "Authentication tickets on /login",
         lastSeen: "1 day ago",
         count: 3,
         category: "Authentication",

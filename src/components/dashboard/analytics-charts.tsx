@@ -102,7 +102,7 @@ export function AnalyticsCharts({
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader className="pb-0">
             <div>
-              <CardTitle className="text-lg">Where reports are landing</CardTitle>
+              <CardTitle className="text-lg">Reports by product area</CardTitle>
               <p className="mt-2 text-sm text-muted-foreground">
                 The product areas carrying the most reported problems.
               </p>
@@ -154,7 +154,7 @@ export function AnalyticsCharts({
             <div>
               <CardTitle className="text-lg">Time to resolution</CardTitle>
               <p className="mt-2 text-sm text-muted-foreground">
-                Average hours from first report to fixed or closed.
+                Average time from report submission to Fixed or Closed.
               </p>
             </div>
           </CardHeader>

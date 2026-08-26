@@ -33,7 +33,7 @@ export const features: FeatureCard[] = [
     icon: Sparkles,
     title: "A reliable first pass",
     description:
-      "Turn uneven reports into the same scannable shape without hiding the original words.",
+      "Turn inconsistent reports into a clear, scannable format without losing the original wording.",
   },
   {
     icon: FileStack,
@@ -43,9 +43,9 @@ export const features: FeatureCard[] = [
   },
   {
     icon: FolderKanban,
-    title: "Familiar status, clear owner",
+    title: "Familiar statuses, clear owners",
     description:
-      "Move work from new to investigating, in progress, fixed, and closed—without inventing a new process.",
+      "Move tickets from new to investigating, in progress, fixed, and closed without changing your workflow.",
   },
   {
     icon: ShieldCheck,
@@ -58,22 +58,22 @@ export const features: FeatureCard[] = [
 export const workflowSteps: WorkflowStep[] = [
   {
     title: "Capture the report",
-    description: "Add the complaint, device details, screenshots, and whatever logs survived.",
+    description: "Add the problem description, device details, screenshots, and available logs.",
   },
   {
-    title: "Check the first pass",
-    description: "Read the suggested severity, steps, and likely cause against the evidence.",
+    title: "Review AI triage",
+    description: "Compare the suggested severity, steps, and likely cause with the evidence.",
   },
   {
-    title: "Hand it to an owner",
-    description: "Correct anything that is off, assign the ticket, and record the next move.",
+    title: "Assign the ticket",
+    description: "Correct the suggestions as needed, assign the ticket, and record the next step.",
   },
 ];
 
 export const securityItems: SecurityItem[] = [
   { icon: Route, label: "Members-only routes" },
   { icon: LockKeyhole, label: "Private evidence uploads" },
-  { icon: CheckCircle2, label: "Drafts validated before save" },
+  { icon: CheckCircle2, label: "AI drafts validated before saving" },
   { icon: UserCheck, label: "Workspace-scoped access" },
 ];
 
@@ -87,7 +87,7 @@ export const inputChips = [
 export const outputMeta = [
   { label: "Severity", value: "Critical", tone: "rose" },
   { label: "Area", value: "Checkout", tone: "cyan" },
-  { label: "Status", value: "Needs review", tone: "emerald" },
+  { label: "Status", value: "New", tone: "emerald" },
 ] as const;
 
 export const outputSteps = [
@@ -104,12 +104,12 @@ export const pipelineCards = [
   },
   {
     icon: FileSearch,
-    title: "Working draft",
+    title: "AI triage draft",
     detail: "Safari checkout failure, high impact, needs confirmation",
   },
   {
     icon: CheckCircle2,
-    title: "In the queue",
-    detail: "Evidence, reproduction steps, and next move stay together",
+    title: "Ticket ready for review",
+    detail: "Evidence, reproduction steps, and next step stay together",
   },
 ] as const;

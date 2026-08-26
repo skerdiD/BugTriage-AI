@@ -13,19 +13,19 @@ export function presentTicketActivityCopy(
   description: string | null
 ) {
   const presentedTitle = updatedDraftTitles.has(title)
-    ? "Triage draft updated"
+    ? "AI triage updated"
     : readyDraftTitles.has(title)
-      ? "Triage draft ready"
+      ? "AI triage ready"
       : title;
 
   let presentedDescription = description ?? "A ticket change was recorded.";
 
   if (presentedDescription.startsWith("AI ")) {
-    presentedDescription = `The triage draft ${presentedDescription.slice(3)}`;
+    presentedDescription = `AI triage ${presentedDescription.slice(3)}`;
   } else if (presentedDescription === "Background AI triage completed successfully.") {
-    presentedDescription = "The first triage draft is ready for review.";
+    presentedDescription = "AI triage is ready for review.";
   } else if (presentedDescription === "Severity classified as Critical with high confidence.") {
-    presentedDescription = "The draft marked this as Critical with high confidence.";
+    presentedDescription = "AI triage marked this as Critical with high confidence.";
   }
 
   return {

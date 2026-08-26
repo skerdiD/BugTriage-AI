@@ -120,7 +120,7 @@ function SignupContent() {
             </Link>
 
             <Badge className="mb-5 rounded-full border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-violet-200">
-              Set up the queue once
+              Set up your workspace
             </Badge>
 
             <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-white">
@@ -128,8 +128,8 @@ function SignupContent() {
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Give support, QA, and engineering one place for the report, the
-              evidence, the owner, and the next decision.
+              Give support, QA, and engineering one place for the original report,
+              supporting evidence, ticket owner, and next decision.
             </p>
 
             <div className="mt-8 grid max-w-2xl gap-4 md:grid-cols-3">
@@ -216,7 +216,7 @@ function SignupContent() {
                   />
                   <p className="text-xs text-muted-foreground">
                     Use at least 6 characters. If email confirmation is enabled,
-                    we&apos;ll send the next step there.
+                    we&apos;ll email you a confirmation link.
                   </p>
                 </div>
 

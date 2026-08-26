@@ -21,7 +21,7 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
   return (
     <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
       <CardHeader className="flex flex-row items-center justify-between gap-4">
-        <CardTitle className="text-lg">Latest through triage</CardTitle>
+        <CardTitle className="text-lg">Recently triaged tickets</CardTitle>
         <Link
           href="/tickets"
           className="inline-flex items-center gap-1 text-sm font-semibold text-violet-300 transition hover:text-violet-200"
@@ -72,7 +72,7 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
               </div>
 
               <div className="shrink-0 text-left lg:min-w-28 lg:text-right">
-                <p className="text-xs text-muted-foreground">Draft confidence</p>
+                <p className="text-xs text-muted-foreground">AI confidence</p>
                 <p className="mt-1 text-xl font-bold text-violet-300">
                   {ticket.confidence}%
                 </p>
@@ -81,7 +81,7 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
           ))
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-            The latest reports will show up here after their first triage pass.
+            Recently triaged tickets will appear here.
           </div>
         )}
       </CardContent>

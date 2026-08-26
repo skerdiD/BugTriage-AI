@@ -13,7 +13,7 @@ export const WORKSPACE_COOKIE_NAME = "bt_workspace_id";
 export const PROJECT_COOKIE_NAME = "bt_project_id";
 export const DEFAULT_PERSONAL_PROJECT_NAME = "Bug Intake";
 export const DEFAULT_PERSONAL_PROJECT_DESCRIPTION =
-  "Default home for incoming reports, private evidence, triage drafts, and engineering follow-up.";
+  "Default home for incoming reports, private evidence, AI triage, and engineering follow-up.";
 
 type EnsureWorkspaceInput = {
   authUserId: string;

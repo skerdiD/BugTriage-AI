@@ -65,8 +65,8 @@ export function getSafeAuthClientErrorMessage(
   }
 
   if (action === "signup") {
-    return "Something went wrong while creating your account.";
+    return "We couldn't create your account. Please try again.";
   }
 
-  return "Something went wrong while signing in.";
+  return "We couldn't sign you in. Please try again.";
 }

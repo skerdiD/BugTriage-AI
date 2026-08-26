@@ -43,7 +43,7 @@ export default async function ProfilePage() {
                   {user.name}
                 </p>
                 <p className="mt-1 truncate text-sm text-muted-foreground">
-                  This is how you appear on reports, notes, and activity.
+                  This is how your name appears on tickets, notes, and activity.
                 </p>
               </div>
             </div>

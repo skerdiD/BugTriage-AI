@@ -11,7 +11,7 @@ export function TriagePipeline() {
             How the handoff changes
           </p>
           <h2 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-            From rough evidence to a reviewable next move
+            From rough evidence to a structured ticket
           </h2>
         </div>
         <p className="text-sm text-slate-300">

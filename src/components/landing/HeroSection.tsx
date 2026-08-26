@@ -16,7 +16,7 @@ const trustSignals = [
   { icon: PlayCircle, label: "No signup for the demo" },
   { icon: LockKeyhole, label: "Private evidence uploads" },
   { icon: ShieldCheck, label: "Workspace-scoped access" },
-  { icon: CheckCircle2, label: "Validated, editable drafts" },
+  { icon: CheckCircle2, label: "Validated, editable AI drafts" },
 ] as const;
 
 export function HeroSection() {
@@ -48,8 +48,8 @@ export function HeroSection() {
               size="lg"
               className="h-12 w-full rounded-full bg-white px-7 text-sm font-semibold text-slate-950 shadow-[0_20px_60px_-28px_rgba(255,255,255,0.9)] transition active:scale-[0.98] hover:bg-cyan-50 sm:w-auto"
             >
-              <Link href="/login" aria-label="Open the BugTriage AI live demo">
-                Open live demo
+              <Link href="/login" aria-label="Explore the BugTriage AI demo">
+                Explore demo
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -60,12 +60,12 @@ export function HeroSection() {
               variant="outline"
               className="h-12 w-full rounded-full border-white/15 bg-white/[0.045] px-7 text-sm font-medium text-white transition active:scale-[0.98] hover:border-cyan-200/25 hover:bg-white/[0.09] sm:w-auto"
             >
-              <Link href="#product-preview">See a report transform</Link>
+              <Link href="#product-preview">See report-to-ticket workflow</Link>
             </Button>
           </div>
 
           <p className="mt-4 text-sm text-slate-300">
-            Read-only sample data. No account or setup required.
+            Read-only demo data. No account or setup required.
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export function HeroSection() {
               <p className="text-[0.68rem] font-medium tracking-[0.15em] text-slate-300 uppercase sm:text-xs">
                 <span className="sm:hidden">Live product</span>
                 <span className="hidden sm:inline">
-                  Live product · sample workspace
+                  Live product · demo workspace
                 </span>
               </p>
               <span className="flex items-center gap-1.5 text-[0.68rem] text-emerald-200 sm:text-xs">
@@ -110,7 +110,7 @@ export function HeroSection() {
                   Real interface, realistic data
                 </p>
                 <p className="mt-0.5 text-[0.7rem] text-slate-300">
-                  Explore the complete workflow safely
+                  Explore the complete workflow
                 </p>
               </div>
             </div>

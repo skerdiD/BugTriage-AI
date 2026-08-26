@@ -14,11 +14,11 @@ export function FeatureGrid({ features }: { features: FeatureCard[] }) {
               Built around real bug work
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Keep the useful context. Lose the archaeology.
+              Keep useful context. Reduce investigation overhead.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-200">
-              Support and QA can hand over what they know. Engineering can see what
-              is fact, what is suggested, and who owns the next move.
+              Support and QA can submit what they know. Engineering can distinguish
+              source evidence from AI suggestions and see who owns the next step.
             </p>
           </div>
 
@@ -55,7 +55,7 @@ export function FeatureGrid({ features }: { features: FeatureCard[] }) {
                 A short, reviewable loop
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                From &ldquo;something broke&rdquo; to a ticket someone owns.
+                From an incomplete report to an assigned ticket.
               </h2>
             </div>
 

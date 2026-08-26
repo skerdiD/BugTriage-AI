@@ -39,7 +39,7 @@ export default function GlobalError({
                 onClick={() => unstableRetry()}
                 className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
               >
-                Try this again
+                Try again
               </button>
               <a
                 href="/dashboard"

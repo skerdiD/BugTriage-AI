@@ -250,7 +250,7 @@ describe("analyzeAndCreateTicketAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "You must be signed in before creating a bug ticket.",
+      error: "You must be signed in before submitting a bug report.",
     });
     expect(protectMock).not.toHaveBeenCalled();
     expect(uploadScreenshotFileMock).not.toHaveBeenCalled();
@@ -300,7 +300,7 @@ describe("analyzeAndCreateTicketAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Combined uploads must be 20MB or smaller per ticket.",
+      error: "Combined uploads must be 20 MB or smaller per ticket.",
     });
     expect(uploadScreenshotFileMock).not.toHaveBeenCalled();
     expect(uploadLogFileMock).not.toHaveBeenCalled();

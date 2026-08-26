@@ -304,8 +304,8 @@ export function TicketDetailClient({
             </h1>
 
             <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-              The report, evidence, working theory, ownership, and decisions are all
-              here. Start with what is known, then verify the draft.
+              Review the original report, evidence, AI analysis, ownership, and
+              ticket history.
             </p>
           </div>
         </div>
@@ -318,7 +318,7 @@ export function TicketDetailClient({
                   <ScanSearch className="size-5 text-violet-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Draft confidence</p>
+                  <p className="text-sm text-muted-foreground">AI confidence</p>
                   <p className="text-2xl font-bold text-violet-200">
                     {ticket.confidence}%
                   </p>
@@ -326,7 +326,7 @@ export function TicketDetailClient({
               </div>
 
               <Badge className="rounded-full border-emerald-500/25 bg-emerald-500/15 text-emerald-300">
-                {ticket.confidence > 0 ? "Draft ready" : "Waiting"}
+                {ticket.confidence > 0 ? "Analysis ready" : "Not available"}
               </Badge>
             </div>
 
@@ -371,7 +371,7 @@ export function TicketDetailClient({
                     <ClipboardList className="size-5 text-violet-300" />
                   </div>
                   <div>
-                    <CardTitle>Triage draft</CardTitle>
+                    <CardTitle>AI triage draft</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
                       Suggested language and leads—not confirmed findings.
                     </p>
@@ -392,7 +392,7 @@ export function TicketDetailClient({
                       <RefreshCw className="mr-2 size-4" />
                     )}
                     {isAiPending || isAnalysisProcessing
-                      ? "Building draft..."
+                      ? "Running AI triage..."
                       : ticket.aiProcessingStatus === "FAILED"
                         ? "Retry triage"
                         : "Run triage again"}
@@ -407,7 +407,7 @@ export function TicketDetailClient({
                   role="status"
                   className="rounded-2xl border border-sky-500/20 bg-sky-500/10 px-4 py-3 text-sm text-sky-100"
                 >
-                  The triage draft is being built in the background. This page will
+                  AI triage is running in the background. This page will
                   check for it automatically for up to one minute.
                 </p>
               ) : null}
@@ -417,8 +417,8 @@ export function TicketDetailClient({
                   role="alert"
                   className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
                 >
-                  The draft could not be built, but the original report is safe. You
-                  can retry triage or continue manually.
+                  AI triage could not be completed, but the original report is still
+                  available. You can retry triage or continue manually.
                 </p>
               ) : null}
 
@@ -480,7 +480,7 @@ export function TicketDetailClient({
                   Check the suggested impact and cause against the original report and
                   attached evidence. The current draft has a{" "}
                   <span className="font-semibold text-white">
-                    {ticket.priorityScore}/100 queue score
+                    {ticket.priorityScore}/100 priority score
                   </span>{" "}
                   and{" "}
                   <span className="font-semibold text-white">
@@ -515,7 +515,7 @@ export function TicketDetailClient({
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <p className="text-sm text-muted-foreground">Queue score</p>
+                  <p className="text-sm text-muted-foreground">Priority score</p>
                   <p className="mt-3 text-5xl font-bold tracking-tight text-red-300">
                     {ticket.priorityScore}
                   </p>
@@ -591,7 +591,7 @@ export function TicketDetailClient({
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <p className="font-semibold">Draft history</p>
+                  <p className="font-semibold">AI triage history</p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
                     Earlier passes stay visible so changes are easy to question.
                   </p>
@@ -615,7 +615,7 @@ export function TicketDetailClient({
                               {run.severity}
                             </Badge>
                             <Badge className="border-white/10 bg-white/[0.06] text-slate-200">
-                              {run.confidence}% draft confidence
+                              {run.confidence}% AI confidence
                             </Badge>
                             {run.feedback ? (
                               <Badge className="border-violet-500/25 bg-violet-500/10 text-violet-200">
@@ -895,7 +895,7 @@ export function TicketDetailClient({
 
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progress through the queue</span>
+                  <span className="text-muted-foreground">Ticket progress</span>
                   <span className="font-semibold text-violet-300">
                     {workflowProgress}%
                   </span>
@@ -930,7 +930,7 @@ export function TicketDetailClient({
                       <div>
                         <p className="text-sm font-semibold text-white">{item}</p>
                         <p className="text-xs text-muted-foreground">
-                          {isActive ? "You are here" : "Queue stage"}
+                          {isActive ? "Current status" : "Workflow stage"}
                         </p>
                       </div>
                     </div>
@@ -945,7 +945,7 @@ export function TicketDetailClient({
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <SearchCheck className="size-5 text-emerald-300" />
-                  <CardTitle>Possibly related</CardTitle>
+                  <CardTitle>Similar tickets</CardTitle>
                 </div>
               </CardHeader>
 

@@ -75,8 +75,8 @@ const ticketDraftItems = [
     detail: "One focused action an owner can verify and refine.",
   },
   {
-    title: "Priority and draft confidence",
-    detail: "Signals for ordering the queue—not a replacement for judgment.",
+    title: "Priority and AI confidence",
+    detail: "Signals for prioritizing the ticket—not a replacement for judgment.",
   },
 ];
 
@@ -174,8 +174,8 @@ export default function SubmitBugPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="New bug report"
-        description="Write down what happened while the details are fresh. Attach what you have; the triage draft stays editable."
+        title="Report a bug"
+        description="Describe what happened and attach any evidence you have. The AI triage draft stays editable."
         badge="Workspace members only"
       />
 
@@ -397,7 +397,7 @@ export default function SubmitBugPage() {
                   <UploadDropzone
                     title="Screenshots"
                     description="Drop the images here, or choose them from your device"
-                    helperText="PNG, JPG, and WEBP up to 10MB each. Up to 3 files."
+                    helperText="PNG, JPG, and WEBP up to 10 MB each. Up to 3 files."
                     icon={ImageIcon}
                     accept={{
                       "image/png": [".png"],
@@ -411,7 +411,7 @@ export default function SubmitBugPage() {
                   <UploadDropzone
                     title="Console logs"
                     description="Drop log files here, or choose them from your device"
-                    helperText="TXT, LOG, and JSON up to 10MB each. Up to 3 files."
+                    helperText="TXT, LOG, and JSON up to 10 MB each. Up to 3 files."
                     icon={FileText}
                     accept={{
                       "text/plain": [".txt", ".log"],
@@ -496,12 +496,12 @@ export default function SubmitBugPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Building the first draft...
+                      Submitting report...
                     </>
                   ) : (
                     <>
                       <ClipboardCheck className="mr-2 size-4" />
-                      Create triage draft
+                      Submit bug report
                     </>
                   )}
                 </Button>
@@ -518,7 +518,7 @@ export default function SubmitBugPage() {
                   <ListChecks className="size-5 text-violet-300" />
                 </div>
                 <div>
-                  <CardTitle>What you&apos;ll review next</CardTitle>
+                  <CardTitle>What happens next</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
                     The original report stays beside every suggested field.
                   </p>

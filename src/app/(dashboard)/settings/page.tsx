@@ -15,6 +15,10 @@ import { hasRequiredWorkspaceRole } from "@/lib/auth/authorization";
 import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { formatWorkspaceRole } from "@/lib/utils";
 
+function formatCount(count: number, singular: string) {
+  return `${count} ${count === 1 ? singular : `${singular}s`}`;
+}
+
 export default async function SettingsPage() {
   const context = await getCurrentWorkspaceContextOrRedirect();
   const canManageProjects = hasRequiredWorkspaceRole(
@@ -25,8 +29,8 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Workspace setup"
-        description="See how this workspace is organized and decide where incoming reports should land."
+        title="Workspace settings"
+        description="Review workspace access, projects, and report routing."
         badge={context.workspace.slug}
       />
 
@@ -65,14 +69,14 @@ export default async function SettingsPage() {
 
                 <div className="rounded-2xl border border-white/10 bg-black/15 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Queue snapshot
+                    Workspace summary
                   </p>
                   <p className="mt-2 font-semibold text-white">
-                    {context.workspace.memberCount} members
+                    {formatCount(context.workspace.memberCount, "member")}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {context.workspace.projectCount} projects {"\u00B7"}{" "}
-                    {context.workspace.ticketCount} tickets
+                    {formatCount(context.workspace.projectCount, "project")} {"\u00B7"}{" "}
+                    {formatCount(context.workspace.ticketCount, "ticket")}
                   </p>
                 </div>
               </div>
@@ -157,8 +161,8 @@ export default async function SettingsPage() {
                 </div>
               ) : (
                 <EmptyState
-                  title="Reports have nowhere to land yet"
-                  description="Create the first project and describe which product area belongs there."
+                  title="No projects yet"
+                  description="Create the first project and describe which product area it covers."
                 />
               )}
             </CardContent>
@@ -220,9 +224,9 @@ export default async function SettingsPage() {
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        <span>{workspace.memberCount} members</span>
-                        <span>{workspace.projectCount} projects</span>
-                        <span>{workspace.ticketCount} tickets</span>
+                        <span>{formatCount(workspace.memberCount, "member")}</span>
+                        <span>{formatCount(workspace.projectCount, "project")}</span>
+                        <span>{formatCount(workspace.ticketCount, "ticket")}</span>
                         <span className="font-mono">{workspace.slug}</span>
                       </div>
                     </div>
@@ -232,7 +236,7 @@ export default async function SettingsPage() {
             ) : (
               <EmptyState
                 title="No workspaces yet"
-                description="Create one to give a team its own members, projects, and bug queue."
+                description="Create one to give a team its own members, projects, and tickets."
               />
             )}
           </CardContent>

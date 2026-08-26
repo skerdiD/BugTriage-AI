@@ -518,7 +518,7 @@ function buildRepeatedPatterns(tickets: ReportingTicket[]): RepeatedIssuePattern
   for (const ticket of tickets) {
     const category = ticket.category?.trim() || "Uncategorized";
     const affectedPage = ticket.affectedPage?.trim() || "shared flow";
-    const name = `${category} issues on ${affectedPage}`;
+    const name = `${category} tickets on ${affectedPage}`;
     const key = `${category.toLowerCase()}|${affectedPage.toLowerCase()}`;
     const current = patterns.get(key);
 
@@ -597,9 +597,9 @@ function buildWeeklyInsights(
           : "No clear cluster yet",
       description: topCategory
           ? `${topCategory.bugs} tickets are grouped under ${topCategory.category}. That makes it the first place worth checking for shared causes.`
-          : "A few more reports will make recurring categories and affected areas easier to trust.",
+          : "A few more tickets will make recurring categories and affected areas easier to identify.",
       recommendation: topPage
-          ? `Start with ${topPage.path}; it is attached to more reports than any other surface right now.`
+          ? `Start with ${topPage.path}; it is linked to more tickets than any other surface right now.`
           : "Keep routes and feature areas specific on new reports so the first useful cluster is easy to spot.",
     },
     {
@@ -607,11 +607,11 @@ function buildWeeklyInsights(
       label: "Browser signal",
       title:
         mentionSafari > 0
-          ? "Safari keeps appearing in the drafts"
+          ? "Safari keeps appearing in AI triage"
           : "No browser stands out yet",
       description:
         mentionSafari > 0
-          ? `${mentionSafari} triage drafts mention Safari-specific behavior. Treat that as a lead for verification, not a confirmed cause.`
+          ? `${mentionSafari} AI triage results mention Safari-specific behavior. Treat that as a lead for verification, not a confirmed cause.`
           : "The current reports do not contain enough repeated browser detail to justify a browser-specific regression pass.",
       recommendation:
         mentionSafari > 0
@@ -627,7 +627,7 @@ function buildWeeklyInsights(
           : "No resolution baseline yet",
       description:
         resolvedTickets.length > 0
-          ? `Resolved tickets are averaging ${formatHours(avgResolutionHours)} from report to closure. Draft confidence averages ${formatPercent(averageConfidence, 0)} where a triage draft is available.`
+          ? `Resolved tickets are averaging ${formatHours(avgResolutionHours)} from report submission to closure. AI confidence averages ${formatPercent(averageConfidence, 0)} where AI triage is available.`
           : "Nothing has been fixed or closed yet, so there is not enough history for a useful time-to-resolution number.",
       recommendation:
         resolvedTickets.length > 0
@@ -711,7 +711,7 @@ export function buildAnalyticsPageData(
         icon: "clock",
         label: "Typical time to done",
         value: formatHours(avgResolutionHours),
-        helper: "Average time between the report and a fixed or closed status.",
+        helper: "Average time from report submission to Fixed or Closed.",
         trend: `${resolvedTickets.length} resolved`,
         trendDirection: "down",
         trendTone: resolvedTickets.length > 0 ? "positive" : "warning",
@@ -731,7 +731,7 @@ export function buildAnalyticsPageData(
         icon: "critical",
         label: "High-impact share",
         value: formatPercent(percentage(criticalHighCount, tickets.length)),
-        helper: "Share of the queue currently marked high or critical.",
+        helper: "Share of tickets currently marked High or Critical.",
         trend: criticalHighCount.toLocaleString(),
         trendDirection: criticalHighCount > 0 ? "up" : "down",
         trendTone: criticalHighCount > 0 ? "negative" : "positive",
@@ -739,10 +739,10 @@ export function buildAnalyticsPageData(
       },
       {
         icon: "accuracy",
-        label: "Draft confidence",
+        label: "AI confidence",
         value: confidenceValues.length > 0 ? formatPercent(avgConfidence, 0) : "N/A",
-        helper: "Average model confidence across tickets with a triage draft.",
-        trend: `${confidenceValues.length} drafts`,
+        helper: "Average AI confidence across triaged tickets.",
+        trend: `${confidenceValues.length} tickets`,
         trendDirection: "up",
         trendTone: confidenceValues.length > 0 ? "positive" : "warning",
         accent: "blue",

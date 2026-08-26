@@ -27,6 +27,10 @@ import { getWorkspaceMembers } from "@/lib/data/workspaces";
 import { getAppBaseUrl } from "@/lib/security/app-url";
 import { formatWorkspaceRole } from "@/lib/utils";
 
+function formatMemberCount(count: number) {
+  return `${count} ${count === 1 ? "member" : "members"}`;
+}
+
 function roleBadgeClass(role: string) {
   if (role === "OWNER") {
     return "border-yellow-500/25 bg-yellow-500/15 text-yellow-300";
@@ -82,9 +86,9 @@ export default async function TeamPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="People and access"
-        description="Invite the people doing the work, check permissions, and see how ownership is distributed."
-        badge={`${members.length} members`}
+        title="Team"
+        description="Manage workspace members, roles, invites, and ticket ownership."
+        badge={formatMemberCount(members.length)}
       />
 
       <section className="grid gap-5 md:grid-cols-3">
@@ -94,7 +98,7 @@ export default async function TeamPage() {
               <Users className="size-5 text-violet-300" />
             </div>
             <p className="mt-6 text-3xl font-bold">{members.length}</p>
-            <p className="mt-1 text-sm text-muted-foreground">People with access</p>
+            <p className="mt-1 text-sm text-muted-foreground">Workspace members</p>
           </CardContent>
         </Card>
 
@@ -129,8 +133,8 @@ export default async function TeamPage() {
                 </div>
                 <h2 className="mt-6 text-xl font-semibold">Invite teammates</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Create a link tied to one email address and role. The recipient
-                  must sign in with that same address before joining.
+                  Create an invite link for one email address and workspace role. The
+                  recipient must sign in with that address before joining.
                 </p>
               </div>
               <Badge className={roleBadgeClass(context.role)}>
@@ -185,8 +189,7 @@ export default async function TeamPage() {
                 </div>
                 <h2 className="mt-6 text-xl font-semibold">Pending invites</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Links expire after 7 days, or earlier if someone accepts or revokes
-                  them.
+                  Links expire after 7 days or when they are accepted or revoked.
                 </p>
               </div>
               <Badge className="border-white/10 bg-white/[0.04] text-white/80">
@@ -242,7 +245,7 @@ export default async function TeamPage() {
                 </div>
               ) : (
                 <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">
-                  No open invites. Create one when somebody needs access.
+                  No pending invites. Create one when a teammate needs access.
                 </div>
               )
             ) : (
@@ -357,8 +360,8 @@ export default async function TeamPage() {
         </section>
       ) : (
         <EmptyState
-          title="Nobody else is here yet"
-          description="Create an invite link when another teammate needs access to this workspace."
+          title="No other team members yet"
+          description="Create an invite link when a teammate needs access to this workspace."
         />
       )}
     </div>

@@ -46,27 +46,27 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "New report",
+    title: "Report a bug",
     href: "/submit-bug",
     icon: UploadCloud,
   },
   {
-    title: "All tickets",
+    title: "Tickets",
     href: "/tickets",
     icon: Ticket,
   },
   {
-    title: "Trends",
+    title: "Analytics",
     href: "/analytics",
     icon: BarChart3,
   },
   {
-    title: "People",
+    title: "Team",
     href: "/team",
     icon: Users,
   },
   {
-    title: "Workspace",
+    title: "Settings",
     href: "/settings",
     icon: Settings,
   },

@@ -133,9 +133,10 @@ export function DashboardShell({
               <div className="flex items-start gap-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.08] px-4 py-3 text-sm text-sky-100">
                 <Eye className="mt-0.5 size-4 shrink-0 text-sky-300" />
                 <div>
-                  <p className="font-semibold">You&apos;re in the sample workspace</p>
+                  <p className="font-semibold">You&apos;re viewing the demo workspace</p>
                   <p className="mt-0.5 text-xs leading-5 text-sky-100/65">
-                    Everything is real except the edits—changes and uploads are switched off.
+                    Explore realistic product data in read-only mode. Changes and
+                    uploads are disabled.
                   </p>
                 </div>
               </div>

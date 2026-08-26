@@ -33,7 +33,7 @@ function getRejectionMessage(rejection: FileRejection) {
   }
 
   if (firstError.code === "file-too-large") {
-    return `${rejection.file.name} is too large. Max size is 10MB.`;
+    return `${rejection.file.name} is too large. The maximum size is 10 MB.`;
   }
 
   if (firstError.code === "file-invalid-type") {

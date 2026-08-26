@@ -423,7 +423,7 @@ describe("ticket data layer", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           type: TicketActivityType.AI_ANALYZED,
-          title: "Triage draft updated",
+          title: "AI triage updated",
         }),
       })
     );
@@ -754,7 +754,7 @@ describe("ticket data layer", () => {
         ticketCode: "BUG-3002",
         body: "x".repeat(MAX_TICKET_COMMENT_LENGTH + 1),
       })
-    ).rejects.toThrow("characters or less");
+    ).rejects.toThrow("characters or fewer");
 
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });

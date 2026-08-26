@@ -84,7 +84,7 @@ describe("storage security helpers", () => {
 
     expect(validateTicketFile(oversized, "LOG")).toEqual({
       valid: false,
-      message: "File must be 10MB or smaller.",
+      message: "File must be 10 MB or smaller.",
     });
   });
 

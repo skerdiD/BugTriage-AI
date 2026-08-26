@@ -38,7 +38,7 @@ describe("bugReportFormSchema", () => {
 
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toBe(
-      "Console logs must be less than 8000 characters."
+      "Console logs must be 8,000 characters or fewer."
     );
   });
 

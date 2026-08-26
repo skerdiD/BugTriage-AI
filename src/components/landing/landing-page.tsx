@@ -30,8 +30,7 @@ export function LandingPage() {
               BugTriage AI
             </p>
             <p className="mt-2 text-slate-400">
-              Built for the awkward handoff between the person who saw the bug and
-              the person fixing it.
+              Built for clear handoffs between bug reporters and engineers.
             </p>
           </div>
 

@@ -60,8 +60,8 @@ export function AnalyticsClient({
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Patterns and pace"
-        description="See where reports are clustering, how long they stay open, and which signals are worth checking next."
+        title="Analytics"
+        description="Track report volume, ticket resolution time, and recurring product areas."
         badge="Project history"
       />
 
@@ -97,7 +97,7 @@ export function AnalyticsClient({
       {!hasTickets ? (
         <EmptyState
           title="Not enough history yet"
-          description="Once a few reports move through the queue, this page will show recurring areas and time-to-resolution trends."
+          description="Once a few tickets move through triage, this page will show recurring areas and resolution-time trends."
           actionLabel="Report a bug"
           actionHref="/submit-bug"
         />

@@ -223,8 +223,8 @@ export function formatTicketAsGitHubIssueBody(ticket: TicketDetail) {
   const body = [
     `# ${ticket.code}: ${buildIssueTitle(ticket)}`,
     section("Triage summary", ticket.aiAnalysis?.summary ?? ticket.description),
-    section("Original Bug Report", ticket.description),
-    "## Triage Metadata",
+    section("Original bug report", ticket.description),
+    "## Triage metadata",
     [
       "| Field | Value |",
       "| --- | --- |",
@@ -232,7 +232,7 @@ export function formatTicketAsGitHubIssueBody(ticket: TicketDetail) {
       metadataRow("Status", ticket.status.toLowerCase().replaceAll("_", " ")),
       metadataRow("Priority score", ticket.priorityScore),
       metadataRow(
-        "Draft confidence",
+        "AI confidence",
         ticket.aiAnalysis?.confidenceScore ?? ticket.aiConfidence
       ),
       metadataRow("Category", ticket.category),
@@ -251,16 +251,16 @@ export function formatTicketAsGitHubIssueBody(ticket: TicketDetail) {
       metadataRow("Environment", ticket.environment),
       metadataRow("Affected page", ticket.affectedPage),
     ].join("\n"),
-    section("Steps to Reproduce", steps),
-    section("Expected Behavior", ticket.expectedBehavior),
-    section("Actual Behavior", ticket.actualBehavior),
-    section("Likely Cause", ticket.aiAnalysis?.likelyCause),
-    section("Suggested Fix", ticket.aiAnalysis?.suggestedFix),
+    section("Steps to reproduce", steps),
+    section("Expected behavior", ticket.expectedBehavior),
+    section("Actual behavior", ticket.actualBehavior),
+    section("Likely cause", ticket.aiAnalysis?.likelyCause),
+    section("Suggested fix", ticket.aiAnalysis?.suggestedFix),
     sectionWithCodeFence(
-      "Submitted Reproduction Notes",
+      "Submitted reproduction notes",
       ticket.stepsToReproduce
     ),
-    "## Additional Context",
+    "## Additional context",
     [
       `Exported from BugTriage ticket \`${ticket.code}\`.`,
       `Created: ${ticket.createdAt.toISOString()}`,

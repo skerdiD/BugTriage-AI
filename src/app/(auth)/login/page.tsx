@@ -138,7 +138,7 @@ function LoginContent() {
             </Link>
 
             <Badge className="mb-5 rounded-full border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-violet-200">
-              A calmer bug queue
+              AI-assisted bug triage
             </Badge>
 
             <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-white">
@@ -146,8 +146,8 @@ function LoginContent() {
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              The evidence, decisions, and next move are still here—without asking
-              support or QA to explain the same issue again.
+              The evidence, decisions, and next steps are still here—without asking
+              support or QA to repeat the same context.
             </p>
 
             <div className="mt-8 grid max-w-2xl gap-4 md:grid-cols-3">
@@ -155,7 +155,7 @@ function LoginContent() {
                 <ShieldCheck className="size-5 text-emerald-300" />
                 <p className="mt-4 font-semibold">Workspace access</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Only signed-in members can open your team&apos;s queue.
+                  Only signed-in members can access your team&apos;s workspace.
                 </p>
               </div>
 
@@ -169,9 +169,9 @@ function LoginContent() {
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <Sparkles className="size-5 text-sky-300" />
-                <p className="mt-4 font-semibold">Drafts, not verdicts</p>
+                <p className="mt-4 font-semibold">AI suggestions, not verdicts</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  The first pass is there to review, correct, and hand off.
+                  AI triage provides a first pass for your team to review and verify.
                 </p>
               </div>
             </div>
@@ -184,7 +184,7 @@ function LoginContent() {
               <div>
                 <CardTitle className="text-2xl">Welcome back</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Use your account, or open the sample queue and look around first.
+                  Sign in to continue, or explore the read-only demo.
                 </p>
               </div>
             </CardHeader>
@@ -192,9 +192,10 @@ function LoginContent() {
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-5">
                 <div className="rounded-2xl border border-violet-400/20 bg-violet-500/[0.08] p-4">
-                  <p className="text-sm font-semibold text-white">Want to poke around first?</p>
+                  <p className="text-sm font-semibold text-white">Explore the demo</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Open a realistic, read-only queue. No signup and no blank dashboard.
+                    Open a realistic read-only workspace with preloaded tickets and
+                    AI triage results.
                   </p>
                   <Button
                     type="button"
@@ -202,7 +203,7 @@ function LoginContent() {
                     onClick={handleDemoLogin}
                     className="mt-3 h-11 w-full rounded-xl bg-violet-600 font-semibold shadow-lg shadow-violet-500/20 hover:bg-violet-500"
                   >
-                    Open sample queue
+                    Open demo workspace
                     <ArrowRight className="ml-2 size-4" />
                   </Button>
                 </div>
@@ -270,12 +271,12 @@ function LoginContent() {
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
-                  Starting a new team queue?{" "}
+                  New to BugTriage AI?{" "}
                   <Link
                     href={getAuthPageHref("/signup", redirectedFrom)}
                     className="font-semibold text-violet-300 hover:text-violet-200"
                   >
-                    Set up an account
+                    Create an account
                   </Link>
                 </p>
               </form>
