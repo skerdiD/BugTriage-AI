@@ -1,4 +1,92 @@
+x-runtime-environment: &runtime-environment
+  NODE_ENV: production
+  HOSTNAME: 0.0.0.0
+  PORT: 3000
+  DATABASE_URL: postgresql://bugtriage:bugtriage@postgres:5432/bugtriage
+  DIRECT_URL: postgresql://bugtriage:bugtriage@postgres:5432/bugtriage
+  REDIS_URL: redis://redis:6379
+
+x-runtime-env-files: &runtime-env-files
+  - path: .env
+    required: false
+  - path: .env.local
+    required: false
+
 services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET: ${NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET:-}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+        NEXT_PUBLIC_SENTRY_LOGS_ENABLED: ${NEXT_PUBLIC_SENTRY_LOGS_ENABLED:-true}
+        NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: ${NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE:-}
+        NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE: ${NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE:-}
+    image: bugtriage-ai:local
+    restart: unless-stopped
+    env_file: *runtime-env-files
+    environment: *runtime-environment
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then((response) => { if (!response.ok) process.exit(1) }).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  worker:
+    image: bugtriage-ai:local
+    restart: unless-stopped
+    command: ["npm", "run", "worker"]
+    env_file: *runtime-env-files
+    environment: *runtime-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  migrate:
+    image: bugtriage-ai:local
+    restart: "no"
+    command: ["npm", "run", "db:deploy"]
+    env_file: *runtime-env-files
+    environment: *runtime-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bugtriage
+      POSTGRES_USER: bugtriage
+      POSTGRES_PASSWORD: bugtriage
+    volumes:
+      - bugtriage-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:7.4-alpine
     restart: unless-stopped
@@ -19,4 +107,5 @@ services:
       retries: 10
 
 volumes:
+  bugtriage-postgres-data:
   bugtriage-redis-data:
