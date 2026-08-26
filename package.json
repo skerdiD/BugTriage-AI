@@ -12,6 +12,7 @@
     "worker": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx src/workers/bug-analysis.worker.ts",
     "worker:dev": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --watch --import tsx src/workers/bug-analysis.worker.ts",
     "republish": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx src/workers/ticket-analysis-republisher.ts",
+    "backfill:embeddings": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx src/workers/ticket-embedding-backfill.ts",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit",
@@ -24,7 +25,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "seed:demo": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx prisma/seed.ts",
+    "seed:demo": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx prisma/seed.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

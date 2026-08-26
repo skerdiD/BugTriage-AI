@@ -5,15 +5,22 @@ import { randomUUID } from "crypto";
 import { Prisma, TicketSeverity, TicketStatus } from "@prisma/client";
 
 import {
+  buildTicketEmbeddingInput,
   generateTicketEmbedding,
+  hashTicketEmbeddingContent,
   TICKET_EMBEDDING_DIMENSIONS,
+  TICKET_EMBEDDING_MODEL,
+  TICKET_EMBEDDING_PROVIDER,
   type TicketEmbeddingSource,
 } from "@/lib/ai/ticket-embeddings";
 import { captureServerException } from "@/lib/observability/server-monitoring";
 import { prisma } from "@/lib/prisma";
 
 export const SIMILAR_ISSUE_LIMIT = 3;
-export const SIMILAR_ISSUE_MIN_SCORE = 0.74;
+export const SIMILAR_ISSUE_MIN_SCORE = 0.85;
+const SIMILAR_ISSUE_MAX_LIMIT = 10;
+const SIMILAR_ISSUE_CANDIDATE_MULTIPLIER = 10;
+const SIMILAR_ISSUE_MIN_CANDIDATES = 30;
 
 export type SimilarIssue = {
   id: string;
@@ -25,6 +32,16 @@ export type SimilarIssue = {
   similarityScore: number;
 };
 
+export type SimilarIssueSearchStatus =
+  | "ready"
+  | "not_indexed"
+  | "unavailable";
+
+export type SimilarIssueSearchResult = {
+  issues: SimilarIssue[];
+  status: SimilarIssueSearchStatus;
+};
+
 type SimilarIssueRow = {
   id: string;
   code: string;
@@ -33,6 +50,12 @@ type SimilarIssueRow = {
   severity: TicketSeverity;
   priorityScore: number | null;
   similarity: number;
+};
+
+type StoredTicketEmbedding = {
+  embedding: string;
+  model: string;
+  provider: string;
 };
 
 function assertEmbeddingVector(embedding: number[]) {
@@ -58,6 +81,22 @@ async function hasTicketEmbeddingTable() {
 export function toPgVectorLiteral(embedding: number[]) {
   assertEmbeddingVector(embedding);
   return `[${embedding.map((value) => value.toFixed(8)).join(",")}]`;
+}
+
+function normalizeSearchLimit(limit?: number) {
+  if (limit === undefined || !Number.isFinite(limit)) {
+    return SIMILAR_ISSUE_LIMIT;
+  }
+
+  return Math.min(Math.max(Math.trunc(limit), 1), SIMILAR_ISSUE_MAX_LIMIT);
+}
+
+function normalizeMinScore(minScore?: number) {
+  if (minScore === undefined || !Number.isFinite(minScore)) {
+    return SIMILAR_ISSUE_MIN_SCORE;
+  }
+
+  return Math.min(Math.max(minScore, 0), 1);
 }
 
 export function mapSimilarIssueRows(
@@ -106,21 +145,35 @@ export async function createAndStoreTicketEmbedding(input: {
     );
   }
 
-  const generated = await generateTicketEmbedding(input.source);
-  const vectorLiteral = toPgVectorLiteral(generated.embedding);
-  const existing = await prisma.$queryRaw<Array<{ contentHash: string }>>`
-    SELECT "contentHash"
+  const content = buildTicketEmbeddingInput(input.source);
+
+  if (!content) {
+    throw new Error("Ticket embedding input is empty.");
+  }
+
+  const contentHash = hashTicketEmbeddingContent(content);
+  const existing = await prisma.$queryRaw<
+    Array<{ contentHash: string; model: string; provider: string }>
+  >`
+    SELECT "contentHash", "model", "provider"
     FROM "public"."TicketEmbedding"
     WHERE "ticketId" = ${input.ticketId}
     LIMIT 1
   `;
 
-  if (existing[0]?.contentHash === generated.contentHash) {
+  if (
+    existing[0]?.contentHash === contentHash &&
+    existing[0]?.provider === TICKET_EMBEDDING_PROVIDER &&
+    existing[0]?.model === TICKET_EMBEDDING_MODEL
+  ) {
     return {
       stored: false,
-      contentHash: generated.contentHash,
+      contentHash,
     };
   }
+
+  const generated = await generateTicketEmbedding(input.source);
+  const vectorLiteral = toPgVectorLiteral(generated.embedding);
 
   await prisma.$executeRaw`
     INSERT INTO "public"."TicketEmbedding" (
@@ -161,20 +214,23 @@ export async function createAndStoreTicketEmbedding(input: {
   };
 }
 
-export async function findSimilarIssuesForTicket(input: {
+export async function searchSimilarIssuesForTicket(input: {
   ticketId: string;
   workspaceId: string;
   projectId: string;
   limit?: number;
   minScore?: number;
-}): Promise<SimilarIssue[]> {
+}): Promise<SimilarIssueSearchResult> {
   try {
     if (!(await hasTicketEmbeddingTable())) {
-      return [];
+      return { issues: [], status: "unavailable" };
     }
 
-    const currentEmbedding = await prisma.$queryRaw<Array<{ embedding: string }>>`
-      SELECT te."embedding"::text AS "embedding"
+    const currentEmbedding = await prisma.$queryRaw<StoredTicketEmbedding[]>`
+      SELECT
+        te."embedding"::text AS "embedding",
+        te."model",
+        te."provider"
       FROM "public"."TicketEmbedding" te
       INNER JOIN "public"."Ticket" t
         ON t."id" = te."ticketId"
@@ -188,43 +244,66 @@ export async function findSimilarIssuesForTicket(input: {
       LIMIT 1
     `;
 
-    const vectorLiteral = currentEmbedding[0]?.embedding;
+    const current = currentEmbedding[0];
 
-    if (!vectorLiteral) {
-      return [];
+    if (
+      !current?.embedding ||
+      current.provider !== TICKET_EMBEDDING_PROVIDER ||
+      current.model !== TICKET_EMBEDDING_MODEL
+    ) {
+      return { issues: [], status: "not_indexed" };
     }
 
-    const limit = Math.min(Math.max(input.limit ?? SIMILAR_ISSUE_LIMIT, 1), 10);
-    const minScore = input.minScore ?? SIMILAR_ISSUE_MIN_SCORE;
+    const limit = normalizeSearchLimit(input.limit);
+    const minScore = normalizeMinScore(input.minScore);
+    const candidateLimit = Math.min(
+      Math.max(limit * SIMILAR_ISSUE_CANDIDATE_MULTIPLIER, SIMILAR_ISSUE_MIN_CANDIDATES),
+      100
+    );
     const rows = await prisma.$queryRaw<SimilarIssueRow[]>(Prisma.sql`
-      WITH current_embedding AS (
-        SELECT ${vectorLiteral}::vector(768) AS embedding
+      WITH nearest_candidates AS MATERIALIZED (
+        SELECT
+          t."id",
+          t."code",
+          t."title",
+          t."status",
+          t."severity",
+          t."priorityScore",
+          te."projectId",
+          te."embedding" <=> ${current.embedding}::vector(768) AS distance
+        FROM "public"."TicketEmbedding" te
+        INNER JOIN "public"."Ticket" t
+          ON t."id" = te."ticketId"
+          AND t."workspaceId" = te."workspaceId"
+          AND t."projectId" = te."projectId"
+        WHERE te."workspaceId" = ${input.workspaceId}
+          AND t."workspaceId" = ${input.workspaceId}
+          AND te."ticketId" <> ${input.ticketId}
+          AND te."provider" = ${TICKET_EMBEDDING_PROVIDER}
+          AND te."model" = ${TICKET_EMBEDDING_MODEL}
+        ORDER BY te."embedding" <=> ${current.embedding}::vector(768) ASC
+        LIMIT ${candidateLimit}
       )
       SELECT
-        t."id",
-        t."code",
-        t."title",
-        t."status",
-        t."severity",
-        t."priorityScore",
-        (1 - (te."embedding" <=> current_embedding.embedding))::double precision AS "similarity"
-      FROM "public"."TicketEmbedding" te
-      INNER JOIN "public"."Ticket" t
-        ON t."id" = te."ticketId"
-        AND t."workspaceId" = te."workspaceId"
-        AND t."projectId" = te."projectId"
-      CROSS JOIN current_embedding
-      WHERE te."workspaceId" = ${input.workspaceId}
-        AND t."workspaceId" = ${input.workspaceId}
-        AND te."ticketId" <> ${input.ticketId}
-        AND (1 - (te."embedding" <=> current_embedding.embedding)) >= ${minScore}
+        "id",
+        "code",
+        "title",
+        "status",
+        "severity",
+        "priorityScore",
+        (1 - distance)::double precision AS "similarity"
+      FROM nearest_candidates
+      WHERE distance <= ${1 - minScore}
       ORDER BY
-        CASE WHEN te."projectId" = ${input.projectId} THEN 0 ELSE 1 END ASC,
-        te."embedding" <=> current_embedding.embedding ASC
+        CASE WHEN "projectId" = ${input.projectId} THEN 0 ELSE 1 END ASC,
+        distance ASC
       LIMIT ${limit}
     `);
 
-    return mapSimilarIssueRows(rows, input.ticketId);
+    return {
+      issues: mapSimilarIssueRows(rows, input.ticketId),
+      status: "ready",
+    };
   } catch (error) {
     captureServerException(error, {
       area: "database",
@@ -237,6 +316,16 @@ export async function findSimilarIssuesForTicket(input: {
       },
     });
 
-    return [];
+    return { issues: [], status: "unavailable" };
   }
+}
+
+export async function findSimilarIssuesForTicket(input: {
+  ticketId: string;
+  workspaceId: string;
+  projectId: string;
+  limit?: number;
+  minScore?: number;
+}): Promise<SimilarIssue[]> {
+  return (await searchSimilarIssuesForTicket(input)).issues;
 }

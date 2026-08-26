@@ -33,6 +33,22 @@ export type GeneratedTicketEmbedding = {
   model: typeof TICKET_EMBEDDING_MODEL;
 };
 
+function normalizeEmbedding(embedding: number[]) {
+  if (!embedding.every(Number.isFinite)) {
+    throw new Error("Ticket embedding contains non-finite values.");
+  }
+
+  const magnitude = Math.sqrt(
+    embedding.reduce((sum, value) => sum + value * value, 0)
+  );
+
+  if (!Number.isFinite(magnitude) || magnitude === 0) {
+    throw new Error("Ticket embedding has zero magnitude.");
+  }
+
+  return embedding.map((value) => value / magnitude);
+}
+
 function compact(value?: string | null) {
   return redactSensitiveText(value?.trim().replace(/\s+/g, " ") ?? "");
 }
@@ -100,8 +116,12 @@ export async function generateTicketEmbedding(
     );
   }
 
+  // gemini-embedding-001 does not normalize reduced-dimension vectors. Cosine
+  // search is more numerically stable when every stored vector has unit length.
+  const normalizedEmbedding = normalizeEmbedding(result.embedding);
+
   return {
-    embedding: [...result.embedding],
+    embedding: normalizedEmbedding,
     content,
     contentHash: hashTicketEmbeddingContent(content),
     provider: TICKET_EMBEDDING_PROVIDER,

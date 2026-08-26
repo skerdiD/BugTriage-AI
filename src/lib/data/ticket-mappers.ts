@@ -11,6 +11,7 @@ import type {
   UiTicket,
   UiTicketListItem,
   UiTicketSeverity,
+  UiSimilarIssueSearchStatus,
   UiTicketStatus,
 } from "@/lib/dashboard/types";
 import { presentTicketActivityCopy } from "@/lib/dashboard/activity-copy";
@@ -105,7 +106,8 @@ export function mapTicketListItemToUiTicket(
 export function mapTicketDetailToUiTicket(
   ticket: TicketDetail,
   attachmentDownloadUrls: Record<string, string | null> = {},
-  similarIssues: SimilarIssue[] = []
+  similarIssues: SimilarIssue[] = [],
+  similarIssueSearchStatus: UiSimilarIssueSearchStatus = "not_indexed"
 ): UiTicket {
   const assigneeName = ticket.assignee?.name ?? "Unassigned";
   const analysisSteps = stringArrayFromJson(ticket.aiAnalysis?.reproductionSteps);
@@ -198,6 +200,7 @@ export function mapTicketDetailToUiTicket(
       };
     }),
     similarIssues: similarIssues.map(mapSimilarIssueToUiIssue),
+    similarIssueSearchStatus,
   };
 }
 

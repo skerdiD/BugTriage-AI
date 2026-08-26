@@ -5,7 +5,7 @@ const {
   TicketDetailClientMock,
   createSupabaseAdminClientMock,
   createSignedTicketFileUrlMock,
-  findSimilarIssuesForTicketMock,
+  searchSimilarIssuesForTicketMock,
   getCurrentWorkspaceContextOrRedirectMock,
   getTicketByCodeMock,
   mapTicketDetailToUiTicketMock,
@@ -18,7 +18,7 @@ const {
     TicketDetailClientMock: vi.fn(() => null),
     createSupabaseAdminClientMock: vi.fn(),
     createSignedTicketFileUrlMock: vi.fn(),
-    findSimilarIssuesForTicketMock: vi.fn(),
+    searchSimilarIssuesForTicketMock: vi.fn(),
     getCurrentWorkspaceContextOrRedirectMock: vi.fn(),
     getTicketByCodeMock: vi.fn(),
     mapTicketDetailToUiTicketMock: vi.fn(),
@@ -54,7 +54,7 @@ vi.mock("@/lib/data/ticket-mappers", () => ({
 }));
 
 vi.mock("@/lib/data/similar-issues", () => ({
-  findSimilarIssuesForTicket: findSimilarIssuesForTicketMock,
+  searchSimilarIssuesForTicket: searchSimilarIssuesForTicketMock,
 }));
 
 vi.mock("@/lib/data/tickets", () => ({
@@ -84,7 +84,10 @@ describe("ticket detail page", () => {
     createSupabaseAdminClientMock.mockReturnValue({
       storage: {},
     });
-    findSimilarIssuesForTicketMock.mockResolvedValue([]);
+    searchSimilarIssuesForTicketMock.mockResolvedValue({
+      issues: [],
+      status: "not_indexed",
+    });
     mapTicketDetailToUiTicketMock.mockReturnValue({
       id: "BUG-4242",
       title: "Mapped ticket",
@@ -130,14 +133,19 @@ describe("ticket detail page", () => {
     expect(createSignedTicketFileUrlMock.mock.invocationCallOrder[0]).toBeGreaterThan(
       getTicketByCodeMock.mock.invocationCallOrder[0]
     );
-    expect(findSimilarIssuesForTicketMock).toHaveBeenCalledWith({
+    expect(searchSimilarIssuesForTicketMock).toHaveBeenCalledWith({
       ticketId: "ticket-1",
       workspaceId: "workspace-1",
       projectId: "project-1",
     });
-    expect(mapTicketDetailToUiTicketMock).toHaveBeenCalledWith(dbTicket, {
-      "attachment-1": "https://download.example/checkout.png",
-    }, []);
+    expect(mapTicketDetailToUiTicketMock).toHaveBeenCalledWith(
+      dbTicket,
+      {
+        "attachment-1": "https://download.example/checkout.png",
+      },
+      [],
+      "not_indexed"
+    );
     expect(result.props.ticket).toEqual({
       id: "BUG-4242",
       title: "Mapped ticket",
@@ -159,7 +167,7 @@ describe("ticket detail page", () => {
 
     expect(notFoundMock).toHaveBeenCalled();
     expect(createSignedTicketFileUrlMock).not.toHaveBeenCalled();
-    expect(findSimilarIssuesForTicketMock).not.toHaveBeenCalled();
+    expect(searchSimilarIssuesForTicketMock).not.toHaveBeenCalled();
   });
 
   it("renders a 404 when the ticket lookup denies access", async () => {
@@ -177,7 +185,7 @@ describe("ticket detail page", () => {
 
     expect(notFoundMock).toHaveBeenCalled();
     expect(createSignedTicketFileUrlMock).not.toHaveBeenCalled();
-    expect(findSimilarIssuesForTicketMock).not.toHaveBeenCalled();
+    expect(searchSimilarIssuesForTicketMock).not.toHaveBeenCalled();
   });
 
   it("does not require the Supabase admin client when a ticket has no attachments", async () => {
@@ -199,7 +207,12 @@ describe("ticket detail page", () => {
 
     expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
     expect(createSignedTicketFileUrlMock).not.toHaveBeenCalled();
-    expect(mapTicketDetailToUiTicketMock).toHaveBeenCalledWith(dbTicket, {}, []);
+    expect(mapTicketDetailToUiTicketMock).toHaveBeenCalledWith(
+      dbTicket,
+      {},
+      [],
+      "not_indexed"
+    );
   });
 
   it("keeps rendering when attachment signing is not configured", async () => {
@@ -234,7 +247,8 @@ describe("ticket detail page", () => {
       {
         "attachment-1": null,
       },
-      []
+      [],
+      "not_indexed"
     );
   });
 });

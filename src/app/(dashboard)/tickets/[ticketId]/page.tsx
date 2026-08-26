@@ -7,7 +7,7 @@ import {
 } from "@/lib/auth/authorization";
 import { getCurrentWorkspaceContextOrRedirect } from "@/lib/auth/session";
 import { TicketDetailClient } from "@/components/dashboard/ticket-detail-client";
-import { findSimilarIssuesForTicket } from "@/lib/data/similar-issues";
+import { searchSimilarIssuesForTicket } from "@/lib/data/similar-issues";
 import { getTicketByCode } from "@/lib/data/tickets";
 import { mapTicketDetailToUiTicket } from "@/lib/data/ticket-mappers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -72,7 +72,7 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
     }
   }
 
-  const similarIssues = await findSimilarIssuesForTicket({
+  const similarIssueSearch = await searchSimilarIssuesForTicket({
     ticketId: dbTicket.id,
     workspaceId: dbTicket.workspaceId,
     projectId: dbTicket.projectId,
@@ -91,7 +91,8 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
       ticket={mapTicketDetailToUiTicket(
         dbTicket,
         attachmentDownloadUrls,
-        similarIssues
+        similarIssueSearch.issues,
+        similarIssueSearch.status
       )}
     />
   );

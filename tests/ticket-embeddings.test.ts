@@ -62,6 +62,9 @@ describe("ticket embeddings", () => {
     });
 
     expect(result.embedding).toHaveLength(TICKET_EMBEDDING_DIMENSIONS);
+    expect(
+      Math.sqrt(result.embedding.reduce((sum, value) => sum + value ** 2, 0))
+    ).toBeCloseTo(1, 10);
     expect(result.contentHash).toMatch(/^[a-f0-9]{64}$/);
     expect(googleEmbeddingMock).toHaveBeenCalledWith(TICKET_EMBEDDING_MODEL);
     expect(embedMock).toHaveBeenCalledWith(
@@ -77,5 +80,15 @@ describe("ticket embeddings", () => {
         },
       })
     );
+  });
+
+  it("rejects zero vectors that pgvector cosine indexes cannot search", async () => {
+    embedMock.mockResolvedValue({
+      embedding: Array.from({ length: TICKET_EMBEDDING_DIMENSIONS }, () => 0),
+    });
+
+    await expect(
+      generateTicketEmbedding({ title: "Checkout fails" })
+    ).rejects.toThrow("Ticket embedding has zero magnitude.");
   });
 });

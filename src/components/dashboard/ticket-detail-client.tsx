@@ -940,17 +940,27 @@ export function TicketDetailClient({
             </CardContent>
           </Card>
 
-          {ticket.similarIssues.length > 0 ? (
-            <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-              <CardHeader>
+          <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <SearchCheck className="size-5 text-emerald-300" />
-                  <CardTitle>Similar tickets</CardTitle>
+                  <div>
+                    <CardTitle>Similar tickets</CardTitle>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Meaning-based matching across this workspace
+                    </p>
+                  </div>
                 </div>
-              </CardHeader>
+                <Badge className="shrink-0 rounded-full border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                  Semantic
+                </Badge>
+              </div>
+            </CardHeader>
 
-              <CardContent className="space-y-3">
-                {ticket.similarIssues.map((issue) => (
+            <CardContent className="space-y-3">
+              {ticket.similarIssues.length > 0 ? (
+                ticket.similarIssues.map((issue) => (
                   <Link
                     key={issue.id}
                     href={`/tickets/${issue.id}`}
@@ -980,10 +990,33 @@ export function TicketDetailClient({
                       ) : null}
                     </div>
                   </Link>
-                ))}
-              </CardContent>
-            </Card>
-          ) : null}
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] p-4">
+                  <p className="text-sm font-semibold text-slate-200">
+                    {ticket.similarIssueSearchStatus === "unavailable"
+                      ? "Semantic search is temporarily unavailable"
+                      : ticket.similarIssueSearchStatus === "ready"
+                      ? "No strong semantic matches"
+                      : ticket.aiProcessingStatus === "PENDING" ||
+                          ticket.aiProcessingStatus === "PROCESSING"
+                        ? "Semantic matching is being prepared"
+                        : "Semantic matching is unavailable"}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {ticket.similarIssueSearchStatus === "unavailable"
+                      ? "Similar tickets could not be checked right now. Please try again later."
+                      : ticket.similarIssueSearchStatus === "ready"
+                      ? "No other ticket currently meets the similarity threshold."
+                      : ticket.aiProcessingStatus === "PENDING" ||
+                          ticket.aiProcessingStatus === "PROCESSING"
+                        ? "Matches will appear after AI triage creates this ticket’s search index."
+                        : "This ticket has not been indexed yet. Re-run AI triage or ask an administrator to backfill embeddings."}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
             <CardHeader>

@@ -1242,7 +1242,7 @@ export async function runDemoSeed() {
 
   await removeObsoleteDemoTickets(project.id, demoTicketCodes);
 
-  await prisma.$transaction(
+  const seededTickets = await prisma.$transaction(
     demoTickets.map((ticket, index) =>
       upsertDemoTicket({
         userId: demoUser.id,
@@ -1254,8 +1254,21 @@ export async function runDemoSeed() {
     )
   );
 
+  const { backfillTicketEmbeddings } = await import(
+    "../src/workers/ticket-embedding-backfill"
+  );
+  const embeddingBackfill = await backfillTicketEmbeddings({
+    ticketIds: seededTickets.map((ticket) => ticket.id),
+  });
+
+  if (embeddingBackfill.failed > 0) {
+    throw new Error(
+      `Could not create ${embeddingBackfill.failed} demo ticket embeddings.`
+    );
+  }
+
   console.info(
-    `Seeded ${demoTickets.length} demo tickets into "${workspace.name}" / "${project.name}" for ${demoUser.email}.`
+    `Seeded ${demoTickets.length} demo tickets with ${embeddingBackfill.stored} refreshed and ${embeddingBackfill.skipped} current embeddings into "${workspace.name}" / "${project.name}" for ${demoUser.email}.`
   );
 }
 

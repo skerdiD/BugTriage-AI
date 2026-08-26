@@ -92,6 +92,11 @@ export type UiSimilarIssue = {
   matchPercent: number;
 };
 
+export type UiSimilarIssueSearchStatus =
+  | "ready"
+  | "not_indexed"
+  | "unavailable";
+
 export type UiAiAnalysisFeedback = "HELPFUL" | "NOT_HELPFUL";
 
 export type UiAiProcessingStatus =
@@ -152,6 +157,7 @@ export type UiTicket = {
   comments: UiTicketComment[];
   activity: UiTicketActivity[];
   similarIssues: UiSimilarIssue[];
+  similarIssueSearchStatus: UiSimilarIssueSearchStatus;
 };
 
 export type AnalyticsMetric = {

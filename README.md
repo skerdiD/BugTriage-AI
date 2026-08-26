@@ -348,7 +348,9 @@ npm run seed:demo
 ```
 
 This idempotent command uses `SUPABASE_SERVICE_ROLE_KEY` to create or reset the
-Supabase Auth demo user, then refreshes only the managed demo workspace data.
+Supabase Auth demo user, then refreshes only the managed demo workspace data and
+its semantic-search embeddings. A Gemini API key is required for missing or stale
+demo vectors; current vectors are reused without another API call.
 
 ### 5. Start the development server and worker
 
@@ -385,6 +387,7 @@ npx prisma migrate dev    # Run local migrations
 npx prisma migrate deploy # Apply production migrations
 npx prisma studio         # Open Prisma Studio
 npx prisma generate       # Generate Prisma client
+npm run backfill:embeddings # Create or refresh semantic indexes for existing analyzed tickets
 ```
 
 ---
