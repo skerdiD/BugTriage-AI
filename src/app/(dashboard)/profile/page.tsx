@@ -26,7 +26,7 @@ export default async function ProfilePage() {
       />
 
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <Avatar

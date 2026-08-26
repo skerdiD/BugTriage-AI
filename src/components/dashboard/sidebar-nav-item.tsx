@@ -27,7 +27,7 @@ export function SidebarNavItem({
       aria-current={isActive ? "page" : undefined}
       aria-label={collapsed ? label : undefined}
       className={cn(
-        "group relative flex h-12 items-center overflow-hidden rounded-2xl border text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70",
+        "group relative flex h-11 items-center overflow-hidden rounded-xl border text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70",
         collapsed ? "justify-center px-0" : "gap-3 px-4",
         isActive
           ? "border-violet-400/30 bg-linear-to-r from-violet-500/18 via-violet-400/8 to-transparent text-white shadow-lg shadow-black/20"
@@ -43,7 +43,7 @@ export function SidebarNavItem({
       <span
         className={cn(
           "flex shrink-0 items-center justify-center rounded-xl transition-colors",
-          collapsed ? "size-10" : "size-9",
+          collapsed ? "size-9" : "size-8",
           isActive
             ? "bg-white/[0.08] text-white"
             : "bg-white/[0.03] text-muted-foreground group-hover:text-white"

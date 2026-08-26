@@ -92,39 +92,45 @@ export default async function TeamPage() {
       />
 
       <section className="grid gap-5 md:grid-cols-3">
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20">
+          <CardContent className="flex items-center gap-4 p-5 sm:p-6">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
               <Users className="size-5 text-violet-300" />
             </div>
-            <p className="mt-6 text-3xl font-bold">{members.length}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Workspace members</p>
+            <div>
+              <p className="text-3xl font-bold">{members.length}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Workspace members</p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20">
+          <CardContent className="flex items-center gap-4 p-5 sm:p-6">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
               <TicketCheck className="size-5 text-emerald-300" />
             </div>
-            <p className="mt-6 text-3xl font-bold">{totalOpenAssignments}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Open assignments</p>
+            <div>
+              <p className="text-3xl font-bold">{totalOpenAssignments}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Open assignments</p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
-          <CardContent className="p-6">
-            <div className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20">
+          <CardContent className="flex items-center gap-4 p-5 sm:p-6">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
               <ClipboardList className="size-5 text-sky-300" />
             </div>
-            <p className="mt-6 text-3xl font-bold">{totalReportedTickets}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Reports submitted</p>
+            <div>
+              <p className="text-3xl font-bold">{totalReportedTickets}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Reports submitted</p>
+            </div>
           </CardContent>
         </Card>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+      <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20">
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -180,7 +186,7 @@ export default async function TeamPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+        <Card className="rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20">
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -257,6 +263,20 @@ export default async function TeamPage() {
         </Card>
       </section>
 
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight text-white">
+            Workspace members
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Current access, ownership, and assignment load.
+          </p>
+        </div>
+        <Badge className="w-fit border-white/10 bg-white/[0.05] text-slate-200">
+          {formatMemberCount(members.length)}
+        </Badge>
+      </div>
+
       {members.length > 0 ? (
         <section className="grid gap-5 lg:grid-cols-2">
           {members.map((member) => {
@@ -272,12 +292,12 @@ export default async function TeamPage() {
             return (
               <Card
                 key={member.id}
-                className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20"
+                className="rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20"
               >
-                <CardContent className="p-6">
+                <CardContent className="p-5 sm:p-6">
                   <div className="flex items-start justify-between gap-5">
                     <div className="flex items-center gap-4">
-                      <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 font-bold text-white shadow-lg shadow-violet-500/20">
+                      <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 text-sm font-bold text-white shadow-lg shadow-violet-500/20 sm:size-14">
                         {member.name
                           .split(" ")
                           .map((part) => part[0])
@@ -311,18 +331,18 @@ export default async function TeamPage() {
                   <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Mail className="size-4 text-sky-300" />
-                      <span>{member.email}</span>
+                      <span className="min-w-0 break-all">{member.email}</span>
                     </div>
                   </div>
 
-                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 sm:p-4">
                       <p className="text-xs text-muted-foreground">Open assignments</p>
                       <p className="mt-2 text-2xl font-bold">
                         {member.openAssignedTicketCount}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 sm:p-4">
                       <p className="text-xs text-muted-foreground">Reports submitted</p>
                       <p className="mt-2 text-2xl font-bold">
                         {member.reportedTicketCount}
@@ -330,19 +350,8 @@ export default async function TeamPage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 flex gap-2">
-                    <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
-                      <Mail className="size-4 text-sky-300" />
-                      <span>
-                        {member.isOwner
-                          ? "Workspace owner"
-                          : `Role: ${formatWorkspaceRole(member.role)}`}
-                      </span>
-                    </div>
-                  </div>
-
                   {availableRoles.length > 0 || canRemoveMember ? (
-                    <div className="mt-6">
+                    <div className="mt-5">
                       <WorkspaceMemberControls
                         workspaceId={context.workspace.id}
                         memberId={member.id}

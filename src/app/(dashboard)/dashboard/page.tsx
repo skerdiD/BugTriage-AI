@@ -64,7 +64,7 @@ export default async function DashboardPage() {
         </Button>
       </PageHeader>
 
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
         {data.stats.map((stat) => (
           <StatCard
             key={stat.label}
@@ -92,7 +92,7 @@ export default async function DashboardPage() {
               : "AI confidence will appear after the first ticket is triaged."}
           </p>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <CardContent className="grid grid-cols-2 gap-3 xl:grid-cols-5">
           {data.statusSummary.map((item) => (
             <div
               key={item.status}
@@ -107,15 +107,15 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <RecentTickets tickets={data.recent} />
-
-      <RecentActivityFeed items={data.recentActivity} />
-
       <PriorityQueue
         items={data.priority}
         criticalCount={data.criticalOpenCount}
         highCount={data.highOpenCount}
       />
+
+      <RecentTickets tickets={data.recent} />
+
+      <RecentActivityFeed items={data.recentActivity} />
 
       {!data.hasTickets ? (
         <EmptyState

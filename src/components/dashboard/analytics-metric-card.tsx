@@ -38,14 +38,14 @@ export function AnalyticsMetricCard({
   accent,
 }: AnalyticsMetricCardProps) {
   return (
-    <Card className="group overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:border-violet-500/30 hover:bg-white/[0.055]">
-      <CardContent className="relative p-6">
+    <Card className="group overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20 transition-[border-color,background-color] hover:border-violet-500/25 hover:bg-white/[0.05]">
+      <CardContent className="relative p-5 sm:p-6">
         <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-violet-500/10 blur-3xl transition group-hover:bg-violet-500/20" />
 
         <div className="relative flex items-start justify-between gap-4">
           <div
             className={cn(
-              "flex size-12 items-center justify-center rounded-2xl border",
+              "flex size-10 items-center justify-center rounded-xl border sm:size-11 sm:rounded-2xl",
               accentStyles[accent]
             )}
           >
@@ -63,8 +63,8 @@ export function AnalyticsMetricCard({
           </span>
         </div>
 
-        <div className="relative mt-7">
-          <p className="text-4xl font-bold tracking-tight text-white">{value}</p>
+        <div className="relative mt-5 sm:mt-6">
+          <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{value}</p>
           <p className="mt-2 text-sm font-medium text-white">{label}</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{helper}</p>
         </div>

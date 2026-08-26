@@ -83,7 +83,7 @@ export function DashboardShell({
   }
 
   return (
-    <div className="min-h-screen bg-[#08080d]">
+    <div className="min-h-dvh bg-[#08080d]">
       <AppSidebar
         user={user}
         collapsed={isSidebarCollapsed}
@@ -91,7 +91,7 @@ export function DashboardShell({
         className="hidden lg:flex"
       />
 
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#08080d]/90 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#08080d]/92 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/dashboard" className="flex items-center gap-3">
           <AppLogoMark className="size-9 rounded-xl" iconClassName="size-6" />
           <div>
@@ -123,14 +123,21 @@ export function DashboardShell({
         className={cn(
           "min-h-screen transition-[padding] duration-300 ease-out",
           hasLoadedSidebarPreference && isSidebarCollapsed
-            ? "lg:pl-[84px]"
-            : "lg:pl-[280px]"
+            ? "lg:pl-20"
+            : "lg:pl-64"
         )}
       >
-        <div className="mx-auto w-full max-w-[1640px] px-4 py-6 sm:px-6 lg:px-8 lg:py-9">
-          <div className="mb-6 flex flex-col gap-3 lg:mb-8 lg:flex-row lg:items-start lg:justify-between">
+        <div className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+          <div
+            className={cn(
+              "mb-7 flex flex-col gap-3 lg:mb-8",
+              user.isDemo
+                ? "xl:flex-row xl:items-start xl:justify-between"
+                : "xl:items-end"
+            )}
+          >
             {user.isDemo ? (
-              <div className="flex items-start gap-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.08] px-4 py-3 text-sm text-sky-100">
+              <div className="flex max-w-xl items-start gap-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.075] px-4 py-3 text-sm text-sky-100 shadow-[0_18px_44px_-38px_rgba(14,165,233,0.75)]">
                 <Eye className="mt-0.5 size-4 shrink-0 text-sky-300" />
                 <div>
                   <p className="font-semibold">You&apos;re viewing the demo workspace</p>
@@ -140,9 +147,7 @@ export function DashboardShell({
                   </p>
                 </div>
               </div>
-            ) : (
-              <div />
-            )}
+            ) : null}
             <WorkspaceContextSwitcher
               roleLabel={workspace.role}
               currentWorkspaceId={workspace.id}

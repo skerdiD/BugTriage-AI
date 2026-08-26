@@ -120,11 +120,11 @@ function LoginContent() {
   return (
     <main
       id="main-content"
-      className="relative min-h-screen overflow-hidden bg-background px-6 py-8 text-foreground"
+      className="relative min-h-screen overflow-hidden bg-background px-4 py-6 text-foreground sm:px-6 sm:py-8"
     >
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.22),transparent_34rem)]" />
 
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
         <section className="grid w-full gap-10 lg:grid-cols-[1fr_0.86fr] lg:items-center">
           <div className="hidden lg:block">
             <Link href="/" className="mb-10 flex items-center gap-3">

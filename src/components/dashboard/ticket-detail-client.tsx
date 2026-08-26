@@ -337,6 +337,67 @@ export function TicketDetailClient({
         </Card>
       </div>
 
+      <Card className="rounded-3xl border-violet-500/20 bg-violet-500/[0.07] shadow-xl shadow-black/20 xl:hidden">
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <div>
+            <CardTitle>Move this ticket</CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Keep the current state visible to the team.
+            </p>
+          </div>
+          <StatusBadge status={status} />
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div>
+            <label
+              htmlFor="mobile-ticket-status"
+              className="mb-2 block text-sm text-muted-foreground"
+            >
+              Current status
+            </label>
+            <Select
+              value={status}
+              disabled={isStatusPending}
+              onValueChange={(value) => handleStatusChange(value as TicketStatus)}
+            >
+              <SelectTrigger
+                id="mobile-ticket-status"
+                className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {workflowStatuses.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Ticket progress</span>
+              <span className="font-semibold text-violet-300">
+                {workflowProgress}%
+              </span>
+            </div>
+            <Progress value={workflowProgress} className="h-2 bg-white/10" />
+          </div>
+
+          {statusError ? (
+            <p
+              role="alert"
+              className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+            >
+              {statusError}
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
+
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.7fr]">
         <div className="space-y-6">
           <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
@@ -356,7 +417,7 @@ export function TicketDetailClient({
 
             <CardContent>
               <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                <p className="text-sm leading-7 text-muted-foreground">
+                <p className="whitespace-pre-wrap text-sm leading-7 text-slate-300">
                   {ticket.originalReport}
                 </p>
               </div>
@@ -852,22 +913,28 @@ export function TicketDetailClient({
         </div>
 
         <aside className="space-y-6 xl:self-start">
-          <Card className="sticky top-24 z-20 overflow-hidden rounded-3xl border-white/10 bg-[#15121d] shadow-[0_28px_90px_-46px_rgba(0,0,0,0.96)] supports-[backdrop-filter]:bg-[#15121d]/95">
+          <Card className="sticky top-24 z-20 hidden overflow-hidden rounded-3xl border-white/10 bg-[#15121d] shadow-[0_28px_90px_-46px_rgba(0,0,0,0.96)] supports-[backdrop-filter]:bg-[#15121d]/95 xl:flex">
             <CardHeader>
               <CardTitle>Move this ticket</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-6">
               <div>
-                <p className="mb-2 text-sm text-muted-foreground">
+                <label
+                  htmlFor="desktop-ticket-status"
+                  className="mb-2 block text-sm text-muted-foreground"
+                >
                   Current status
-                </p>
+                </label>
                 <Select
                   value={status}
                   disabled={isStatusPending}
                   onValueChange={(value) => handleStatusChange(value as TicketStatus)}
                 >
-                  <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">
+                  <SelectTrigger
+                    id="desktop-ticket-status"
+                    className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

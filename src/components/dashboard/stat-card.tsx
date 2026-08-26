@@ -28,14 +28,14 @@ export function StatCard({
   accent,
 }: StatCardProps) {
   return (
-    <Card className="group overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:border-violet-500/30 hover:bg-white/[0.055]">
-      <CardContent className="relative p-6">
+    <Card className="group overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20 transition-[border-color,background-color] hover:border-violet-500/25 hover:bg-white/[0.05]">
+      <CardContent className="relative p-4 sm:p-6">
         <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-violet-500/10 blur-3xl transition group-hover:bg-violet-500/20" />
 
         <div className="relative flex items-start justify-between">
           <div
             className={cn(
-              "flex size-12 items-center justify-center rounded-2xl border",
+              "flex size-9 items-center justify-center rounded-xl border sm:size-11 sm:rounded-2xl",
               accentStyles[accent]
             )}
           >
@@ -44,7 +44,7 @@ export function StatCard({
 
           <span
             className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-semibold",
+              "rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-xs",
               trendType === "positive"
                 ? "bg-emerald-500/10 text-emerald-300"
                 : "bg-red-500/10 text-red-300"
@@ -54,9 +54,9 @@ export function StatCard({
           </span>
         </div>
 
-        <div className="relative mt-7">
-          <p className="text-4xl font-bold tracking-tight text-white">{value}</p>
-          <p className="mt-2 text-sm text-muted-foreground">{label}</p>
+        <div className="relative mt-5 sm:mt-6">
+          <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{value}</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">{label}</p>
         </div>
       </CardContent>
     </Card>

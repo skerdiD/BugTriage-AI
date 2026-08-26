@@ -115,8 +115,8 @@ export function AppSidebar({
           isMobile
             ? "h-full w-full"
             : cn(
-                "fixed inset-y-0 left-0",
-                isDesktopCollapsed ? "w-[84px]" : "w-[280px]"
+              "fixed inset-y-0 left-0",
+                isDesktopCollapsed ? "w-20" : "w-64"
               ),
           className
         )}
@@ -124,7 +124,7 @@ export function AppSidebar({
         <div
           className={cn(
             "border-b border-white/10",
-            isDesktopCollapsed ? "px-3 py-4" : "px-5 py-5"
+            isDesktopCollapsed ? "px-3 py-4" : "px-4 py-4"
           )}
         >
           <div
@@ -141,17 +141,17 @@ export function AppSidebar({
                 isDesktopCollapsed ? "justify-center" : "gap-3"
               )}
             >
-              <AppLogoMark className="size-11" />
+              <AppLogoMark className="size-10 rounded-xl" iconClassName="size-6" />
 
               <div
                 className={cn(
                   "min-w-0 overflow-hidden transition-all duration-200 ease-out",
                   isDesktopCollapsed
                     ? "max-w-0 -translate-x-2 opacity-0"
-                    : "max-w-[180px] translate-x-0 opacity-100"
+                    : "max-w-[164px] translate-x-0 opacity-100"
                 )}
               >
-                <p className="truncate text-[1.15rem] font-bold tracking-tight text-white">
+                <p className="truncate text-base font-bold tracking-tight text-white">
                   BugTriage AI
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
@@ -191,10 +191,15 @@ export function AppSidebar({
         <nav
           className={cn(
             "flex-1 overflow-y-auto",
-            isDesktopCollapsed ? "px-3 py-5" : "px-4 py-6"
+            isDesktopCollapsed ? "px-3 py-5" : "px-3 py-5"
           )}
         >
-          <div className="space-y-2">
+          {!isDesktopCollapsed ? (
+            <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/70">
+              Workspace
+            </p>
+          ) : null}
+          <div className="space-y-1">
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
@@ -218,7 +223,7 @@ export function AppSidebar({
         <div
           className={cn(
             "border-t border-white/10",
-            isDesktopCollapsed ? "px-3 py-4" : "p-5"
+            isDesktopCollapsed ? "px-3 py-4" : "p-4"
           )}
         >
           <DropdownMenu
@@ -235,7 +240,7 @@ export function AppSidebar({
                   "group/account w-full rounded-2xl border-white/10 bg-white/[0.035] text-left text-white shadow-sm shadow-black/10 transition-all duration-200 hover:border-violet-400/35 hover:bg-white/[0.06] hover:text-white aria-expanded:border-violet-400/40 aria-expanded:bg-violet-500/10",
                   isDesktopCollapsed
                     ? "h-11 justify-center px-0"
-                    : "h-14 justify-start gap-3 px-3"
+                    : "h-12 justify-start gap-3 px-2.5"
                 )}
               >
                 <Avatar

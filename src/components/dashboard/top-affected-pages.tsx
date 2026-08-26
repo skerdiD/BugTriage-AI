@@ -1,4 +1,4 @@
-import { Code2, ExternalLink } from "lucide-react";
+import { Code2 } from "lucide-react";
 
 import { SeverityBadge } from "@/components/dashboard/severity-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,12 +38,9 @@ export function TopAffectedPages({ pages }: TopAffectedPagesProps) {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-mono text-sm font-semibold text-violet-300">
-                      {page.path}
-                    </p>
-                    <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
-                  </div>
+                  <p className="truncate font-mono text-sm font-semibold text-violet-300">
+                    {page.path}
+                  </p>
 
                   <p className="mt-1 text-sm text-muted-foreground">
                     {page.bugCount} {page.bugCount === 1 ? "ticket" : "tickets"}

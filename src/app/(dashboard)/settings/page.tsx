@@ -34,7 +34,7 @@ export default async function SettingsPage() {
         badge={context.workspace.slug}
       />
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <section className="grid items-start gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
             <CardTitle>At a glance</CardTitle>
@@ -83,7 +83,7 @@ export default async function SettingsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <Card className="rounded-2xl border-white/10 bg-white/[0.03] shadow-none">
+              <Card className="rounded-2xl border-white/10 bg-white/[0.03] py-0 shadow-none">
                 <CardContent className="p-4">
                   <Users className="size-5 text-violet-300" />
                   <p className="mt-4 text-2xl font-bold">
@@ -93,7 +93,7 @@ export default async function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-2xl border-white/10 bg-white/[0.03] shadow-none">
+              <Card className="rounded-2xl border-white/10 bg-white/[0.03] py-0 shadow-none">
                 <CardContent className="p-4">
                   <FolderKanban className="size-5 text-sky-300" />
                   <p className="mt-4 text-2xl font-bold">
@@ -103,7 +103,7 @@ export default async function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-2xl border-white/10 bg-white/[0.03] shadow-none">
+              <Card className="rounded-2xl border-white/10 bg-white/[0.03] py-0 shadow-none">
                 <CardContent className="p-4">
                   <Shield className="size-5 text-emerald-300" />
                   <p className="mt-4 text-2xl font-bold">
@@ -131,7 +131,11 @@ export default async function SettingsPage() {
                     return (
                       <div
                         key={project.id}
-                        className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                        className={
+                          isActiveProject
+                            ? "rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.045] p-4"
+                            : "rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                        }
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div>
@@ -183,7 +187,7 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+      <section className="grid items-start gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
           <CardHeader>
             <CardTitle>Workspaces you can access</CardTitle>
@@ -198,7 +202,11 @@ export default async function SettingsPage() {
                   return (
                     <div
                       key={workspace.id}
-                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                        className={
+                          isActiveWorkspace
+                            ? "rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.045] p-4"
+                            : "rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                        }
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>

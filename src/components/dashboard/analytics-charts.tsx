@@ -52,7 +52,7 @@ export function AnalyticsCharts({
           </div>
         </CardHeader>
 
-        <CardContent className="h-[350px] p-6">
+        <CardContent className="h-[310px] px-3 pb-5 pt-4 sm:h-[350px] sm:p-6">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={bugReportsOverTime}>
               <defs>
@@ -109,7 +109,7 @@ export function AnalyticsCharts({
             </div>
           </CardHeader>
 
-          <CardContent className="h-[340px] p-6">
+          <CardContent className="h-[310px] px-2 pb-5 pt-4 sm:h-[340px] sm:p-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bugsByCategory} layout="vertical">
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" horizontal={false} />
@@ -159,7 +159,7 @@ export function AnalyticsCharts({
             </div>
           </CardHeader>
 
-          <CardContent className="h-[340px] p-6">
+          <CardContent className="h-[310px] px-3 pb-5 pt-4 sm:h-[340px] sm:p-6">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={averageResolutionTime}>
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" />

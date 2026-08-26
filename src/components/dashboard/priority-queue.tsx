@@ -1,4 +1,5 @@
 import { AlertTriangle, Flag } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +23,7 @@ export function PriorityQueue({
   highCount,
 }: PriorityQueueProps) {
   return (
-    <Card className="overflow-hidden rounded-3xl border-violet-500/20 bg-gradient-to-br from-violet-500/12 via-purple-500/7 to-transparent shadow-xl shadow-black/20">
+    <Card className="overflow-hidden rounded-3xl border-violet-500/20 bg-gradient-to-br from-violet-500/12 via-purple-500/7 to-transparent py-0 shadow-xl shadow-black/20">
       <CardContent className="relative p-6">
         <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-violet-500/20 blur-3xl" />
 
@@ -45,12 +46,15 @@ export function PriorityQueue({
             {items.map((item) => (
               <Badge
                 key={item.id}
+                asChild
                 className={cn(
-                  "rounded-full px-3 py-1.5",
+                  "max-w-full rounded-full px-3 py-1.5 transition hover:brightness-110 focus-visible:ring-2 focus-visible:ring-violet-400/60",
                   priorityStyles[item.severity]
                 )}
               >
-                {item.id}: {item.title}
+                <Link href={`/tickets/${item.id}`}>
+                  <span className="truncate">{item.id}: {item.title}</span>
+                </Link>
               </Badge>
             ))}
           </div>

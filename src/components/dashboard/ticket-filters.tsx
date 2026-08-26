@@ -47,7 +47,7 @@ export function TicketFilters({
 
   return (
     <div className="space-y-5">
-      <Card className="rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20">
+      <Card className="rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20">
         <CardContent className="p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative flex-1">
@@ -80,29 +80,34 @@ export function TicketFilters({
       </Card>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <Tabs
-          value={activeStatus}
-          onValueChange={(value) =>
-            onActiveStatusChange(value as TicketStatusFilter)
-          }
-        >
-          <TabsList className="h-auto flex-wrap justify-start gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1">
-            {statusTabs.map((status) => (
-              <TabsTrigger
-                key={status}
-                value={status}
-                className="rounded-xl px-3 py-2 text-xs data-[state=active]:bg-violet-600 data-[state=active]:text-white sm:text-sm"
-              >
-                {status}
-                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px]">
-                  {statusCounts[status]}
-                </span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+          <Tabs
+            value={activeStatus}
+            onValueChange={(value) =>
+              onActiveStatusChange(value as TicketStatusFilter)
+            }
+          >
+            <TabsList
+              aria-label="Filter tickets by status"
+              className="h-auto w-max flex-nowrap justify-start gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1 group-data-horizontal/tabs:h-auto"
+            >
+              {statusTabs.map((status) => (
+                <TabsTrigger
+                  key={status}
+                  value={status}
+                  className="h-9 flex-none rounded-xl px-3 text-xs data-[state=active]:bg-violet-600 data-[state=active]:text-white sm:text-sm"
+                >
+                  {status}
+                  <span className="ml-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px]">
+                    {statusCounts[status]}
+                  </span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
 
-        <p aria-live="polite" className="text-sm text-muted-foreground">
+        <p aria-live="polite" className="px-1 text-sm text-muted-foreground lg:px-0">
           <span className="font-semibold text-white">{visibleCount}</span> of{" "}
           {totalCount} {totalCount === 1 ? "ticket" : "tickets"}
         </p>

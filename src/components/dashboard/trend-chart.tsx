@@ -24,7 +24,7 @@ export function TrendChart({ data }: TrendChartProps) {
         <CardTitle className="text-lg">Reports from the last seven days</CardTitle>
       </CardHeader>
 
-      <CardContent className="h-[340px] p-6">
+      <CardContent className="h-[300px] px-3 pb-5 pt-4 sm:h-[340px] sm:p-6">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
             <CartesianGrid

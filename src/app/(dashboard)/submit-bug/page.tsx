@@ -246,7 +246,7 @@ export default function SubmitBugPage() {
                         <FormLabel>Browser *</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">
+                            <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]">
                               <SelectValue placeholder="Select browser" />
                             </SelectTrigger>
                           </FormControl>
@@ -270,7 +270,7 @@ export default function SubmitBugPage() {
                         <FormLabel>Device *</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">
+                            <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]">
                               <SelectValue placeholder="Select device" />
                             </SelectTrigger>
                           </FormControl>
@@ -294,7 +294,7 @@ export default function SubmitBugPage() {
                         <FormLabel>Environment *</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/[0.04]">
+                            <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]">
                               <SelectValue placeholder="Select environment" />
                             </SelectTrigger>
                           </FormControl>
@@ -510,8 +510,8 @@ export default function SubmitBugPage() {
           </CardContent>
         </Card>
 
-        <aside className="space-y-6">
-          <Card className="sticky top-24 rounded-3xl border-violet-500/20 bg-gradient-to-br from-violet-500/12 via-purple-500/8 to-transparent shadow-xl shadow-black/20">
+        <aside className="min-w-0 space-y-6">
+          <Card className="rounded-3xl border-violet-500/20 bg-gradient-to-br from-violet-500/12 via-purple-500/8 to-transparent shadow-xl shadow-black/20 xl:sticky xl:top-24">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="flex size-11 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10">

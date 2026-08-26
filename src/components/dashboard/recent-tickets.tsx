@@ -34,9 +34,10 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
       <CardContent className="space-y-3">
         {tickets.length > 0 ? (
           tickets.map((ticket) => (
-            <article
+            <Link
               key={ticket.id}
-              className="group flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/[0.025] p-5 transition hover:border-violet-500/30 hover:bg-violet-500/[0.045] lg:flex-row lg:items-center lg:justify-between"
+              href={`/tickets/${ticket.id}`}
+              className="group flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/[0.025] p-5 transition-[border-color,background-color,box-shadow] hover:border-violet-500/30 hover:bg-violet-500/[0.045] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 lg:flex-row lg:items-center lg:justify-between"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -77,7 +78,7 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
                   {ticket.confidence}%
                 </p>
               </div>
-            </article>
+            </Link>
           ))
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-muted-foreground">

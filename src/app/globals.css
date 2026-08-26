@@ -107,6 +107,12 @@
       radial-gradient(circle at top left, rgba(139, 92, 246, 0.12), transparent 34rem),
       radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 32rem),
       linear-gradient(180deg, #08080d 0%, #090910 45%, #08080d 100%);
+    text-rendering: optimizeLegibility;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
   }
 
   a,

@@ -69,7 +69,7 @@ export function TicketTable({ tickets }: TicketTableProps) {
 
   return (
     <>
-      <Card className="hidden overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20 md:block">
+      <Card className="hidden overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20 md:block">
         <Table className="table-fixed">
           <TableCaption className="sr-only">
             Ticket list with severity, status, assignee, created date, and AI
@@ -170,7 +170,7 @@ export function TicketTable({ tickets }: TicketTableProps) {
         </Table>
       </Card>
 
-      <Card className="divide-y divide-white/10 overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] shadow-xl shadow-black/20 md:hidden">
+      <Card className="divide-y divide-white/10 overflow-hidden rounded-3xl border-white/10 bg-white/[0.035] py-0 shadow-xl shadow-black/20 md:hidden">
         {tickets.map((ticket) => {
           const compactCreatedAt = getCompactRelativeDate(ticket.createdAt);
 

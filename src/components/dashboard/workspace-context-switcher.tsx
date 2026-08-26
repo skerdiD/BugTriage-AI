@@ -90,12 +90,12 @@ export function WorkspaceContextSwitcher({
   }
 
   return (
-    <div className="w-full md:w-auto">
-      <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
+    <div className="w-full xl:w-auto xl:max-w-[720px]">
+      <div className="grid grid-cols-2 gap-2.5 rounded-2xl border border-white/10 bg-white/[0.035] p-3 shadow-[0_20px_50px_-42px_rgba(0,0,0,0.95)] backdrop-blur sm:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_auto] sm:items-end">
         <div className="grid min-w-0 gap-1">
           <label
             htmlFor="workspace-switcher-workspace"
-            className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+            className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
           >
             <Users className="size-3.5 text-violet-300" />
             Workspace
@@ -105,7 +105,7 @@ export function WorkspaceContextSwitcher({
             value={currentWorkspaceId}
             onChange={(event) => handleWorkspaceChange(event.target.value)}
             disabled={isPending}
-            className="h-10 min-w-[220px] rounded-xl border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none transition focus:border-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-[#171724] px-3 pr-8 text-sm text-white outline-none transition-[border-color,box-shadow,background-color] hover:border-white/15 focus:border-violet-400 focus:ring-3 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {workspaces.map((workspace) => (
               <option key={workspace.id} value={workspace.id}>
@@ -118,7 +118,7 @@ export function WorkspaceContextSwitcher({
         <div className="grid min-w-0 gap-1">
           <label
             htmlFor="workspace-switcher-project"
-            className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+            className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
           >
             <FolderKanban className="size-3.5 text-sky-300" />
             Project
@@ -128,7 +128,7 @@ export function WorkspaceContextSwitcher({
             value={currentProjectId ?? ""}
             onChange={(event) => handleProjectChange(event.target.value)}
             disabled={isPending || projects.length === 0}
-            className="h-10 min-w-[220px] rounded-xl border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none transition focus:border-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-10 w-full min-w-0 rounded-xl border border-white/10 bg-[#171724] px-3 pr-8 text-sm text-white outline-none transition-[border-color,box-shadow,background-color] hover:border-white/15 focus:border-violet-400 focus:ring-3 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {projects.length === 0 ? (
               <option value="">No projects yet</option>
@@ -141,7 +141,7 @@ export function WorkspaceContextSwitcher({
           </select>
         </div>
 
-        <div className="flex items-center gap-2 sm:mb-1 sm:pl-1">
+        <div className="col-span-2 flex items-center justify-between gap-2 sm:col-span-1 sm:mb-1 sm:justify-start sm:pl-1">
           <span
             className={`rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] ${roleBadgeClass(
               roleLabel
