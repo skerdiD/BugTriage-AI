@@ -2,12 +2,14 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   ci:
+    name: Checks
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -35,12 +37,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 22.21.0
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -56,19 +58,15 @@ jobs:
         run: npm run typecheck
 
       - name: Run unit tests
-        if: ${{ hashFiles('vitest.config.*', 'tests/**/*.test.ts') != '' }}
         run: npm run test:unit
 
       - name: Run database integrity tests
-        if: ${{ hashFiles('vitest.db.config.*', 'tests/**/*.integration.test.ts') != '' }}
         run: npm run test:db
 
       - name: Install Playwright browsers
-        if: ${{ hashFiles('playwright.config.ts', 'tests/e2e/**/*.spec.ts') != '' }}
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright smoke test
-        if: ${{ hashFiles('playwright.config.ts', 'tests/e2e/**/*.spec.ts') != '' }}
         run: npm run test:e2e -- --grep @smoke
 
       - name: Run production build
