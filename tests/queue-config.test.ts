@@ -6,6 +6,7 @@ import {
   BUG_ANALYSIS_ATTEMPTS,
   BUG_ANALYSIS_BACKOFF_DELAY_MS,
   buildBugAnalysisJob,
+  parseBugAnalysisJob,
 } from "@/lib/queue/bug-analysis";
 import {
   RedisConfigurationError,
@@ -41,6 +42,35 @@ describe("Redis and BullMQ configuration", () => {
     ).toThrow(RedisConfigurationError);
   });
 
+  it("rejects plaintext remote Redis connections in production", () => {
+    expect(() =>
+      getRedisUrl({
+        NODE_ENV: "production",
+        REDIS_URL: "redis://default:secret@redis.example.com:6379",
+      })
+    ).toThrow("Production Redis connections must use TLS");
+
+    expect(
+      getRedisUrl({
+        NODE_ENV: "production",
+        REDIS_URL: "rediss://default:secret@redis.example.com:6379",
+      })
+    ).toBe("rediss://default:secret@redis.example.com:6379");
+    expect(
+      getRedisUrl({
+        NODE_ENV: "production",
+        REDIS_URL: "redis://127.0.0.1:6379",
+      })
+    ).toBe("redis://127.0.0.1:6379");
+    expect(
+      getRedisUrl({
+        NODE_ENV: "production",
+        REDIS_URL: "redis://redis:6379",
+        REDIS_ALLOW_INSECURE_CONNECTION: "true",
+      })
+    ).toBe("redis://redis:6379");
+  });
+
   it("builds a minimal identifier-only payload with retry and backoff defaults", () => {
     const definition = buildBugAnalysisJob({
       ticketId: "ticket-1",
@@ -56,6 +86,31 @@ describe("Redis and BullMQ configuration", () => {
         delay: BUG_ANALYSIS_BACKOFF_DELAY_MS,
       },
     });
+  });
+
+  it("rejects malformed or unexpected worker jobs without accepting extra data", () => {
+    expect(
+      parseBugAnalysisJob({
+        name: "analyze-ticket",
+        data: { ticketId: " ticket-1 " },
+        jobId: "analysis-job-1",
+      })
+    ).toEqual({ data: { ticketId: "ticket-1" }, jobId: "analysis-job-1" });
+
+    expect(() =>
+      parseBugAnalysisJob({
+        name: "unexpected-job",
+        data: { ticketId: "ticket-1" },
+        jobId: "analysis-job-1",
+      })
+    ).toThrow("unexpected name");
+    expect(() =>
+      parseBugAnalysisJob({
+        name: "analyze-ticket",
+        data: { ticketId: "ticket-1", report: "untrusted payload" },
+        jobId: "analysis-job-1",
+      })
+    ).toThrow();
   });
 
   it("uses conservative bounded worker concurrency", () => {

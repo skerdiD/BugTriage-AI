@@ -26,6 +26,7 @@ vi.mock("@/lib/observability/server-monitoring", () => ({ captureServerException
 vi.mock("@/lib/prisma", () => ({ prisma: prismaMock }));
 
 import {
+  TICKET_ANALYSIS_REPUBLISH_CONCURRENCY,
   dispatchTicketAnalysisOutboxRecord,
   republishPendingTicketAnalyses,
 } from "@/lib/queue/republish-ticket-analysis";
@@ -80,6 +81,39 @@ describe("ticket analysis outbox republisher", () => {
       deferred: 0,
     });
     expect(enqueueMock).toHaveBeenCalledOnce();
+  });
+
+  it("publishes backlog records concurrently without exceeding the safe bound", async () => {
+    const records = Array.from(
+      { length: TICKET_ANALYSIS_REPUBLISH_CONCURRENCY + 2 },
+      (_, index) => ({
+        id: `dispatch-${index}`,
+        ticketId: `ticket-${index}`,
+        jobId: `analysis-job-${index}`,
+        attempts: 0,
+      })
+    );
+    let active = 0;
+    let peakActive = 0;
+
+    prismaMock.ticketAnalysisDispatch.findMany.mockResolvedValue(records);
+    enqueueMock.mockImplementation(async ({ jobId }: { jobId: string }) => {
+      active += 1;
+      peakActive = Math.max(peakActive, active);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      active -= 1;
+      return { jobId, queueName: "bug-analysis" };
+    });
+
+    await expect(republishPendingTicketAnalyses({}, dependencies)).resolves.toEqual({
+      candidates: records.length,
+      queued: records.length,
+      deferred: 0,
+    });
+    expect(peakActive).toBeGreaterThan(1);
+    expect(peakActive).toBeLessThanOrEqual(
+      TICKET_ANALYSIS_REPUBLISH_CONCURRENCY
+    );
   });
 
   it("does not publish twice when another republisher owns the claim", async () => {

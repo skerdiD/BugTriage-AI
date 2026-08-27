@@ -16,6 +16,8 @@ const CLAIM_LEASE_MS = 60_000;
 const MAX_DISPATCH_ATTEMPTS = 8;
 const MAX_DISPATCH_ERROR_LENGTH = 500;
 const MAX_DISPATCH_BACKOFF_MS = 15 * 60_000;
+export const TICKET_ANALYSIS_REPUBLISH_CONCURRENCY = 5;
+export const TICKET_ANALYSIS_REPUBLISH_MAX_LIMIT = 500;
 const TERMINAL_TICKET_ERROR =
   "Background analysis could not be scheduled. Retry the analysis later.";
 
@@ -27,6 +29,15 @@ const defaultDependencies: RepublishDependencies = {
 
 export function getDispatchBackoffMs(attempt: number) {
   return Math.min(1_000 * 2 ** Math.max(0, attempt - 1), MAX_DISPATCH_BACKOFF_MS);
+}
+
+function normalizeRepublishLimit(limit?: number) {
+  if (limit === undefined || !Number.isFinite(limit)) return 100;
+
+  return Math.min(
+    Math.max(Math.trunc(limit), 1),
+    TICKET_ANALYSIS_REPUBLISH_MAX_LIMIT
+  );
 }
 
 async function claimDispatch(dispatchId: string, now: Date) {
@@ -169,17 +180,39 @@ export async function republishPendingTicketAnalyses(
       ],
     },
     orderBy: { nextAttemptAt: "asc" },
-    take: input.limit ?? 100,
+    take: normalizeRepublishLimit(input.limit),
     select: { id: true, ticketId: true, jobId: true, attempts: true },
   });
   let queued = 0;
   let deferred = 0;
-  for (const dispatch of pending) {
-    const claimToken = await claimDispatch(dispatch.id, now);
-    if (!claimToken) continue;
-    const result = await dispatchClaimedRecord({ ...dispatch, claimToken, now, dependencies });
-    if (result.mode === "queued") queued += 1;
-    else deferred += 1;
+
+  for (
+    let offset = 0;
+    offset < pending.length;
+    offset += TICKET_ANALYSIS_REPUBLISH_CONCURRENCY
+  ) {
+    const batch = pending.slice(
+      offset,
+      offset + TICKET_ANALYSIS_REPUBLISH_CONCURRENCY
+    );
+    const results = await Promise.all(
+      batch.map(async (dispatch) => {
+        const claimToken = await claimDispatch(dispatch.id, now);
+        if (!claimToken) return null;
+
+        return dispatchClaimedRecord({
+          ...dispatch,
+          claimToken,
+          now,
+          dependencies,
+        });
+      })
+    );
+
+    for (const result of results) {
+      if (result?.mode === "queued") queued += 1;
+      else if (result?.mode === "pending") deferred += 1;
+    }
   }
   console.info("[ticket-analysis-republisher] completed", { candidates: pending.length, queued, deferred });
   return { candidates: pending.length, queued, deferred };

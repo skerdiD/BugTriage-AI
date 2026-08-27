@@ -5,6 +5,7 @@ x-runtime-environment: &runtime-environment
   DATABASE_URL: postgresql://bugtriage:bugtriage@postgres:5432/bugtriage
   DIRECT_URL: postgresql://bugtriage:bugtriage@postgres:5432/bugtriage
   REDIS_URL: redis://redis:6379
+  REDIS_ALLOW_INSECURE_CONNECTION: "true"
 
 x-runtime-env-files: &runtime-env-files
   - path: .env

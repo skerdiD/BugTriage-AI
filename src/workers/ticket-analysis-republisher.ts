@@ -42,4 +42,10 @@ async function main() {
   }
 }
 
-void main();
+void main().catch((error) => {
+  Sentry.captureException(error, {
+    tags: { area: "ticket-analysis-republisher", action: "fatal" },
+  });
+  console.error("[ticket-analysis-republisher] fatal error");
+  process.exitCode = 1;
+});

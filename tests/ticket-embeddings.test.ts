@@ -22,6 +22,7 @@ import {
   generateTicketEmbedding,
   TICKET_EMBEDDING_DIMENSIONS,
   TICKET_EMBEDDING_MODEL,
+  TICKET_EMBEDDING_TIMEOUT_MS,
 } from "@/lib/ai/ticket-embeddings";
 
 describe("ticket embeddings", () => {
@@ -72,6 +73,7 @@ describe("ticket embeddings", () => {
         model: "mock-embedding-model",
         value: expect.stringContaining("Auth form hangs on mobile"),
         maxRetries: 1,
+        abortSignal: expect.any(AbortSignal),
         providerOptions: {
           google: {
             outputDimensionality: TICKET_EMBEDDING_DIMENSIONS,
@@ -80,6 +82,9 @@ describe("ticket embeddings", () => {
         },
       })
     );
+    const abortSignal = embedMock.mock.calls[0]?.[0]?.abortSignal as AbortSignal;
+    expect(abortSignal.aborted).toBe(false);
+    expect(TICKET_EMBEDDING_TIMEOUT_MS).toBeLessThan(60_000);
   });
 
   it("rejects zero vectors that pgvector cosine indexes cannot search", async () => {

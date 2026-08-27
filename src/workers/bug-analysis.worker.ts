@@ -4,8 +4,9 @@ import { UnrecoverableError, Worker } from "bullmq";
 import "@/sentry.server.config";
 
 import {
+  BUG_ANALYSIS_JOB_NAME,
   BUG_ANALYSIS_QUEUE_NAME,
-  bugAnalysisJobDataSchema,
+  parseBugAnalysisJob,
   type BugAnalysisJobData,
 } from "@/lib/queue/bug-analysis";
 import {
@@ -25,12 +26,23 @@ const worker = new Worker<BugAnalysisJobData>(
   BUG_ANALYSIS_QUEUE_NAME,
   async (job) => {
     const startedAt = Date.now();
-    const data = bugAnalysisJobDataSchema.parse(job.data);
-    const jobId = job.id;
+    let parsedJob: ReturnType<typeof parseBugAnalysisJob>;
 
-    if (!jobId) {
-      throw new UnrecoverableError("Analysis job is missing its stable job ID.");
+    try {
+      parsedJob = parseBugAnalysisJob({
+        name: job.name,
+        data: job.data,
+        jobId: job.id,
+      });
+    } catch {
+      console.warn("[bug-analysis-worker] rejected invalid job", {
+        expectedJobName: BUG_ANALYSIS_JOB_NAME,
+        hasJobId: Boolean(job.id),
+      });
+      throw new UnrecoverableError("Invalid bug analysis job.");
     }
+
+    const { data, jobId } = parsedJob;
 
     const attempt = job.attemptsMade + 1;
 
@@ -96,9 +108,11 @@ worker.on("error", (error) => {
   console.error("[bug-analysis-worker] worker error");
 });
 
-console.info("[bug-analysis-worker] ready", {
-  queue: BUG_ANALYSIS_QUEUE_NAME,
-  concurrency,
+worker.on("ready", () => {
+  console.info("[bug-analysis-worker] ready", {
+    queue: BUG_ANALYSIS_QUEUE_NAME,
+    concurrency,
+  });
 });
 
 let shuttingDown = false;

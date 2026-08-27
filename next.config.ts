@@ -89,11 +89,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-const hasSentrySourceMapConfig = Boolean(
-  process.env.SENTRY_AUTH_TOKEN &&
-    process.env.SENTRY_ORG &&
-    process.env.SENTRY_PROJECT
+const hasSentrySourceMapConfig = [
+  process.env.SENTRY_AUTH_TOKEN,
+  process.env.SENTRY_ORG,
+  process.env.SENTRY_PROJECT,
+].every(
+  (value) => Boolean(value?.trim())
 );
+const shouldUploadSentrySourceMaps =
+  hasSentrySourceMapConfig &&
+  (["1", "true"].includes(process.env.CI?.toLowerCase() ?? "") ||
+    process.env.VERCEL === "1" ||
+    ["1", "true"].includes(
+      process.env.SENTRY_UPLOAD_SOURCE_MAPS?.toLowerCase() ?? ""
+    ));
 
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
@@ -101,6 +110,10 @@ export default withSentryConfig(nextConfig, {
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: !process.env.CI,
   telemetry: false,
+  // Avoid installing Sentry's post-compile release/upload hook when source-map
+  // credentials are absent. The no-op hook still scans the production output
+  // and can materially slow or stall local and preview builds.
+  useRunAfterProductionCompileHook: shouldUploadSentrySourceMaps,
   // Upload application source maps only. Including framework and dependency
   // maps adds substantial build time and does not improve app runtime errors.
   widenClientFileUpload: false,
@@ -110,7 +123,7 @@ export default withSentryConfig(nextConfig, {
     excludeReplayShadowDom: true,
   },
   sourcemaps: {
-    disable: !hasSentrySourceMapConfig,
+    disable: !shouldUploadSentrySourceMaps,
     deleteSourcemapsAfterUpload: true,
   },
 });

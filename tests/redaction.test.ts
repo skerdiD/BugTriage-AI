@@ -8,6 +8,7 @@ describe("redactSensitiveText", () => {
       Authorization: Bearer abcdef1234567890TOKEN0987654321
       password=super-secret-password
       DATABASE_URL=postgresql://user:pass@db.example.com:5432/app
+      REDIS_URL=rediss://default:redis-secret@secure-redis.example.com:6379
       GitHub token ghp_secret_token_value
       -----BEGIN PRIVATE KEY-----
       very-secret-private-key
@@ -18,6 +19,10 @@ describe("redactSensitiveText", () => {
 
     expect(result).not.toContain("super-secret-password");
     expect(result).not.toContain("postgresql://user:pass@db.example.com:5432/app");
+    expect(result).not.toContain(
+      "rediss://default:redis-secret@secure-redis.example.com:6379"
+    );
+    expect(result).not.toContain("redis-secret");
     expect(result).not.toContain("very-secret-private-key");
     expect(result).not.toContain("ghp_secret_token_value");
     expect(result).toContain("Bearer [REDACTED]");

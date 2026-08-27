@@ -13,7 +13,7 @@ export const BUG_ANALYSIS_BACKOFF_DELAY_MS = 2_000;
 
 export const bugAnalysisJobDataSchema = z.object({
   ticketId: z.string().trim().min(1).max(191),
-});
+}).strict();
 
 export type BugAnalysisJobData = z.infer<typeof bugAnalysisJobDataSchema>;
 
@@ -22,6 +22,27 @@ export type BugAnalysisJobDefinition = {
   data: BugAnalysisJobData;
   options: JobsOptions;
 };
+
+export function parseBugAnalysisJob(input: {
+  name: string;
+  data: unknown;
+  jobId?: string;
+}) {
+  if (input.name !== BUG_ANALYSIS_JOB_NAME) {
+    throw new Error("BullMQ analysis job has an unexpected name.");
+  }
+
+  const data = bugAnalysisJobDataSchema.parse(input.data);
+  const jobId = input.jobId?.trim();
+
+  if (!jobId || jobId.length > 191 || jobId.includes(":")) {
+    throw new Error(
+      "BullMQ analysis job IDs must be non-empty, at most 191 characters, and cannot contain colons."
+    );
+  }
+
+  return { data, jobId };
+}
 
 const globalForQueue = globalThis as unknown as {
   bugAnalysisQueue?: Queue<BugAnalysisJobData>;
@@ -34,8 +55,14 @@ export function buildBugAnalysisJob(input: {
 }): BugAnalysisJobDefinition {
   const data = bugAnalysisJobDataSchema.parse({ ticketId: input.ticketId });
 
-  if (!input.jobId.trim() || input.jobId.includes(":")) {
-    throw new Error("BullMQ analysis job IDs must be non-empty and cannot contain colons.");
+  if (
+    !input.jobId.trim() ||
+    input.jobId.length > 191 ||
+    input.jobId.includes(":")
+  ) {
+    throw new Error(
+      "BullMQ analysis job IDs must be non-empty, at most 191 characters, and cannot contain colons."
+    );
   }
 
   return {

@@ -85,6 +85,7 @@
     "@prisma/dev": {
       "@hono/node-server": "1.19.13"
     },
+    "deepmerge-ts": "8.0.2",
     "next": {
       "postcss": "8.5.26"
     }

@@ -11,6 +11,7 @@ export const TICKET_EMBEDDING_PROVIDER = "google-gemini";
 export const TICKET_EMBEDDING_MODEL = "gemini-embedding-001";
 export const TICKET_EMBEDDING_DIMENSIONS = 768;
 export const TICKET_EMBEDDING_MAX_INPUT_CHARS = 6_000;
+export const TICKET_EMBEDDING_TIMEOUT_MS = 12_000;
 
 export type TicketEmbeddingSource = {
   title?: string | null;
@@ -102,6 +103,7 @@ export async function generateTicketEmbedding(
     model: google.embedding(TICKET_EMBEDDING_MODEL),
     value: content,
     maxRetries: 1,
+    abortSignal: AbortSignal.timeout(TICKET_EMBEDDING_TIMEOUT_MS),
     providerOptions: {
       google: {
         outputDimensionality: TICKET_EMBEDDING_DIMENSIONS,

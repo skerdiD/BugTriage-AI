@@ -3,6 +3,7 @@ import "server-only";
 import Redis, { type RedisOptions } from "ioredis";
 
 const SUPPORTED_REDIS_PROTOCOLS = new Set(["redis:", "rediss:"]);
+const LOCAL_REDIS_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const DEFAULT_WORKER_CONCURRENCY = 3;
 const MAX_WORKER_CONCURRENCY = 20;
 
@@ -33,6 +34,19 @@ export function getRedisUrl(env: NodeJS.ProcessEnv = process.env) {
   if (!SUPPORTED_REDIS_PROTOCOLS.has(parsed.protocol) || !parsed.hostname) {
     throw new RedisConfigurationError(
       "REDIS_URL must be a valid redis:// or rediss:// URL."
+    );
+  }
+
+  if (
+    env.NODE_ENV === "production" &&
+    parsed.protocol === "redis:" &&
+    !LOCAL_REDIS_HOSTS.has(parsed.hostname.toLowerCase()) &&
+    !["1", "true"].includes(
+      env.REDIS_ALLOW_INSECURE_CONNECTION?.trim().toLowerCase() ?? ""
+    )
+  ) {
+    throw new RedisConfigurationError(
+      "Production Redis connections must use TLS with a rediss:// URL unless plaintext transport is explicitly allowed for a trusted private network."
     );
   }
 

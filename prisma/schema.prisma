@@ -250,6 +250,7 @@ model TicketAnalysisDispatch {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([status, nextAttemptAt])
+  @@index([status, lockedAt])
   @@index([ticketId, createdAt])
 }
 

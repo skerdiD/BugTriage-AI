@@ -2,7 +2,7 @@ const structuredSecretPatterns: Array<[RegExp, string]> = [
   [/(bearer\s+)[a-z0-9\-._~+/]+=*/gi, "$1[REDACTED]"],
   [/\b(password|passwd|pwd)\b\s*[:=]\s*([^\s]+)/gi, "$1=[REDACTED]"],
   [/\b(api[_-]?key|secret|token|access[_-]?token|refresh[_-]?token)\b\s*[:=]\s*([^\s]+)/gi, "$1=[REDACTED]"],
-  [/\b(?:postgres|postgresql|mysql|mongodb(?:\+srv)?|redis):\/\/[^\s"'`]+/gi, "[REDACTED_DATABASE_URL]"],
+  [/\b(?:postgres|postgresql|mysql|mongodb(?:\+srv)?|rediss?):\/\/[^\s"'`]+/gi, "[REDACTED_DATABASE_URL]"],
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, "[REDACTED_PRIVATE_KEY]"],
 ];
 
