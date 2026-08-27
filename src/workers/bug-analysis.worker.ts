@@ -1,6 +1,8 @@
 import * as Sentry from "@sentry/nextjs";
 import { UnrecoverableError, Worker } from "bullmq";
 
+import "@/sentry.server.config";
+
 import {
   BUG_ANALYSIS_QUEUE_NAME,
   bugAnalysisJobDataSchema,
@@ -16,8 +18,6 @@ import {
   recordTicketAnalysisFailure,
 } from "@/lib/services/ticket-analysis";
 import { prisma } from "@/lib/prisma";
-
-await import("@/sentry.server.config");
 
 const concurrency = getWorkerConcurrency();
 const redis = createRedisConnection("worker");
