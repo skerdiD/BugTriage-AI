@@ -105,7 +105,7 @@ vi.mock("@/lib/supabase/storage", () => ({
 }));
 
 import { analyzeAndCreateTicketAction } from "@/app/(dashboard)/submit-bug/actions";
-import { defaultBugReportValues } from "@/lib/validation/bug-report";
+import { exampleBugReportValues } from "@/lib/validation/bug-report";
 
 const validAiResponse = {
   improvedTitle: "Checkout payment form fails on Safari iOS",
@@ -145,7 +145,7 @@ function createAllowedDecision() {
 function buildValidFormData() {
   const formData = new FormData();
 
-  Object.entries(defaultBugReportValues).forEach(([key, value]) => {
+  Object.entries(exampleBugReportValues).forEach(([key, value]) => {
     formData.append(key, value);
   });
 
@@ -393,7 +393,7 @@ describe("analyzeAndCreateTicketAction", () => {
     expect(createTicketMock).toHaveBeenCalledWith(
       expect.objectContaining({
         code: "BUG-4242",
-        title: defaultBugReportValues.title,
+        title: exampleBugReportValues.title,
         severity: TicketSeverity.MEDIUM,
         status: TicketStatus.NEW,
         category: "Triage pending",
@@ -439,7 +439,7 @@ describe("analyzeAndCreateTicketAction", () => {
     );
     expect(createTicketMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: defaultBugReportValues.title,
+        title: exampleBugReportValues.title,
         severity: TicketSeverity.MEDIUM,
         category: "Triage pending",
       })

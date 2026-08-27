@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { Eye, Menu } from "lucide-react";
 
@@ -38,6 +38,18 @@ type DashboardShellProps = {
 };
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "bt.sidebar.collapsed";
+
+const DashboardUserContext = createContext<DashboardUser | null>(null);
+
+export function useDashboardUser() {
+  const user = useContext(DashboardUserContext);
+
+  if (!user) {
+    throw new Error("useDashboardUser must be used within DashboardShell.");
+  }
+
+  return user;
+}
 
 export function DashboardShell({
   children,
@@ -156,7 +168,9 @@ export function DashboardShell({
               projects={projects}
             />
           </div>
-          {children}
+          <DashboardUserContext.Provider value={user}>
+            {children}
+          </DashboardUserContext.Provider>
         </div>
       </main>
     </div>

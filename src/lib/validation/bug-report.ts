@@ -109,7 +109,18 @@ export const bugReportFormSchema = z.object({
 
 export type BugReportFormValues = z.infer<typeof bugReportFormSchema>;
 
-export const defaultBugReportValues: BugReportFormValues = {
+export const defaultBugReportValues: Partial<BugReportFormValues> = {
+  title: "",
+  description: "",
+  stepsToReproduce: "",
+  expectedBehavior: "",
+  actualBehavior: "",
+  environment: "production",
+  affectedPage: "",
+  consoleLogs: "",
+};
+
+export const exampleBugReportValues: BugReportFormValues = {
   title: "Payment form fails on Safari mobile",
   description:
     "User reported that when trying to complete checkout on Safari iOS, the payment form becomes unresponsive after entering card details. Submit button appears disabled even with valid input.",
@@ -123,6 +134,5 @@ export const defaultBugReportValues: BugReportFormValues = {
   device: "ios-mobile",
   environment: "production",
   affectedPage: "/checkout/payment",
-  consoleLogs:
-    "TypeError: Cannot read properties of undefined reading paymentIntent\nat PaymentForm.submitPayment",
+  consoleLogs: "",
 };

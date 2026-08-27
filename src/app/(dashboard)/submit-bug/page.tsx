@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertCircle,
@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 import { analyzeAndCreateTicketAction } from "@/app/(dashboard)/submit-bug/actions";
+import { useDashboardUser } from "@/components/dashboard/dashboard-shell";
 import { PageHeader } from "@/components/dashboard/page-header";
 import type { UploadDropzoneProps } from "@/components/dashboard/upload-dropzone";
 import { Badge } from "@/components/ui/badge";
@@ -47,9 +48,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { detectBugReportClientContext } from "@/lib/bug-report-client-context";
 import {
   bugReportFormSchema,
   defaultBugReportValues,
+  exampleBugReportValues,
   type BugReportFormValues,
 } from "@/lib/validation/bug-report";
 
@@ -93,6 +96,7 @@ const UploadDropzone = dynamic<UploadDropzoneProps>(
 
 export default function SubmitBugPage() {
   const router = useRouter();
+  const { isDemo } = useDashboardUser();
   const [isPending, startTransition] = useTransition();
 
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
@@ -108,6 +112,37 @@ export default function SubmitBugPage() {
   });
 
   const isSubmitting = isPending || form.formState.isSubmitting;
+
+  useEffect(() => {
+    const browserNavigator = navigator as Navigator & {
+      userAgentData?: {
+        brands: readonly { brand: string; version: string }[];
+        mobile: boolean;
+      };
+    };
+    const detectedContext = detectBugReportClientContext({
+      userAgent: browserNavigator.userAgent,
+      platform: browserNavigator.platform,
+      maxTouchPoints: browserNavigator.maxTouchPoints,
+      userAgentData: browserNavigator.userAgentData,
+    });
+
+    if (detectedContext.browser && !form.getValues("browser")) {
+      form.setValue("browser", detectedContext.browser, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      });
+    }
+
+    if (detectedContext.device && !form.getValues("device")) {
+      form.setValue("device", detectedContext.device, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      });
+    }
+  }, [form]);
 
   const totalUploadBytes = useMemo(
     () =>
@@ -191,6 +226,17 @@ export default function SubmitBugPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   Plain language beats perfect formatting. Missing details can be added later.
                 </p>
+                {isDemo ? (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="mt-1 h-auto justify-start px-0 text-violet-300"
+                    onClick={() => form.reset(exampleBugReportValues)}
+                  >
+                    Use example report
+                  </Button>
+                ) : null}
               </div>
             </div>
           </CardHeader>
@@ -206,7 +252,7 @@ export default function SubmitBugPage() {
                       <FormLabel>Short summary *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Example: Checkout button stops responding on iPhone Safari"
+                          placeholder="e.g. Payment form fails on Safari mobile"
                           className="h-11 rounded-xl border-white/10 bg-white/[0.04]"
                           {...field}
                         />
@@ -224,7 +270,7 @@ export default function SubmitBugPage() {
                       <FormLabel>What happened? *</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="What did the person see, what were they trying to do, and how often did it happen?"
+                          placeholder="Describe what happened, what you expected instead, and any error messages you saw..."
                           className="min-h-32 rounded-xl border-white/10 bg-white/[0.04]"
                           {...field}
                         />
@@ -244,7 +290,10 @@ export default function SubmitBugPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Browser *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value ?? ""}
+                        >
                           <FormControl>
                             <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]">
                               <SelectValue placeholder="Select browser" />
@@ -268,7 +317,10 @@ export default function SubmitBugPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Device *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value ?? ""}
+                        >
                           <FormControl>
                             <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/[0.04]">
                               <SelectValue placeholder="Select device" />
