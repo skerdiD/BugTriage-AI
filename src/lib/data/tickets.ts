@@ -842,28 +842,28 @@ export async function completeTicketGitHubExport(input: {
     );
   }
 
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.ticket.updateMany({
-      where: {
-        id: access.ticket.id,
-        githubExportStatus: GitHubExportStatus.EXPORTING,
-      },
-      data: {
-        githubExportStatus: GitHubExportStatus.EXPORTED,
-        githubIssueUrl: input.issueUrl,
-        githubIssueNumber: input.issueNumber,
-        githubExportedAt: new Date(),
-        githubExportError: null,
-      },
-    });
+  const updated = await prisma.ticket.updateMany({
+    where: {
+      id: access.ticket.id,
+      githubExportStatus: GitHubExportStatus.EXPORTING,
+    },
+    data: {
+      githubExportStatus: GitHubExportStatus.EXPORTED,
+      githubIssueUrl: input.issueUrl,
+      githubIssueNumber: input.issueNumber,
+      githubExportedAt: new Date(),
+      githubExportError: null,
+    },
+  });
 
-    if (updated.count !== 1) {
-      throw new GitHubExportStateError(
-        "GitHub export state changed before completion."
-      );
-    }
+  if (updated.count !== 1) {
+    throw new GitHubExportStateError(
+      "GitHub export state changed before completion."
+    );
+  }
 
-    await tx.ticketActivity.create({
+  try {
+    await prisma.ticketActivity.create({
       data: {
         ticketId: access.ticket.id,
         actorId: input.actorId ?? currentUser.id,
@@ -876,12 +876,23 @@ export async function completeTicketGitHubExport(input: {
         },
       },
     });
+  } catch (error) {
+    captureServerException(error, {
+      area: "tickets",
+      action: "github-export-activity",
+      message: "[tickets] failed to record GitHub export activity",
+      context: {
+        workspaceId: input.workspaceId,
+        ticketCode: input.ticketCode,
+        issueNumber: input.issueNumber,
+      },
+    });
+  }
 
-    return {
-      issueUrl: input.issueUrl,
-      issueNumber: input.issueNumber,
-    };
-  });
+  return {
+    issueUrl: input.issueUrl,
+    issueNumber: input.issueNumber,
+  };
 }
 
 export async function failTicketGitHubExport(input: {

@@ -17,6 +17,7 @@ import type {
 import { presentTicketActivityCopy } from "@/lib/dashboard/activity-copy";
 import type { SimilarIssue } from "@/lib/data/similar-issues";
 import type { TicketDetail, TicketListItem } from "@/lib/data/tickets";
+import { getSafeGitHubIssueUrl } from "@/lib/security/urls";
 
 function initialsFromName(name?: string | null) {
   if (!name) return "NA";
@@ -150,7 +151,10 @@ export function mapTicketDetailToUiTicket(
     aiFeedback: latestAiRun?.feedback ?? null,
     aiHistory,
     githubExportStatus: ticket.githubExportStatus,
-    githubIssueUrl: ticket.githubIssueUrl,
+    githubIssueUrl: getSafeGitHubIssueUrl(
+      ticket.githubIssueUrl,
+      ticket.githubIssueNumber
+    ),
     githubIssueNumber: ticket.githubIssueNumber,
     githubExportedAt: ticket.githubExportedAt
       ? format(ticket.githubExportedAt, "MMM d, yyyy, HH:mm")

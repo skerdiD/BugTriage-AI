@@ -30,3 +30,37 @@ export function getAuthPageHref(
 
   return `${page}?${params.toString()}`;
 }
+
+export function getSafeGitHubIssueUrl(
+  candidate: string | null | undefined,
+  expectedIssueNumber?: number | null
+) {
+  if (!candidate) {
+    return null;
+  }
+
+  try {
+    const url = new URL(candidate.trim());
+    const issuePath = url.pathname.match(/^\/[^/]+\/[^/]+\/issues\/(\d+)$/i);
+    const issueNumber = issuePath ? Number(issuePath[1]) : Number.NaN;
+
+    if (
+      url.protocol !== "https:" ||
+      url.hostname.toLowerCase() !== "github.com" ||
+      url.port ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash ||
+      !Number.isSafeInteger(issueNumber) ||
+      issueNumber < 1 ||
+      (expectedIssueNumber != null && issueNumber !== expectedIssueNumber)
+    ) {
+      return null;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}

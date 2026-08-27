@@ -1,6 +1,9 @@
+import "server-only";
+
 import { z } from "zod";
 
 import type { TicketDetail } from "@/lib/data/tickets";
+import { getSafeGitHubIssueUrl } from "@/lib/security/urls";
 
 const GITHUB_API_TIMEOUT_MS = 10_000;
 const GITHUB_API_VERSION = "2022-11-28";
@@ -52,7 +55,18 @@ export type GitHubIssueExportConfig = {
 export type GitHubIssueExportResult = {
   issueUrl: string;
   issueNumber: number;
+  labelsApplied: boolean;
 };
+
+export class GitHubIssueExportError extends Error {
+  status: number;
+
+  constructor(message: string, status = 502) {
+    super(message);
+    this.name = "GitHubIssueExportError";
+    this.status = status;
+  }
+}
 
 type GitHubIssueResponse = {
   html_url?: unknown;
@@ -103,14 +117,15 @@ export function getGitHubIssueExportConfig(): GitHubIssueExportConfig {
   const token = z
     .string()
     .trim()
-    .min(8)
-    .max(300)
-    .regex(/^[A-Za-z0-9_]+$/)
+    .min(16)
+    .max(500)
+    .regex(/^[\x21-\x7e]+$/)
     .safeParse(process.env.GITHUB_TOKEN);
 
   if (!owner.success || !repo.success || !token.success) {
-    throw new Error(
-      "GitHub export is not configured. Check the server repository and token settings."
+    throw new GitHubIssueExportError(
+      "GitHub export is not configured. Check the server repository and token settings.",
+      503
     );
   }
 
@@ -121,14 +136,22 @@ export function getGitHubIssueExportConfig(): GitHubIssueExportConfig {
   };
 }
 
+function sanitizeGitHubText(value: string) {
+  return value
+    .normalize("NFC")
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "")
+    .replace(/[\u202a-\u202e\u2066-\u2069]/g, "")
+    .replace(/@(?=[A-Za-z0-9_-])/g, "@\u200b");
+}
+
 function normalizeMarkdownValue(value?: string | null) {
-  const normalizedValue = value?.trim();
+  const normalizedValue = value ? sanitizeGitHubText(value).trim() : "";
 
   return normalizedValue || "Not provided.";
 }
 
 function normalizeSingleLineMarkdownValue(value: string) {
-  return value.replace(/\s+/g, " ").trim();
+  return sanitizeGitHubText(value).replace(/\s+/g, " ").trim();
 }
 
 function escapeMarkdownTableValue(value: string) {
@@ -151,11 +174,13 @@ function metadataRow(label: string, value?: string | number | null) {
 }
 
 function truncateForGitHub(value: string, maxLength: number) {
-  if (value.length <= maxLength) {
+  const characters = Array.from(value);
+
+  if (characters.length <= maxLength) {
     return value;
   }
 
-  return `${value.slice(0, maxLength - 28).trimEnd()}\n\n_Trimmed for GitHub export._`;
+  return `${characters.slice(0, maxLength - 31).join("").trimEnd()}\n\n_Trimmed for GitHub export._`;
 }
 
 function buildIssueTitle(ticket: TicketDetail) {
@@ -180,7 +205,7 @@ function formatAssignee(ticket: TicketDetail) {
 }
 
 function sectionWithCodeFence(title: string, value?: string | null) {
-  const normalizedValue = value?.trim();
+  const normalizedValue = value ? sanitizeGitHubText(value).trim() : "";
 
   if (!normalizedValue) {
     return `## ${title}\nNot provided.`;
@@ -344,10 +369,14 @@ async function githubFetch(url: string, init: RequestInit) {
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("GitHub export timed out. Please try again.");
+      throw new GitHubIssueExportError(
+        "GitHub export timed out. Please try again."
+      );
     }
 
-    throw new Error("GitHub export failed because GitHub could not be reached.");
+    throw new GitHubIssueExportError(
+      "GitHub export failed because GitHub could not be reached."
+    );
   } finally {
     clearTimeout(timeout);
   }
@@ -371,7 +400,9 @@ export async function exportTicketToGitHubIssue(
   const body = formatTicketAsGitHubIssueBody(ticket);
 
   if (!title.trim() || !body.trim()) {
-    throw new Error("GitHub issue payload is empty. Check the ticket details.");
+    throw new GitHubIssueExportError(
+      "GitHub issue payload is empty. Check the ticket details."
+    );
   }
 
   const issueResponse = await githubFetch(
@@ -389,20 +420,37 @@ export async function exportTicketToGitHubIssue(
   const issuePayload = await readGitHubJson(issueResponse);
 
   if (!issueResponse.ok) {
-    throw new Error(getSafeGitHubErrorMessage(issueResponse.status, issueResponse));
+    throw new GitHubIssueExportError(
+      getSafeGitHubErrorMessage(issueResponse.status, issueResponse)
+    );
   }
 
   if (
-    typeof issuePayload.html_url !== "string" ||
-    typeof issuePayload.number !== "number"
+    typeof issuePayload.number !== "number" ||
+    !Number.isSafeInteger(issuePayload.number) ||
+    issuePayload.number < 1
   ) {
-    throw new Error("GitHub created the issue but returned an unexpected response.");
+    throw new GitHubIssueExportError(
+      "GitHub created the issue but returned an unexpected response."
+    );
+  }
+
+  const issueUrl =
+    typeof issuePayload.html_url === "string"
+      ? getSafeGitHubIssueUrl(issuePayload.html_url, issuePayload.number)
+      : null;
+
+  if (!issueUrl) {
+    throw new GitHubIssueExportError(
+      "GitHub created the issue but returned an unexpected response."
+    );
   }
 
   const labels = getGitHubLabelsForTicket(ticket);
+  let labelsApplied = false;
 
   try {
-    await githubFetch(
+    const labelResponse = await githubFetch(
       `https://api.github.com/repos/${config.owner}/${config.repo}/issues/${issuePayload.number}/labels`,
       {
         method: "POST",
@@ -412,12 +460,15 @@ export async function exportTicketToGitHubIssue(
         }),
       }
     );
+
+    labelsApplied = labelResponse.ok;
   } catch {
     // Label creation is best-effort. The issue export itself should remain useful.
   }
 
   return {
-    issueUrl: issuePayload.html_url,
+    issueUrl,
     issueNumber: issuePayload.number,
+    labelsApplied,
   };
 }

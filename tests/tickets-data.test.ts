@@ -71,6 +71,9 @@ const {
         findUnique: vi.fn(),
         updateMany: vi.fn(),
       },
+      ticketActivity: {
+        create: vi.fn(),
+      },
       ticketAiAnalysisRun: {
         findFirst: vi.fn(),
         update: vi.fn(),
@@ -122,6 +125,7 @@ import {
   MAX_TICKET_COMMENT_LENGTH,
   addTicketComment,
   claimTicketGitHubExport,
+  completeTicketGitHubExport,
   createTicket,
   failTicketGitHubExport,
   generateUniqueTicketCode,
@@ -527,6 +531,40 @@ describe("ticket data layer", () => {
         githubExportError: "GitHub failed",
       },
     });
+  });
+
+  it("keeps a completed export when activity logging fails", async () => {
+    const activityError = new Error("Activity store unavailable");
+    prismaMock.ticket.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.ticketActivity.create.mockRejectedValue(activityError);
+
+    const result = await completeTicketGitHubExport({
+      workspaceId: "workspace-1",
+      ticketCode: "BUG-4242",
+      actorId: "user-1",
+      issueUrl: "https://github.com/acme/project/issues/42",
+      issueNumber: 42,
+    });
+
+    expect(result).toEqual({
+      issueUrl: "https://github.com/acme/project/issues/42",
+      issueNumber: 42,
+    });
+    expect(prismaMock.ticket.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          githubExportStatus: GitHubExportStatus.EXPORTING,
+        }),
+        data: expect.objectContaining({
+          githubExportStatus: GitHubExportStatus.EXPORTED,
+          githubIssueNumber: 42,
+        }),
+      })
+    );
+    expect(captureServerExceptionMock).toHaveBeenCalledWith(
+      activityError,
+      expect.objectContaining({ action: "github-export-activity" })
+    );
   });
 
   it("blocks unauthorized GitHub export failure-state mutations", async () => {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getAuthPageHref, getSafeRedirectPath } from "@/lib/security/urls";
+import {
+  getAuthPageHref,
+  getSafeGitHubIssueUrl,
+  getSafeRedirectPath,
+} from "@/lib/security/urls";
 
 describe("getSafeRedirectPath", () => {
   it("keeps safe in-app redirects", () => {
@@ -39,5 +43,26 @@ describe("getAuthPageHref", () => {
     expect(getAuthPageHref("/login", "https://evil.example")).toBe(
       "/login?redirectedFrom=%2Fdashboard"
     );
+  });
+});
+
+describe("getSafeGitHubIssueUrl", () => {
+  it("accepts only a matching HTTPS GitHub issue URL", () => {
+    expect(
+      getSafeGitHubIssueUrl("https://github.com/acme/project/issues/42", 42)
+    ).toBe("https://github.com/acme/project/issues/42");
+    expect(
+      getSafeGitHubIssueUrl("https://github.com/acme/project/issues/41", 42)
+    ).toBeNull();
+  });
+
+  it("rejects external hosts, credentials, and non-issue paths", () => {
+    expect(
+      getSafeGitHubIssueUrl("https://github.com.evil.example/acme/repo/issues/42")
+    ).toBeNull();
+    expect(
+      getSafeGitHubIssueUrl("https://user@github.com/acme/repo/issues/42")
+    ).toBeNull();
+    expect(getSafeGitHubIssueUrl("https://github.com/settings/tokens")).toBeNull();
   });
 });

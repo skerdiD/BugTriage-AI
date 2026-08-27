@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const {
   AuthenticationErrorMock,
   AuthorizationErrorMock,
@@ -90,6 +92,7 @@ vi.mock("@/lib/security/arcjet", () => ({
 }));
 
 import { POST } from "@/app/api/github/issues/route";
+import { GitHubIssueExportError } from "@/lib/integrations/github-issues";
 
 function createAllowedDecision() {
   return {
@@ -228,6 +231,24 @@ describe("POST /api/github/issues", () => {
     expect(getTicketByCodeMock).not.toHaveBeenCalled();
   });
 
+  it("rejects cross-site and non-JSON mutation requests before authentication", async () => {
+    const response = await POST(
+      new Request("http://127.0.0.1:3000/api/github/issues", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          "Sec-Fetch-Site": "cross-site",
+        },
+        body: JSON.stringify({ ticketCode: "BUG-4242" }),
+      })
+    );
+
+    expect(response.status).toBe(415);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(getCurrentWorkspaceContextOrThrowMock).not.toHaveBeenCalled();
+    expect(protectMock).not.toHaveBeenCalled();
+  });
+
   it("rejects oversized export requests before ticket lookup", async () => {
     const response = await POST(
       createRequest({
@@ -299,7 +320,7 @@ describe("POST /api/github/issues", () => {
 
   it("returns safe GitHub failure errors without the token", async () => {
     exportTicketToGitHubIssueMock.mockRejectedValue(
-      new Error(
+      new GitHubIssueExportError(
         "GitHub rejected the token. Check that it is valid and has permission to create issues."
       )
     );
@@ -317,6 +338,19 @@ describe("POST /api/github/issues", () => {
       error:
         "GitHub rejected the token. Check that it is valid and has permission to create issues.",
     });
+  });
+
+  it("does not expose arbitrary internal errors that look like GitHub errors", async () => {
+    exportTicketToGitHubIssueMock.mockRejectedValue(
+      new Error("GitHub token ghp_secret leaked from an internal dependency")
+    );
+
+    const response = await POST(createRequest({ ticketCode: "BUG-4242" }));
+    const text = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(text).toContain("We couldn't export this ticket right now.");
+    expect(text).not.toContain("ghp_secret");
   });
 
   it("returns a conflict when the ticket was already exported", async () => {

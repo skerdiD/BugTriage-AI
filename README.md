@@ -328,6 +328,8 @@ GOOGLE_GENERATIVE_AI_API_KEY=
 REDIS_URL=rediss://default:PASSWORD@HOST:6379
 BULLMQ_WORKER_CONCURRENCY=3
 GITHUB_TOKEN=
+GITHUB_REPOSITORY_OWNER=
+GITHUB_REPOSITORY_NAME=
 ARCJET_KEY=
 NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_AUTH_TOKEN=
@@ -338,6 +340,10 @@ real Redis credentials only in `.env.local` and deployment secret stores;
 `.env.example` contains placeholders only. The standalone worker, republisher,
 and demo seeder load `.env` first and then `.env.local`, while injected deployment
 environment variables take precedence over both files.
+
+For GitHub export, prefer a fine-grained token scoped to the target repository
+with only `Issues: write` permission. Keep it server-side and rotate it if it is
+ever exposed.
 
 ### 4. Run setup
 

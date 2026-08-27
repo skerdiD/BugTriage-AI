@@ -6,6 +6,8 @@ import {
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 import {
   exportTicketToGitHubIssue,
   formatTicketAsGitHubIssueBody,
@@ -161,6 +163,7 @@ describe("GitHub Issues export", () => {
     expect(result).toEqual({
       issueUrl: "https://github.com/skerdiD/BugTriage-AI/issues/12",
       issueNumber: 12,
+      labelsApplied: false,
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toBe(
@@ -283,5 +286,42 @@ describe("GitHub Issues export", () => {
     expect(body).toContain("| Affected page | /checkout<br />/admin \\| hidden |");
     expect(body).toContain("````text\n1. Open checkout");
     expect(body).toContain("Paste ```malicious fence```");
+  });
+
+  it("neutralizes user-controlled mentions and bidirectional control characters", () => {
+    const body = formatTicketAsGitHubIssueBody(
+      createTicket({
+        description: "Notify @everyone \u202eevil.exe",
+        aiAnalysis: null,
+      })
+    );
+
+    expect(body).toContain("@\u200beveryone");
+    expect(body).not.toContain("\u202e");
+  });
+
+  it("rejects an unexpected or mismatched issue URL from GitHub", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        html_url: "https://example.com/issues/12",
+        number: 12,
+      }),
+    });
+
+    await expect(
+      exportTicketToGitHubIssue(
+        {
+          owner: "skerdiD",
+          repo: "BugTriage-AI",
+          token: "ghp_valid_test_token",
+        },
+        createTicket()
+      )
+    ).rejects.toThrow(
+      "GitHub created the issue but returned an unexpected response."
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

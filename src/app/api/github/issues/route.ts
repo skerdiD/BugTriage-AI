@@ -14,6 +14,7 @@ import {
 import {
   exportTicketToGitHubIssue,
   getGitHubIssueExportConfig,
+  GitHubIssueExportError,
   githubIssueExportSchema,
 } from "@/lib/integrations/github-issues";
 import { captureServerException } from "@/lib/observability/server-monitoring";
@@ -24,6 +25,34 @@ import {
 } from "@/lib/security/arcjet";
 
 const MAX_GITHUB_EXPORT_REQUEST_BYTES = 8 * 1024;
+
+const RESPONSE_HEADERS = {
+  "Cache-Control": "no-store",
+  "X-Content-Type-Options": "nosniff",
+} as const;
+
+function jsonResponse(body: unknown, init?: ResponseInit) {
+  const headers = new Headers(init?.headers);
+
+  for (const [name, value] of Object.entries(RESPONSE_HEADERS)) {
+    headers.set(name, value);
+  }
+
+  return Response.json(body, {
+    ...init,
+    headers,
+  });
+}
+
+function acceptsJsonRequest(request: Request) {
+  const contentType = request.headers.get("content-type");
+  const fetchSite = request.headers.get("sec-fetch-site")?.toLowerCase();
+
+  return (
+    contentType?.split(";", 1)[0]?.trim().toLowerCase() ===
+      "application/json" && fetchSite !== "cross-site"
+  );
+}
 
 class RequestBodyError extends Error {
   status: number;
@@ -99,11 +128,18 @@ export async function POST(request: Request) {
   let context: Awaited<ReturnType<typeof getCurrentWorkspaceContextOrThrow>>;
   let body: unknown;
 
+  if (!acceptsJsonRequest(request)) {
+    return jsonResponse(
+      { ok: false, error: "GitHub export requires a same-site JSON request." },
+      { status: 415 }
+    );
+  }
+
   try {
     context = await getCurrentWorkspaceContextOrThrow();
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      return Response.json(
+      return jsonResponse(
         { ok: false, error: "You must be signed in before exporting tickets." },
         { status: 401 }
       );
@@ -115,14 +151,14 @@ export async function POST(request: Request) {
       message: "[github-export] failed to resolve workspace context",
     });
 
-    return Response.json(
+    return jsonResponse(
       { ok: false, error: "We couldn't export this ticket right now." },
       { status: 500 }
     );
   }
 
   if (isDemoUser(context.user)) {
-    return Response.json(
+    return jsonResponse(
       { ok: false, error: "GitHub export is disabled in demo mode." },
       { status: 403 }
     );
@@ -146,7 +182,7 @@ export async function POST(request: Request) {
     });
 
   if (!arcjetDecision) {
-    return Response.json(
+    return jsonResponse(
       { ok: false, error: "We couldn't export this ticket right now." },
       { status: 500 }
     );
@@ -155,7 +191,7 @@ export async function POST(request: Request) {
   logArcjetError("github-issue-export", arcjetDecision);
 
   if (arcjetDecision.isDenied()) {
-    return Response.json(
+    return jsonResponse(
       {
         ok: false,
         error: getArcjetDeniedMessage(
@@ -173,13 +209,13 @@ export async function POST(request: Request) {
     body = await readJsonBodyWithLimit(request);
   } catch (error) {
     if (error instanceof RequestBodyError) {
-      return Response.json(
+      return jsonResponse(
         { ok: false, error: error.message },
         { status: error.status }
       );
     }
 
-    return Response.json(
+    return jsonResponse(
       { ok: false, error: "Invalid export request." },
       { status: 400 }
     );
@@ -188,7 +224,7 @@ export async function POST(request: Request) {
   const parsed = githubIssueExportSchema.safeParse(body);
 
   if (!parsed.success) {
-    return Response.json(
+    return jsonResponse(
       {
         ok: false,
         error:
@@ -228,27 +264,25 @@ export async function POST(request: Request) {
       issueNumber: result.issueNumber,
     });
 
-    return Response.json({
+    return jsonResponse({
       ok: true,
       issueUrl: result.issueUrl,
       issueNumber: result.issueNumber,
     });
   } catch (error) {
     if (error instanceof AuthorizationError) {
-      return Response.json({ ok: false, error: error.message }, { status: 403 });
+      return jsonResponse({ ok: false, error: error.message }, { status: 403 });
     }
 
     if (error instanceof GitHubExportStateError) {
-      return Response.json(
+      return jsonResponse(
         { ok: false, error: error.message },
         { status: error.status }
       );
     }
 
     const safeError =
-      error instanceof Error &&
-      (error.message.startsWith("GitHub ") ||
-        error.message.startsWith("This ticket"))
+      error instanceof GitHubIssueExportError
         ? error.message
         : "We couldn't export this ticket right now.";
 
@@ -269,9 +303,9 @@ export async function POST(request: Request) {
       },
     });
 
-    return Response.json(
+    return jsonResponse(
       { ok: false, error: safeError },
-      { status: safeError.startsWith("GitHub ") ? 502 : 500 }
+      { status: error instanceof GitHubIssueExportError ? error.status : 500 }
     );
   }
 }

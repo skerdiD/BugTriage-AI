@@ -43,6 +43,24 @@ type ExportResponse =
       error: string;
     };
 
+function isExportResponse(value: unknown): value is ExportResponse {
+  if (!value || typeof value !== "object" || !("ok" in value)) {
+    return false;
+  }
+
+  if (value.ok === false) {
+    return "error" in value && typeof value.error === "string";
+  }
+
+  return (
+    value.ok === true &&
+    "issueUrl" in value &&
+    typeof value.issueUrl === "string" &&
+    "issueNumber" in value &&
+    typeof value.issueNumber === "number"
+  );
+}
+
 export function GitHubIssueExportDialog({
   ticketCode,
   canExport,
@@ -92,6 +110,7 @@ export function GitHubIssueExportDialog({
     try {
       const response = await fetch("/api/github/issues", {
         method: "POST",
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
         },
@@ -100,10 +119,20 @@ export function GitHubIssueExportDialog({
         }),
       });
 
-      const result = (await response.json()) as ExportResponse;
+      const result: unknown = await response.json();
+
+      if (!isExportResponse(result)) {
+        setError("GitHub export returned an unexpected response. Please try again.");
+        return;
+      }
 
       if (!response.ok || !result.ok) {
         setError(result.ok ? "GitHub export failed. Please try again." : result.error);
+
+        if (response.status === 409) {
+          router.refresh();
+        }
+
         return;
       }
 
@@ -118,7 +147,7 @@ export function GitHubIssueExportDialog({
   }
 
   const isPersistedExporting = status === "EXPORTING";
-  const isDisabled = isExporting || isPersistedExporting || !canExport;
+  const isDisabled = isExporting || !canExport;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -135,7 +164,7 @@ export function GitHubIssueExportDialog({
             <GitPullRequest className="mr-2 size-4" />
           )}
           {isPersistedExporting
-            ? "Export in progress"
+            ? "Check GitHub export"
             : status === "FAILED"
               ? "Retry GitHub export"
               : "Export to GitHub"}
@@ -158,6 +187,15 @@ export function GitHubIssueExportDialog({
               <p className="font-semibold">Previous export failed</p>
               <p className="mt-1 text-red-100/80">{failureMessage}</p>
             </div>
+          </div>
+        ) : isPersistedExporting ? (
+          <div className="flex gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+            <Loader2 className="mt-0.5 size-4 shrink-0" />
+            <p>
+              An earlier export is still marked as in progress. Checking again is
+              safe: the server blocks overlapping attempts and can recover an
+              abandoned export after its lease expires.
+            </p>
           </div>
         ) : (
           <div className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
@@ -194,7 +232,9 @@ export function GitHubIssueExportDialog({
               ) : (
                 <>
                   <GitPullRequest className="mr-2 size-4" />
-                  {status === "FAILED" ? "Retry export" : "Export to GitHub"}
+                  {status === "FAILED" || isPersistedExporting
+                    ? "Retry export"
+                    : "Export to GitHub"}
                 </>
               )}
             </Button>
