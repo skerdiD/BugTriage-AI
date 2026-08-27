@@ -913,7 +913,7 @@ export function TicketDetailClient({
         </div>
 
         <aside className="space-y-6 xl:self-start">
-          <Card className="sticky top-24 z-20 hidden overflow-hidden rounded-3xl border-white/10 bg-[#15121d] shadow-[0_28px_90px_-46px_rgba(0,0,0,0.96)] supports-[backdrop-filter]:bg-[#15121d]/95 xl:flex">
+          <Card className="hidden overflow-hidden rounded-3xl border-white/10 bg-[#15121d] shadow-[0_28px_90px_-46px_rgba(0,0,0,0.96)] supports-[backdrop-filter]:bg-[#15121d]/95 xl:flex">
             <CardHeader>
               <CardTitle>Move this ticket</CardTitle>
             </CardHeader>
