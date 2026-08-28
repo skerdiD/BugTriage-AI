@@ -17,11 +17,25 @@ describe("demo seed helpers", () => {
     const tickets = buildDemoTickets();
     const codes = tickets.map((ticket) => ticket.code);
 
-    expect(tickets.length).toBeGreaterThan(0);
+    expect(tickets).toHaveLength(11);
     expect(new Set(codes).size).toBe(codes.length);
     expect(codes.every((code) => code.startsWith(DEMO_TICKET_CODE_PREFIX))).toBe(
       true
     );
+  });
+
+  it("includes three new semantic-search examples dated today", () => {
+    const tickets = buildDemoTickets();
+    const today = new Date().toDateString();
+    const todaysTickets = tickets.filter(
+      (ticket) => ticket.createdAt.toDateString() === today
+    );
+
+    expect(todaysTickets.map((ticket) => ticket.code)).toEqual([
+      "DEMO-1009",
+      "DEMO-1010",
+      "DEMO-1011",
+    ]);
   });
 
   it("only flags stale managed demo ticket codes for cleanup on rerun", () => {

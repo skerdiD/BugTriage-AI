@@ -33,6 +33,7 @@ export const LEGACY_DEMO_PROJECT_SLUG = "saas-demo-workspace";
 export const DEMO_PROJECT_NAME = "SaaS Platform";
 export const DEMO_PROJECT_DESCRIPTION =
   "Demo project with realistic tickets and AI triage results.";
+const DEMO_SEED_TRANSACTION_TIMEOUT_MS = 30_000;
 
 const DEMO_TEAM_MEMBERS = [
   {
@@ -119,6 +120,9 @@ export function buildDemoTickets(): DemoTicketSeed[] {
   const commentButtonCreatedAt = daysAgo(5, 16, 10);
   const passwordResetCreatedAt = daysAgo(3, 9, 25);
   const activityFeedCreatedAt = daysAgo(1, 12, 45);
+  const safariSessionCreatedAt = daysAgo(0, 8, 40);
+  const screenshotUploadCreatedAt = daysAgo(0, 9, 35);
+  const statusTimelineCreatedAt = daysAgo(0, 10, 25);
 
   return [
     {
@@ -659,6 +663,206 @@ export function buildDemoTickets(): DemoTicketSeed[] {
           metadata: {
             from: "IN_PROGRESS",
             to: "FIXED",
+          },
+        },
+      ],
+    },
+    {
+      code: "DEMO-1009",
+      title: "Valid sign-in loops back to login on iPhone Safari",
+      description:
+        "A customer can submit valid credentials on iPhone Safari, but the dashboard redirect returns them to the login form. Retrying on desktop Chrome with the same account works immediately.",
+      expectedBehavior:
+        "A successful mobile sign-in should persist the session and open the dashboard.",
+      actualBehavior:
+        "Safari briefly navigates toward the dashboard, then redirects back to login without showing an authentication error.",
+      stepsToReproduce:
+        "1. Open the production login page on an iPhone.\n2. Enter valid account credentials in Safari.\n3. Tap Sign in.\n4. Observe the redirect return to the login form.",
+      browser: "Safari 17",
+      device: "iPhone 14",
+      environment: "production",
+      affectedPage: "/login",
+      severity: TicketSeverity.CRITICAL,
+      status: TicketStatus.NEW,
+      category: "Authentication",
+      priorityScore: 95,
+      aiConfidence: 94,
+      createdAt: safariSessionCreatedAt,
+      updatedAt: hoursAfter(safariSessionCreatedAt, 0.5),
+      aiSummary:
+        "A valid Safari mobile login reaches the redirect step but does not retain the authenticated session, sending the customer back to the login screen.",
+      likelyCause:
+        "The auth callback or session cookie persistence path may be failing specifically during the mobile Safari redirect.",
+      suggestedFix:
+        "Trace the callback response and cookie attributes on iOS Safari, then preserve the established session before completing the dashboard redirect.",
+      reproductionSteps: [
+        "Open the production login page in iPhone Safari.",
+        "Submit valid credentials.",
+        "Observe the dashboard redirect loop back to login.",
+      ],
+      tags: ["auth", "mobile-safari", "session", "redirect"],
+      comments: [
+        {
+          body: "Support reproduced this with the same account that signs in successfully from desktop Chrome.",
+          createdAt: hoursAfter(safariSessionCreatedAt, 0.35),
+        },
+      ],
+      activities: [
+        {
+          type: TicketActivityType.CREATED,
+          title: "Bug submitted",
+          description: "Support reported another production login loop isolated to iPhone Safari.",
+          createdAt: safariSessionCreatedAt,
+          metadata: {
+            source: "support",
+          },
+        },
+        {
+          type: TicketActivityType.AI_ANALYZED,
+          title: "Triage draft ready",
+          description: "The triage draft linked the symptoms to mobile Safari session persistence.",
+          createdAt: hoursAfter(safariSessionCreatedAt, 0.15),
+          metadata: {
+            confidence: 94,
+            severity: "CRITICAL",
+          },
+        },
+      ],
+    },
+    {
+      code: "DEMO-1010",
+      title: "Bug report fails after an oversized PNG passes attachment checks",
+      description:
+        "The Submit Bug form accepts a high-resolution PNG and starts sending the report, but the request ends with a generic server error. A smaller copy of the same screenshot uploads successfully.",
+      expectedBehavior:
+        "The attachment should either upload successfully or be rejected before submission with a clear size-limit message.",
+      actualBehavior:
+        "Client validation accepts the large screenshot, then the server rejects the upload after several seconds.",
+      stepsToReproduce:
+        "1. Open Submit Bug.\n2. Attach a high-resolution PNG larger than the server upload limit.\n3. Submit the form.\n4. Observe the delayed generic error.",
+      browser: "Edge 126",
+      device: "Windows 11 desktop",
+      environment: "production",
+      affectedPage: "/submit-bug",
+      severity: TicketSeverity.HIGH,
+      status: TicketStatus.INVESTIGATING,
+      category: "File Uploads",
+      priorityScore: 84,
+      aiConfidence: 92,
+      createdAt: screenshotUploadCreatedAt,
+      updatedAt: hoursAfter(screenshotUploadCreatedAt, 0.75),
+      aiSummary:
+        "A large PNG passes browser-side attachment validation but is rejected by the server, producing a delayed and unhelpful submission failure.",
+      likelyCause:
+        "The client and server appear to enforce different maximum file sizes or calculate the screenshot payload size differently.",
+      suggestedFix:
+        "Use one shared attachment-size rule on both sides and return a specific validation response before attempting storage upload.",
+      reproductionSteps: [
+        "Select a PNG above the server upload limit.",
+        "Submit the bug report after client validation accepts it.",
+        "Observe the delayed server-side failure.",
+      ],
+      tags: ["uploads", "png", "validation", "file-size"],
+      comments: [
+        {
+          body: "QA confirmed the same image succeeds after being compressed below the server limit.",
+          createdAt: hoursAfter(screenshotUploadCreatedAt, 0.6),
+        },
+      ],
+      activities: [
+        {
+          type: TicketActivityType.CREATED,
+          title: "Bug submitted",
+          description: "QA reported inconsistent size validation for a production PNG attachment.",
+          createdAt: screenshotUploadCreatedAt,
+        },
+        {
+          type: TicketActivityType.AI_ANALYZED,
+          title: "Triage draft ready",
+          description: "The triage draft identified a likely mismatch between client and server upload limits.",
+          createdAt: hoursAfter(screenshotUploadCreatedAt, 0.2),
+          metadata: {
+            confidence: 92,
+            severity: "HIGH",
+          },
+        },
+        {
+          type: TicketActivityType.STATUS_CHANGED,
+          title: "Status changed",
+          description: "Ticket moved from New to Investigating.",
+          createdAt: hoursAfter(screenshotUploadCreatedAt, 0.7),
+          metadata: {
+            from: "NEW",
+            to: "INVESTIGATING",
+          },
+        },
+      ],
+    },
+    {
+      code: "DEMO-1011",
+      title: "Ticket timeline stays stale after moving status to In Progress",
+      description:
+        "Changing a ticket from Investigating to In Progress updates the status badge immediately, but the activity timeline does not show the transition until the detail page is reloaded.",
+      expectedBehavior:
+        "The activity timeline should show the new status event as soon as the status update succeeds.",
+      actualBehavior:
+        "The badge shows In Progress while the timeline still ends with the previous Investigating event until refresh.",
+      stepsToReproduce:
+        "1. Open an Investigating ticket.\n2. Change its status to In Progress.\n3. Compare the badge with the activity timeline.\n4. Refresh to make the missing timeline entry appear.",
+      browser: "Chrome 126",
+      device: "MacBook Pro",
+      environment: "production",
+      affectedPage: "/tickets/[ticketId]",
+      severity: TicketSeverity.MEDIUM,
+      status: TicketStatus.IN_PROGRESS,
+      category: "Activity Feed",
+      priorityScore: 66,
+      aiConfidence: 93,
+      createdAt: statusTimelineCreatedAt,
+      updatedAt: hoursAfter(statusTimelineCreatedAt, 0.65),
+      aiSummary:
+        "The ticket status mutation succeeds, but the detail-page activity timeline remains on stale server data until a full refresh.",
+      likelyCause:
+        "The status action may update the ticket without invalidating or refreshing the activity data rendered by the detail route.",
+      suggestedFix:
+        "Revalidate the complete ticket detail route after the mutation and ensure the activity event is committed before the refreshed view is returned.",
+      reproductionSteps: [
+        "Open a ticket in Investigating status.",
+        "Move it to In Progress.",
+        "Observe that the badge updates while the timeline remains stale.",
+      ],
+      tags: ["tickets", "activity-feed", "status", "revalidation"],
+      comments: [
+        {
+          body: "The status event is present after reload, so this appears to be stale rendering rather than a failed write.",
+          createdAt: hoursAfter(statusTimelineCreatedAt, 0.55),
+        },
+      ],
+      activities: [
+        {
+          type: TicketActivityType.CREATED,
+          title: "Bug submitted",
+          description: "QA found another stale activity timeline after a successful status update.",
+          createdAt: statusTimelineCreatedAt,
+        },
+        {
+          type: TicketActivityType.AI_ANALYZED,
+          title: "Triage draft ready",
+          description: "The triage draft pointed to detail-route revalidation after status mutations.",
+          createdAt: hoursAfter(statusTimelineCreatedAt, 0.15),
+          metadata: {
+            confidence: 93,
+            severity: "MEDIUM",
+          },
+        },
+        {
+          type: TicketActivityType.STATUS_CHANGED,
+          title: "Status changed",
+          description: "Ticket moved from Investigating to In Progress.",
+          createdAt: hoursAfter(statusTimelineCreatedAt, 0.6),
+          metadata: {
+            from: "INVESTIGATING",
+            to: "IN_PROGRESS",
           },
         },
       ],
@@ -1251,7 +1455,8 @@ export async function runDemoSeed() {
         projectId: project.id,
         ticket,
       })
-    )
+    ),
+    { timeout: DEMO_SEED_TRANSACTION_TIMEOUT_MS }
   );
 
   const { backfillTicketEmbeddings } = await import(
