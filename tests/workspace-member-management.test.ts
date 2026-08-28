@@ -19,6 +19,7 @@ const {
     workspaceMember: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      upsert: vi.fn(),
       update: vi.fn(),
       findFirst: vi.fn(),
       delete: vi.fn(),
@@ -29,6 +30,7 @@ const {
     project: {
       findFirst: vi.fn(),
       create: vi.fn(),
+      upsert: vi.fn(),
     },
     $transaction: vi.fn(),
   },
@@ -133,10 +135,9 @@ describe("workspace member management", () => {
     prismaMock.workspace.create.mockResolvedValue({
       id: "workspace-2",
     });
-    prismaMock.workspaceMember.findUnique.mockResolvedValue(null);
-    prismaMock.workspaceMember.create.mockResolvedValue({ id: "member-1" });
+    prismaMock.workspaceMember.upsert.mockResolvedValue({ id: "member-1" });
     prismaMock.project.findFirst.mockResolvedValue(null);
-    prismaMock.project.create.mockResolvedValue({ id: "project-1" });
+    prismaMock.project.upsert.mockResolvedValue({ id: "project-1" });
 
     const workspace = await createWorkspace({
       name: "Growth Engineering",
@@ -149,18 +150,38 @@ describe("workspace member management", () => {
       role: WorkspaceRole.OWNER,
       projectCount: 1,
     });
-    expect(prismaMock.workspaceMember.create).toHaveBeenCalledWith({
-      data: {
+    expect(prismaMock.workspaceMember.upsert).toHaveBeenCalledWith({
+      where: {
+        userId_workspaceId: {
+          userId: "user-1",
+          workspaceId: "workspace-2",
+        },
+      },
+      create: {
         userId: "user-1",
         workspaceId: "workspace-2",
         role: WorkspaceRole.OWNER,
       },
+      update: {
+        role: WorkspaceRole.OWNER,
+      },
     });
-    expect(prismaMock.project.create).toHaveBeenCalledWith({
-      data: {
+    expect(prismaMock.project.upsert).toHaveBeenCalledWith({
+      where: {
+        workspaceId_slug: {
+          workspaceId: "workspace-2",
+          slug: "bug-intake",
+        },
+      },
+      create: {
         workspaceId: "workspace-2",
         name: "Bug Intake",
         slug: "bug-intake",
+        description:
+          "Default home for incoming reports, private evidence, AI triage, and engineering follow-up.",
+      },
+      update: {
+        name: "Bug Intake",
         description:
           "Default home for incoming reports, private evidence, AI triage, and engineering follow-up.",
       },

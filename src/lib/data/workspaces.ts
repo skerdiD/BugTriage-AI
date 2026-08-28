@@ -193,40 +193,22 @@ export function pickCurrentProject(
 }
 
 async function ensureWorkspaceOwnerMembership(workspaceId: string, userId: string) {
-  const existingMembership = await prisma.workspaceMember.findUnique({
+  await prisma.workspaceMember.upsert({
     where: {
       userId_workspaceId: {
         userId,
         workspaceId,
       },
     },
-    select: {
-      id: true,
-      role: true,
+    create: {
+      userId,
+      workspaceId,
+      role: WorkspaceRole.OWNER,
+    },
+    update: {
+      role: WorkspaceRole.OWNER,
     },
   });
-
-  if (!existingMembership) {
-    await prisma.workspaceMember.create({
-      data: {
-        userId,
-        workspaceId,
-        role: WorkspaceRole.OWNER,
-      },
-    });
-    return;
-  }
-
-  if (existingMembership.role !== WorkspaceRole.OWNER) {
-    await prisma.workspaceMember.update({
-      where: {
-        id: existingMembership.id,
-      },
-      data: {
-        role: WorkspaceRole.OWNER,
-      },
-    });
-  }
 }
 
 async function ensureDefaultProjectForWorkspace(workspaceId: string) {
@@ -240,11 +222,21 @@ async function ensureDefaultProjectForWorkspace(workspaceId: string) {
   });
 
   if (!project) {
-    project = await prisma.project.create({
-      data: {
+    project = await prisma.project.upsert({
+      where: {
+        workspaceId_slug: {
+          workspaceId,
+          slug: "bug-intake",
+        },
+      },
+      create: {
         workspaceId,
         name: DEFAULT_PERSONAL_PROJECT_NAME,
         slug: "bug-intake",
+        description: DEFAULT_PERSONAL_PROJECT_DESCRIPTION,
+      },
+      update: {
+        name: DEFAULT_PERSONAL_PROJECT_NAME,
         description: DEFAULT_PERSONAL_PROJECT_DESCRIPTION,
       },
     });
@@ -294,29 +286,14 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
       name: true,
     },
   });
-  const existingUserByEmail = existingUserByAuthId
-    ? null
-    : await prisma.user.findUnique({
-        where: {
-          email,
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-        },
-      });
-  const existingUser = existingUserByAuthId ?? existingUserByEmail;
 
-  const user = existingUser
-    ? existingUser.id === input.authUserId &&
-      existingUser.email === email &&
-      existingUser.name === name
-      ? existingUser
+  const user = existingUserByAuthId
+    ? existingUserByAuthId.email === email &&
+      existingUserByAuthId.name === name
+      ? existingUserByAuthId
       : await prisma.user.update({
-          where: { id: existingUser.id },
+          where: { id: existingUserByAuthId.id },
           data: {
-            id: input.authUserId,
             email,
             name,
           },
@@ -326,10 +303,17 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
             name: true,
           },
         })
-    : await prisma.user.create({
-        data: {
+    : await prisma.user.upsert({
+        where: {
+          email,
+        },
+        create: {
           id: input.authUserId,
           email,
+          name,
+        },
+        update: {
+          id: input.authUserId,
           name,
         },
         select: {
@@ -358,13 +342,37 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
   });
 
   if (!workspace) {
-    const baseSlug = slugify(name) || "workspace";
+    const authUserSlug = slugify(user.id) || user.id.slice(0, 48);
+    const personalWorkspaceId = `personal-${user.id}`;
 
-    workspace = await prisma.workspace.create({
-      data: {
+    const provisionedWorkspace = await prisma.workspace.upsert({
+      where: {
+        id: personalWorkspaceId,
+      },
+      create: {
+        id: personalWorkspaceId,
         name: buildPersonalWorkspaceName(name),
-        slug: `${baseSlug}-workspace-${user.id.slice(0, 8)}`,
+        slug: `personal-${authUserSlug}`,
         ownerId: user.id,
+      },
+      update: {
+        name: buildPersonalWorkspaceName(name),
+      },
+      select: {
+        id: true,
+        ownerId: true,
+      },
+    });
+
+    if (provisionedWorkspace.ownerId !== user.id) {
+      throw new WorkspaceManagementError(
+        "A personal workspace could not be provisioned for this account."
+      );
+    }
+
+    workspace = await prisma.workspace.findUnique({
+      where: {
+        id: provisionedWorkspace.id,
       },
       select: {
         id: true,
@@ -376,6 +384,12 @@ export async function ensureUserWorkspace(input: EnsureWorkspaceInput) {
         },
       },
     });
+
+    if (!workspace) {
+      throw new WorkspaceManagementError(
+        "The personal workspace was provisioned, but it could not be loaded."
+      );
+    }
   }
 
   await ensureWorkspaceOwnerMembership(workspace.id, user.id);

@@ -7,19 +7,24 @@ const { prismaMock } = vi.hoisted(() => ({
       findUnique: vi.fn(),
       update: vi.fn(),
       create: vi.fn(),
+      upsert: vi.fn(),
     },
     workspace: {
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       create: vi.fn(),
+      upsert: vi.fn(),
     },
     workspaceMember: {
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      upsert: vi.fn(),
     },
     project: {
       findFirst: vi.fn(),
       create: vi.fn(),
+      upsert: vi.fn(),
     },
   },
 }));
@@ -42,7 +47,7 @@ describe("workspace user identity recovery", () => {
       ownerId: "auth-user-new",
       _count: { projects: 1 },
     });
-    prismaMock.workspaceMember.findUnique.mockResolvedValue({
+    prismaMock.workspaceMember.upsert.mockResolvedValue({
       id: "membership-1",
       role: WorkspaceRole.OWNER,
     });
@@ -53,14 +58,8 @@ describe("workspace user identity recovery", () => {
   });
 
   it("moves an email-matched local user to a recreated auth user id", async () => {
-    prismaMock.user.findUnique
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        id: "auth-user-old",
-        email: "owner@example.com",
-        name: "Old Name",
-      });
-    prismaMock.user.update.mockResolvedValue({
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.upsert.mockResolvedValue({
       id: "auth-user-new",
       email: "owner@example.com",
       name: "Owner Name",
@@ -72,11 +71,15 @@ describe("workspace user identity recovery", () => {
       name: "Owner Name",
     });
 
-    expect(prismaMock.user.update).toHaveBeenCalledWith({
-      where: { id: "auth-user-old" },
-      data: {
+    expect(prismaMock.user.upsert).toHaveBeenCalledWith({
+      where: { email: "owner@example.com" },
+      create: {
         id: "auth-user-new",
         email: "owner@example.com",
+        name: "Owner Name",
+      },
+      update: {
+        id: "auth-user-new",
         name: "Owner Name",
       },
       select: {
@@ -86,5 +89,78 @@ describe("workspace user identity recovery", () => {
       },
     });
     expect(result.user.id).toBe("auth-user-new");
+  });
+
+  it("atomically provisions a new user and their default resources", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.upsert.mockResolvedValue({
+      id: "auth-user-new",
+      email: "owner@example.com",
+      name: "Owner Name",
+    });
+    prismaMock.workspace.findFirst.mockResolvedValue(null);
+    prismaMock.workspace.upsert.mockResolvedValue({
+      id: "workspace-1",
+      ownerId: "auth-user-new",
+    });
+    prismaMock.workspace.findUnique.mockResolvedValue({
+      id: "workspace-1",
+      ownerId: "auth-user-new",
+      _count: { projects: 0 },
+    });
+    prismaMock.project.findFirst.mockResolvedValue(null);
+    prismaMock.project.upsert.mockResolvedValue({
+      id: "project-1",
+      workspaceId: "workspace-1",
+    });
+
+    const result = await ensureUserWorkspace({
+      authUserId: "auth-user-new",
+      email: "owner@example.com",
+      name: "Owner Name",
+    });
+
+    expect(prismaMock.user.upsert).toHaveBeenCalledWith({
+      where: { email: "owner@example.com" },
+      create: {
+        id: "auth-user-new",
+        email: "owner@example.com",
+        name: "Owner Name",
+      },
+      update: {
+        id: "auth-user-new",
+        name: "Owner Name",
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+    expect(prismaMock.workspace.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "personal-auth-user-new" },
+        update: { name: "Owner Name Workspace" },
+      })
+    );
+    expect(prismaMock.workspaceMember.upsert).toHaveBeenCalledOnce();
+    expect(prismaMock.project.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          workspaceId_slug: {
+            workspaceId: "workspace-1",
+            slug: "bug-intake",
+          },
+        },
+        update: {
+          name: "Bug Intake",
+          description:
+            "Default home for incoming reports, private evidence, AI triage, and engineering follow-up.",
+        },
+      })
+    );
+    expect(prismaMock.user.create).not.toHaveBeenCalled();
+    expect(result.workspace.id).toBe("workspace-1");
+    expect(result.project?.id).toBe("project-1");
   });
 });
