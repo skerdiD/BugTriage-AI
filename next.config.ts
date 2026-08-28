@@ -24,6 +24,11 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   experimental: {
+    // Keep recently visited dynamic pages in the client router cache briefly so
+    // switching between dashboard sections does not immediately refetch them.
+    staleTimes: {
+      dynamic: 30,
+    },
     // The upload action accepts up to 20 MiB of files. Leave a small amount of
     // headroom for multipart fields while keeping a firm per-request ceiling.
     serverActions: {

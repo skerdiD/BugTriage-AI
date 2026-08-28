@@ -1,10 +1,25 @@
+import { Suspense } from "react";
+
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { DashboardShellSkeleton } from "@/components/dashboard/dashboard-shell-skeleton";
 import {
   getCurrentDashboardUser,
   getCurrentWorkspaceContextOrRedirect,
 } from "@/lib/auth/session";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<DashboardShellSkeleton />}>
+      <AuthenticatedDashboardShell>{children}</AuthenticatedDashboardShell>
+    </Suspense>
+  );
+}
+
+async function AuthenticatedDashboardShell({
   children,
 }: {
   children: React.ReactNode;
