@@ -102,6 +102,7 @@ export function TicketTable({ tickets }: TicketTableProps) {
           <TableBody>
             {tickets.map((ticket) => {
               const compactCreatedAt = getCompactRelativeDate(ticket.createdAt);
+              const ticketHref = `/tickets/${ticket.id}`;
 
               return (
                 <TableRow
@@ -109,11 +110,13 @@ export function TicketTable({ tickets }: TicketTableProps) {
                   role="link"
                   tabIndex={0}
                   aria-label={`Open ticket ${ticket.id}: ${ticket.title}`}
-                  onClick={() => router.push(`/tickets/${ticket.id}`)}
+                  onPointerEnter={() => router.prefetch(ticketHref)}
+                  onFocus={() => router.prefetch(ticketHref)}
+                  onClick={() => router.push(ticketHref)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      router.push(`/tickets/${ticket.id}`);
+                      router.push(ticketHref);
                     }
                   }}
                   className="group h-16 cursor-pointer border-white/10 transition hover:bg-violet-500/[0.045] focus-visible:bg-violet-500/[0.045] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60 focus-visible:ring-inset"

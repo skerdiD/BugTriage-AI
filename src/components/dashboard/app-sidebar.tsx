@@ -36,7 +36,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -98,6 +97,11 @@ export function AppSidebar({
     setIsLoggingOut(true);
 
     try {
+      // Authentication is the only sidebar action that needs the Supabase
+      // browser SDK. Keep it out of every dashboard route's startup bundle.
+      const { createBrowserSupabaseClient } = await import(
+        "@/lib/supabase/client"
+      );
       const supabase = createBrowserSupabaseClient();
       await supabase.auth.signOut();
       router.push("/login");

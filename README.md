@@ -1,344 +1,406 @@
 # BugTriage AI
 
-**BugTriage AI** is a full-stack AI-powered issue triage platform built with **Next.js**, **React**, **TypeScript**, **Supabase**, **Prisma**, **PostgreSQL**, **pgvector**, and **Gemini AI**.
+> AI-powered issue triage for engineering teams, built as a production-minded full-stack SaaS project.
 
-It turns messy bug reports, screenshots, logs, and user complaints into structured developer-ready tickets with AI analysis, similar-issue search, workspace permissions, analytics, and GitHub Issues export.
-
-[Live Demo](https://bug-triage-ai.vercel.app/) | [Repository](https://github.com/skerdiD/BugTriage-AI)
+BugTriage AI turns incomplete bug reports, screenshots, logs, and user complaints into structured developer-ready tickets.
+It combines multi-tenant ticket management, asynchronous AI analysis, semantic duplicate detection, private file handling, analytics, and GitHub Issues export.
+[Live Demo](https://bug-triage-ai.vercel.app) · [Repository](https://github.com/skerdiD/BugTriage-AI)
 
 ---
 
 ## Demo Account
 
-Use the **Continue as Demo User** button on the sign-in page, or sign in with:
+Use **Continue as Demo User** on the sign-in page, or sign in with:
 
-```txt
+```text
 Email: demo@bugtriage.ai
 Password: Demo1234!
 ```
 
-The shared demo account is read-only. Its workspace, teammates, tickets, activity,
-and AI triage results are fake and may be reset at any time.
+The shared demo workspace is read-only.
+Its teammates, tickets, activity, attachments, and AI results are synthetic demo data and may be reset.
 
 ---
 
-## Preview
+## Product Preview
 
-Explore the deployed app: [bug-triage-ai.vercel.app](https://bug-triage-ai.vercel.app/)
+Six screenshots cover the real product workflow; a landing-page screenshot is intentionally omitted.
 
-### Product Overview
+### Engineering Dashboard
 
-<img src="./public/engineering-dashboard.png" alt="BugTriage AI engineering dashboard" width="100%">
-<img src="./public/ai-workflow-overview.png" alt="BugTriage AI ticket detail with AI triage analysis" width="100%">
+![Engineering Dashboard](./docs/screenshots/dashboard.png)
 
 ### Ticket Workspace
 
-<img src="./public/submit-bug-report.png" alt="BugTriage AI submit bug report form" width="100%">
-<img src="./public/tickets-management.png" alt="BugTriage AI tickets management view" width="100%">
+![Ticket Workspace](./docs/screenshots/tickets.png)
+
+### Bug Submission
+
+![Bug Submission](./docs/screenshots/submit-bug.png)
+
+### Ticket Detail and AI Analysis
+
+![Ticket Detail and AI Analysis](./docs/screenshots/ticket-detail.png)
 
 ### Analytics
 
-<img src="./public/analytics-dashboard.png" alt="BugTriage AI analytics dashboard" width="100%">
-<img src="./public/analytics-deep-dive.png" alt="BugTriage AI analytics deep dive" width="100%">
+![Analytics](./docs/screenshots/analytics.png)
 
----
+### Team Workspace
+
+## ![Team Workspace](./docs/screenshots/team.png)
 
 ## Overview
 
-Most bug tracking demos stop at a basic ticket form. BugTriage AI was built to feel closer to a real SaaS engineering tool for teams that need to turn messy reports into clear, actionable tickets.
+BugTriage AI is a full-stack issue triage platform designed to model a real engineering SaaS workflow rather than a basic CRUD demo.
+A user submits a bug inside a workspace and project.
+The server authenticates the user, validates tenant access, stores the ticket, creates a durable analysis dispatch, and returns without waiting for Gemini.
+A separate BullMQ worker reloads authoritative ticket data, performs structured AI triage, validates the result with Zod, persists analysis history, generates an embedding, and updates semantic search.
+The UI exposes the original report, processing state, AI result, similar issues, comments, activity, attachments, assignee information, analytics, and GitHub export state.
+The project focuses on reliability, tenant isolation, asynchronous processing, secure file access, observability, and maintainable server-side boundaries.
+----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Users can submit bug details, add reproduction steps, upload files, manage tickets by workspace and project, generate structured AI analysis, find similar previous issues, and export tickets to GitHub Issues.
+## What the App Solves
 
-The goal was to show more than CRUD: AI structured output, semantic search, workspace authorization, private file handling, analytics, GitHub integration, testing, monitoring, and production-minded engineering.
+Bug reports are often incomplete or inconsistent.
+Developers may receive vague descriptions, partial reproduction steps, screenshots, logs, and environment details spread across different places.
+BugTriage AI standardizes that input and reduces repetitive triage work before debugging starts.
+The system helps teams:
+
+* Capture structured bug reports
+* Organize issues by workspace and project
+* Track status, severity, priority, and assignee
+* Generate structured AI triage
+* Suggest likely causes and fixes
+* Detect semantically similar issues
+* Keep comments and activity with the ticket
+* Store attachments privately
+* Track engineering trends
+* Export clean issues to GitHub
 
 ---
 
-## Business Value
+## Core User Flow
 
-BugTriage AI helps engineering teams reduce time wasted on unclear bug reports by converting messy feedback, screenshots, logs, and complaints into structured tickets.
+```text
+Submit bug
+  -> authenticate + authorize workspace/project
+  -> validate input
+  -> create Ticket + TicketAnalysisDispatch
+  -> return ticket immediately
+  -> publish ticketId to Redis / BullMQ
+  -> standalone worker reloads ticket
+  -> Gemini triage + Zod validation
+  -> persist analysis + history
+  -> generate/upsert embedding
+  -> pgvector similar-issue search
+```
 
-For clients, it shows the foundation of a practical developer tool where teams can triage faster, detect duplicate issues, prioritize work, organize bug history, and send clean tickets into GitHub Issues.
-
----
+## The user-facing request stays fast while expensive AI work happens asynchronously.
 
 ## Key Features
 
 ### AI Bug Triage
 
-* Generate structured tickets from messy reports
-* Create AI-powered summaries
-* Detect likely causes
-* Suggest possible fixes
-* Assign severity and priority
-* Return confidence scores
-* Validate AI output with Zod
-* Redact sensitive text before AI processing
+* Engineering summary, severity, priority, category, tags, and confidence score
+* Likely-cause analysis and suggested fix
+* Normalized reproduction steps
+* Zod-validated structured output
+* Current analysis plus historical analysis runs
+* Helpful / not-helpful feedback
+* Safe manual re-analysis
+* Sensitive-text redaction before AI processing
 
-### Similar Issues
+### Semantic Similar-Issue Search
 
-* Generate Gemini embeddings
-* Store semantic vectors with pgvector
-* Find similar tickets by meaning
-* Scope search to the same workspace
-* Prefer matches from the same project
-* Show similarity percentage
-* Keep vector search server-side
+* Gemini embeddings stored as 768-dimensional pgvector values
+* Ticket, workspace, and project metadata kept beside vectors
+* Workspace-scoped candidate filtering
+* Project-aware similarity context
+* Meaning-based matching instead of exact keyword matching
+* Server-authorized similarity results
+* Embedding backfill for existing analyzed tickets
+* Content hashes to avoid unnecessary refresh work
 
 ### Bug Submission
 
-* Submit bug titles and descriptions
-* Add expected and actual behavior
-* Add reproduction steps
-* Include browser, device, and environment details
-* Paste console logs
-* Upload screenshots, logs, and JSON files
+* Title, description, expected behavior, and actual behavior
+* Reproduction steps
+* Browser, device, environment, and affected page
+* Diagnostic context
+* Screenshot, log, JSON, and supporting-file uploads
+* Server-side input and tenant validation
 
 ### Ticket Management
 
-* View submitted tickets
-* Search and filter tickets
-* Track status, severity, priority, and category
-* Open ticket detail pages
-* Review original reports and AI analysis
-* Add comments
-* Follow activity history
+* Workspace-scoped ticket list with project-aware organization
+* Search and filtering
+* Status, severity, category, priority, and assignee tracking
+* Ticket detail pages with AI processing states
+* Comments and activity history
+* Private attachments
+* GitHub export state
+* Safe manual AI retry
 
 ### Workspaces and Teams
 
-* Supabase authentication
-* Protected dashboard routes
-* Workspace-based organization
-* Project-based ticket grouping
+* Supabase authentication and protected dashboard routes
+* Workspace membership and project organization
 * Owner, admin, and member roles
-* Team invitations
+* Workspace invitations with expiration and revocation
 * Workspace-level authorization
+* Tenant-scoped relational constraints
 
-### Analytics and Export
+### Analytics and Integrations
 
-* Dashboard overview
-* Ticket counts by status and severity
-* Recent activity feed
-* Ticket trend insights
-* Export tickets to GitHub Issues
-* Include reproduction steps and AI analysis
-* Keep export logic server-side
-
-### Security and Quality
-
-* Protected app routes
-* User-scoped ticket access
-* Private attachment storage
-* Signed download URLs
-* Arcjet protection and rate limiting
-* Sentry monitoring
-* CI quality checks
-
----
-
-## Tech Stack
-
-### Frontend
-
-* Next.js App Router
-* React
-* TypeScript
-* Tailwind CSS
-* shadcn/ui
-* Radix UI
-* Lucide React
-* Recharts
-* React Hook Form
-* Zod
-
-### Backend and Database
-
-* Next.js Server Actions
-* Next.js API Routes
-* Prisma ORM
-* Supabase Postgres
-* Supabase Auth
-* Supabase Storage
-* pgvector
-
-### AI, Search, and Tooling
-
-* Vercel AI SDK
-* Google Gemini
-* Gemini embeddings
-* GitHub Issues REST API
-* Arcjet
-* Sentry
-* Vitest
-* Playwright
-* GitHub Actions
-* Vercel
+* Engineering dashboard with workspace-scoped metrics
+* Ticket totals, status breakdowns, severity breakdowns, and recent activity
+* Recharts visualizations
+* Server-side GitHub Issues export
+* Stored GitHub issue URL, number, and export status
+* Private Supabase Storage with temporary signed download URLs
 
 ---
 
 ## Architecture
 
-```txt
-Client UI
-  |-- Next.js App Router / React / Tailwind / shadcn UI
-  |-- Dashboard / Tickets / Submit Bug / Analytics / Team
-
-Auth and Workspace Layer
-  |-- Supabase Authentication / Protected Routes
-  |-- Workspace Access Checks / Member Roles
-
-Server and Data Layer
-  |-- Server Actions / API Routes / Prisma ORM
-  |-- Tickets / Comments / Activity / Supabase Postgres
-
-AI and Search Layer
-  |-- BullMQ Producer / Redis / Standalone Node Worker
-  |-- Gemini AI / Structured Output
-  |-- Gemini Embeddings / pgvector / Similar Issues
-
-Integration and Security Layer
-  |-- GitHub Issues Export / Supabase Storage
-  |-- Signed URLs / Arcjet / Sentry
+```text
+Next.js / React UI
+      |
+Supabase Auth + workspace authorization
+      |
+Server Actions / Route Handlers / Prisma
+      |
+PostgreSQL ----> Private Supabase Storage
+      |                 |
+Outbox            Signed URLs
+      |
+Redis / BullMQ
+      |
+Node.js Worker -> Gemini -> Zod -> pgvector
 ```
 
-Bug reports stay workspace-scoped, attachments stay private, AI logic runs server-side, and semantic search connects new reports with related historical issues.
+The web app owns user-facing requests; PostgreSQL owns durable state.
+Redis/BullMQ coordinates asynchronous work and the worker owns long-running AI processing.
+pgvector provides semantic retrieval while tenant metadata stays enforced beside each vector.
+---------------------------------------------------------------------------------------------
+
+## Reliable Background Processing
+
+AI analysis is intentionally not executed inside the ticket-creation request.
+Ticket creation stores the report and a `TicketAnalysisDispatch` outbox record before queue publication is attempted.
+This prevents a successful database write from silently losing requested AI work when Redis is unavailable.
+The queue receives a minimal payload containing the ticket identifier.
+The worker reloads authoritative data from PostgreSQL rather than trusting a large serialized job payload.
+
+### Processing State
+
+```text
+PENDING
+   |
+   v
+PROCESSING
+   |
+   +------> COMPLETED
+   |
+   +------> FAILED
+```
+
+The ticket stores processing status, timestamps, job identity, error state, and the user who requested analysis.
+Analysis runs are stored separately so re-analysis preserves history instead of replacing every previous result.
+
+### Dispatch Retries
+
+Queue publication and queue processing are different failure domains.
+The republisher scans recoverable PostgreSQL outbox rows and attempts publication again.
+Concurrent republishers atomically claim work in PostgreSQL.
+Stable BullMQ job IDs make recovered publication safe after ambiguous failures.
+
+### Processing Retries
+
+BullMQ gives AI processing multiple attempts with exponential backoff.
+Worker concurrency is configurable so Gemini and PostgreSQL are not overloaded.
+Permanent processing failures move the ticket to an explicit failed state instead of deleting the original report.
+
+### Idempotency
+
+Retries and duplicate delivery are expected possibilities in distributed workflows.
+The worker uses stable processing identity and repeat-safe persistence.
+Embedding writes use upsert behavior.
+Manual re-analysis creates a new logical operation so intentional new work is not confused with an automatic retry.
+
+### Eventual Consistency
+
+A ticket can exist before its AI analysis is ready.
+That is intentional: the ticket is returned quickly while AI moves through pending and processing states in the background.
+The UI represents those intermediate states instead of blocking the original request.
+-------------------------------------------------------------------------------------
+
+## Data Model
+
+Important Prisma models:
+
+* `User`
+* `Workspace`
+* `WorkspaceMember`
+* `WorkspaceInvite`
+* `Project`
+* `Ticket`
+* `TicketAnalysisDispatch`
+* `TicketAiAnalysis`
+* `TicketAiAnalysisRun`
+* `TicketEmbedding`
+* `TicketAttachment`
+* `TicketComment`
+* `TicketActivity`
+  Projects are scoped to workspaces.
+  Tickets reference project and workspace together.
+  Embeddings keep ticket, workspace, and project metadata together through composite relational constraints.
+  This adds database-level protection against accidental cross-tenant associations.
 
 ---
 
-## Background Processing — Redis + BullMQ
+## Security
 
-Redis is required for AI ticket analysis. BullMQ connects through `ioredis` over
-Redis's native TCP protocol. For Upstash, copy the TLS-enabled TCP connection
-string from the database's **Connect** dialog:
+### Authorization
 
-```env
-REDIS_URL="rediss://default:PASSWORD@HOST:6379"
-BULLMQ_WORKER_CONCURRENCY="3"
-```
+* Authenticated routes require a valid Supabase session
+* Workspace membership is checked before workspace data is returned
+* Project access is validated against the workspace
+* Ticket access is scoped through its workspace
+* Team-management actions are role-aware
+* Sensitive actions do not trust client-provided ownership
 
-`rediss://` enables TLS automatically. This implementation does not use the
-Upstash REST client, so it does not need `UPSTASH_REDIS_REST_URL`,
-`UPSTASH_REDIS_REST_TOKEN`, or a BullMQ API key. Keep Upstash eviction disabled
-(the default) because BullMQ queue keys must not be evicted. BullMQ polls Redis
-even while idle, so review Upstash command usage and prefer a fixed-price plan if
-the pay-as-you-go command volume becomes material.
+### Private Files
 
-Ticket creation writes the authorized, workspace-scoped report and a pending
-`TicketAnalysisDispatch` outbox row in the same PostgreSQL write before attempting
-to publish expensive AI work. The Next.js request adds only a minimal `{ ticketId }`
-job to the single `bug-analysis` queue and never waits for Gemini. If Redis is down,
-the durable outbox row remains pending, records a safe error and retry count, and the
-ticket stays usable. A standalone Node.js worker reloads authoritative ticket data,
-performs structured triage, upserts the pgvector embedding, runs the existing
-workspace-scoped similarity search, and persists the processing state.
+Attachments are stored in a private Supabase Storage bucket.
+The application stores metadata and storage paths instead of permanent public URLs.
+The server checks ticket access before creating a temporary signed download URL.
 
-Jobs receive three attempts with exponential backoff starting at two seconds. The
-worker defaults to three concurrent jobs (`BULLMQ_WORKER_CONCURRENCY`) to control
-pressure on Gemini and PostgreSQL. Each intentional analysis has a stable operation
-ID; automatic retries reuse its unique history row and the embedding upsert, while a
-manual re-analysis creates a new operation and preserves history. Permanent failure
-marks the ticket `FAILED` without deleting the original report. Sentry and structured
-worker logs contain identifiers, attempts, status, and duration, never report content
-or credentials.
+### AI and Abuse Protection
 
-For free local Redis development:
+User input and AI responses are treated as untrusted runtime data.
+Sensitive patterns are redacted before model processing where applicable.
+AI responses must pass the expected Zod schema before persistence.
+Arcjet protects abuse-sensitive paths with request controls and rate limiting.
 
-```bash
-docker compose up -d redis
-```
+### Secrets
 
-Set `REDIS_URL=redis://localhost:6379` in `.env`, then run the web app and worker in
-separate terminals:
+Database credentials, service-role keys, Redis credentials, GitHub tokens, Gemini keys, Arcjet keys, and Sentry credentials remain server-side.
+Production secrets belong in deployment secret stores and never in source control.
+----------------------------------------------------------------------------------
 
-```bash
-npm run dev
-npm run worker:dev
-```
+## Observability
 
-Dispatch retries are separate from BullMQ processing retries: the republisher uses
-PostgreSQL claims, exponential backoff, and a stable outbox-derived job ID; BullMQ
-retains its three processing attempts for Gemini/embedding failures. Schedule the
-one-shot republisher at least once per minute on any Node-capable platform:
+Sentry provides production error monitoring.
+The worker emits structured operational logs around background processing.
+Useful telemetry includes ticket/operation ID, attempt number, processing status, duration, and failure category.
+Report contents and credentials should not be written into operational logs.
+----------------------------------------------------------------------------
 
-```bash
-npm run republish
-```
+## Tech Stack
 
-Concurrent republisher runs atomically claim rows in PostgreSQL. A process crash
-after Redis accepts a job is safe because a recovered claim reuses the same BullMQ
-job ID, while the worker's ticket-level processing lease remains idempotent.
-Dispatch publishing is attempted up to eight times. If those attempts are exhausted,
-the outbox and current ticket operation move to `FAILED` together so the UI stops
-polling and offers a safe manual retry; Redis details remain internal.
+### Frontend
 
-Production has three separate runtime responsibilities:
+* Next.js 16 App Router
+* React 19
+* TypeScript 5
+* Tailwind CSS 4
+* shadcn/ui + Radix UI
+* React Hook Form + Zod
+* Recharts
 
-```txt
-Next.js Web/API -> PostgreSQL outbox <- scheduled `npm run republish`
-      |                    |                       |
-      +--------------------+-----> hosted Redis/BullMQ -> Node.js worker
-                                                       |
-                                                    Gemini
-```
+### Backend and Data
 
-Do not run the persistent BullMQ consumer inside a Vercel serverless request. Deploy
-`npm run worker` to a worker-capable Node host and schedule `npm run republish` at
-least once per minute, both with the same database, Gemini, Sentry, and Redis server
-environment variables used by the web backend. Give the worker enough shutdown
-grace time to finish an in-flight Gemini analysis; BullMQ will recover a job as
-stalled if the process is terminated before graceful shutdown completes. Keep the
-web deployment, worker, and republisher close to the Upstash primary region to
-reduce TCP latency.
+* Next.js Server Actions and Route Handlers
+* Node.js
+* Prisma 7
+* PostgreSQL
+* Supabase Auth
+* Supabase Storage
+* pgvector
+
+### AI and Async
+
+* Vercel AI SDK
+* Google Gemini
+* Gemini embeddings
+* Redis + BullMQ + ioredis
+* Standalone Node.js worker
+* PostgreSQL transactional outbox
+* Scheduled dispatch republisher
+* Embedding backfill script
+
+### Quality and Delivery
+
+* Arcjet
+* Sentry
+* Vitest
+* Playwright
+* PostgreSQL / pgvector integration tests
+* ESLint + TypeScript
+* GitHub Actions
+* Vercel
+* Docker Compose
 
 ---
 
 ## Getting Started
 
-### 1. Clone the repository
+### 1. Requirements
+
+Use a supported Node.js version from `package.json`.
+You also need PostgreSQL, Supabase, a Gemini API key, and Redis.
+
+### 2. Clone and Install
 
 ```bash
 git clone https://github.com/skerdiD/BugTriage-AI.git
 cd BugTriage-AI
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
-### 3. Create environment variables
+### 3. Environment Variables
 
-Create a `.env.local` file:
+Create `.env.local` and use `.env.example` as the source of truth.
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=bugtriage-private
 DATABASE_URL=
 DIRECT_URL=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=bugtriage-private
 GOOGLE_GENERATIVE_AI_API_KEY=
-REDIS_URL=rediss://default:PASSWORD@HOST:6379
+REDIS_URL=
 BULLMQ_WORKER_CONCURRENCY=3
+REDIS_ALLOW_INSECURE_CONNECTION=false
 GITHUB_TOKEN=
 GITHUB_REPOSITORY_OWNER=
 GITHUB_REPOSITORY_NAME=
 ARCJET_KEY=
+APP_URL=
+NEXT_PUBLIC_APP_URL=
+SENTRY_DSN=
 NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_AUTH_TOKEN=
+SENTRY_ORG=
+SENTRY_PROJECT=
 ```
 
-Use `redis://localhost:6379` when running the Docker Compose Redis service. Store
-real Redis credentials only in `.env.local` and deployment secret stores;
-`.env.example` contains placeholders only. The standalone worker, republisher,
-and demo seeder load `.env` first and then `.env.local`, while injected deployment
-environment variables take precedence over both files.
+Use a native Redis URL for BullMQ.
+For Upstash over TLS, use the `rediss://` connection string rather than REST credentials.
 
-For GitHub export, prefer a fine-grained token scoped to the target repository
-with only `Issues: write` permission. Keep it server-side and rotate it if it is
-ever exposed.
+### 4. Start Local Redis
 
-### 4. Run setup
+```bash
+docker compose up -d redis
+```
+
+Set `REDIS_URL=redis://localhost:6379`.
+
+### 5. Prepare the Database
 
 ```bash
 npx prisma migrate dev
@@ -346,78 +408,82 @@ npx prisma generate
 npm run seed:demo
 ```
 
-This idempotent command uses `SUPABASE_SERVICE_ROLE_KEY` to create or reset the
-Supabase Auth demo user, then refreshes only the managed demo workspace data and
-its semantic-search embeddings. A Gemini API key is required for missing or stale
-demo vectors; current vectors are reused without another API call.
-
-### 5. Start the development server and worker
-
-Run these in separate terminals:
+### 6. Run the App
 
 ```bash
 npm run dev
+```
+
+Run the worker in a second terminal:
+
+```bash
 npm run worker:dev
 ```
 
-Open the app at:
-
-```txt
-http://localhost:3000
-```
-
----
+## Open `http://localhost:3000`.
 
 ## Available Scripts
 
-```bash
-npm run dev               # Start development server
-npm run build             # Create production build
-npm run start             # Start production server
-npm run worker            # Start the production BullMQ worker
-npm run worker:dev        # Start the worker with file watching
-npm run republish         # Retry pending PostgreSQL -> Redis analysis dispatches once
-npm run lint              # Run ESLint
-npm run typecheck         # Run TypeScript checks
-npm run test              # Run Vitest tests
-npm run test:e2e          # Run Playwright tests
-npm run seed:demo         # Create or reset the shared demo account and fake data
-npx prisma migrate dev    # Run local migrations
-npx prisma migrate deploy # Apply production migrations
-npx prisma studio         # Open Prisma Studio
-npx prisma generate       # Generate Prisma client
-npm run backfill:embeddings # Create or refresh semantic indexes for existing analyzed tickets
-```
+`npm run dev` — Start Next.js development
+`npm run build` — Generate Prisma client and build
+`npm run start` — Start production web server
+`npm run worker` — Start production BullMQ worker
+`npm run worker:dev` — Start worker with file watching
+`npm run republish` — Retry recoverable outbox dispatches
+`npm run backfill:embeddings` — Refresh missing or stale embeddings
+`npm run lint` — Run ESLint
+`npm run typecheck` — Generate Next types and run TypeScript
+`npm run test` / `test:unit` — Run Vitest
+`npm run test:db` — Run database integrity tests
+`npm run test:e2e` — Run Playwright
+`npm run check` — Run lint, types, unit tests, and build
+`npm run seed:demo` — Create or reset demo data
+`npm run db:migrate` / `db:deploy` — Apply migrations
+-----------------------------------------------------
 
----
+## Testing and CI
 
-## Testing and Quality
+Vitest covers utilities, validators, and server-side logic.
+Database tests run against PostgreSQL with pgvector enabled.
+Playwright covers browser-level behavior.
+GitHub Actions runs lint, type checks, unit tests, database tests, a Playwright smoke test, and a production build.
+-------------------------------------------------------------------------------------------------------------------
 
-* Vitest validates utilities, validators, and server-side logic
-* Playwright validates core end-to-end behavior
-* TypeScript catches type-level regressions
-* ESLint keeps code quality consistent
-* Sentry supports production monitoring
-* GitHub Actions runs quality checks
+## Trade-Offs
 
-Run main checks:
+The async architecture adds Redis, a worker, outbox state, retry logic, and deployment complexity.
+It also introduces eventual consistency because a ticket can exist before AI analysis completes.
+In return, the system gains faster requests, recoverable jobs, controlled concurrency, retry support, idempotent delivery handling, explicit failure states, and clearer web/worker separation.
+For a smaller product, synchronous processing would be simpler.
+Here, the additional architecture demonstrates reliability patterns needed when expensive external work becomes part of a real product workflow.
+------------------------------------------------------------------------------------------------------------------------------------------------
 
-```bash
-npm run lint
-npm run typecheck
-npm run test
-```
+## Engineering Highlights
 
-Run browser tests:
+This project goes beyond CRUD by combining:
 
-```bash
-npm run test:e2e
-```
+* Multi-tenant workspace authorization
+* Composite tenant integrity
+* Transactional outbox dispatch
+* Redis + BullMQ background processing
+* Retry and exponential backoff
+* Idempotent processing
+* Eventual consistency
+* Structured AI output validation
+* AI analysis history and feedback
+* Semantic search with pgvector
+* Private object storage and signed URLs
+* GitHub Issues integration
+* Arcjet abuse protection
+* Sentry monitoring
+* Database integration testing
+* Playwright browser testing
+* GitHub Actions quality gates
+  The goal is not complexity for its own sake.
+  The goal is to show how a full-stack product can stay understandable while handling authentication, authorization, AI, queues, files, semantic search, integrations, failures, and deployment boundaries.
 
 ---
 
 ## Author
 
-Built by **skerdiD**.
-
-GitHub: [@skerdiD](https://github.com/skerdiD)
+Built by [skerdiD](https://github.com/skerdiD).

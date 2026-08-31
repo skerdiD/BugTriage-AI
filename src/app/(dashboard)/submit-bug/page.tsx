@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertCircle,
   AlertTriangle,
@@ -15,7 +14,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 
 import { analyzeAndCreateTicketAction } from "@/app/(dashboard)/submit-bug/actions";
 import { useDashboardUser } from "@/components/dashboard/dashboard-shell";
@@ -50,11 +49,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { detectBugReportClientContext } from "@/lib/bug-report-client-context";
 import {
-  bugReportFormSchema,
   defaultBugReportValues,
   exampleBugReportValues,
   type BugReportFormValues,
-} from "@/lib/validation/bug-report";
+} from "@/lib/validation/bug-report-values";
+
+const bugReportFormResolver: Resolver<BugReportFormValues> = async (
+  values,
+  context,
+  options
+) => {
+  // This form validates only on submit. Defer the schema engine until then so
+  // it does not compete with the route's initial render and hydration.
+  const [{ zodResolver }, { bugReportFormSchema }] = await Promise.all([
+    import("@hookform/resolvers/zod"),
+    import("@/lib/validation/bug-report"),
+  ]);
+
+  return zodResolver(bugReportFormSchema)(values, context, options);
+};
 
 const ticketDraftItems = [
   {
@@ -106,7 +119,7 @@ export default function SubmitBugPage() {
   const [createdCode, setCreatedCode] = useState("");
 
   const form = useForm<BugReportFormValues>({
-    resolver: zodResolver(bugReportFormSchema),
+    resolver: bugReportFormResolver,
     defaultValues: defaultBugReportValues,
     mode: "onSubmit",
   });

@@ -19,6 +19,44 @@ type TicketDetailPageProps = {
   }>;
 };
 
+type TicketDetailRecord = NonNullable<
+  Awaited<ReturnType<typeof getTicketByCode>>
+>;
+
+async function createAttachmentDownloadUrls(ticket: TicketDetailRecord) {
+  if (ticket.attachments.length === 0) {
+    return {};
+  }
+
+  try {
+    const storageSupabase = createSupabaseAdminClient();
+
+    return Object.fromEntries(
+      await Promise.all(
+        ticket.attachments.map(async (attachment) => {
+          try {
+            const signedUrl = await createSignedTicketFileUrl(
+              storageSupabase,
+              attachment.storagePath,
+              ticket.workspaceId,
+              undefined,
+              ticket.code
+            );
+
+            return [attachment.id, signedUrl] as const;
+          } catch {
+            return [attachment.id, null] as const;
+          }
+        })
+      )
+    );
+  } catch {
+    return Object.fromEntries(
+      ticket.attachments.map((attachment) => [attachment.id, null] as const)
+    );
+  }
+}
+
 export default async function TicketDetailPage({ params }: TicketDetailPageProps) {
   const [{ ticketId }, context] = await Promise.all([
     params,
@@ -40,43 +78,17 @@ export default async function TicketDetailPage({ params }: TicketDetailPageProps
     notFound();
   }
 
-  let attachmentDownloadUrls: Record<string, string | null> = {};
-
-  if (dbTicket.attachments.length > 0) {
-    try {
-      const storageSupabase = createSupabaseAdminClient();
-
-      attachmentDownloadUrls = Object.fromEntries(
-        await Promise.all(
-          dbTicket.attachments.map(async (attachment) => {
-            try {
-              const signedUrl = await createSignedTicketFileUrl(
-                storageSupabase,
-                attachment.storagePath,
-                dbTicket.workspaceId,
-                undefined,
-                dbTicket.code
-              );
-
-              return [attachment.id, signedUrl] as const;
-            } catch {
-              return [attachment.id, null] as const;
-            }
-          })
-        )
-      );
-    } catch {
-      attachmentDownloadUrls = Object.fromEntries(
-        dbTicket.attachments.map((attachment) => [attachment.id, null] as const)
-      );
-    }
-  }
-
-  const similarIssueSearch = await searchSimilarIssuesForTicket({
-    ticketId: dbTicket.id,
-    workspaceId: dbTicket.workspaceId,
-    projectId: dbTicket.projectId,
-  });
+  // Attachment signing and semantic similarity search are independent remote
+  // operations. Run them together so ticket detail latency is the slower of
+  // the two paths instead of their sum.
+  const [attachmentDownloadUrls, similarIssueSearch] = await Promise.all([
+    createAttachmentDownloadUrls(dbTicket),
+    searchSimilarIssuesForTicket({
+      ticketId: dbTicket.id,
+      workspaceId: dbTicket.workspaceId,
+      projectId: dbTicket.projectId,
+    }),
+  ]);
 
   return (
     <TicketDetailClient
