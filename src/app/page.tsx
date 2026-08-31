@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     title: "BugTriage AI — From rough report to engineering-ready ticket",
     description:
       "AI-assisted bug triage with structured analysis, duplicate discovery, team workflows, and GitHub export.",
-    images: ["/landing-page-hero.png"],
+    images: ["/engineering-dashboard.png"],
     type: "website",
   },
   twitter: {
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "BugTriage AI — AI bug triage for engineering teams",
     description:
       "Turn messy bug reports into structured, reviewable engineering tickets.",
-    images: ["/landing-page-hero.png"],
+    images: ["/engineering-dashboard.png"],
   },
 };
 

@@ -26,27 +26,20 @@ and AI triage results are fake and may be reset at any time.
 
 Explore the deployed app: [bug-triage-ai.vercel.app](https://bug-triage-ai.vercel.app/)
 
-### Landing Page
-
-<img src="./public/landing-page-hero.png" alt="BugTriage AI landing page hero" width="100%">
-<img src="./public/ai-workflow-overview.png" alt="BugTriage AI workflow overview" width="100%">
-
-### Engineering Dashboard
+### Product Overview
 
 <img src="./public/engineering-dashboard.png" alt="BugTriage AI engineering dashboard" width="100%">
-<img src="./public/recent-ai-triaged-tickets.png" alt="BugTriage AI recent AI triaged tickets" width="100%">
+<img src="./public/ai-workflow-overview.png" alt="BugTriage AI ticket detail with AI triage analysis" width="100%">
 
 ### Ticket Workspace
 
 <img src="./public/submit-bug-report.png" alt="BugTriage AI submit bug report form" width="100%">
 <img src="./public/tickets-management.png" alt="BugTriage AI tickets management view" width="100%">
 
-### Analytics and Team
+### Analytics
 
 <img src="./public/analytics-dashboard.png" alt="BugTriage AI analytics dashboard" width="100%">
-<img src="./public/severity-and-trend-charts.png" alt="BugTriage AI severity and trend charts" width="100%">
 <img src="./public/analytics-deep-dive.png" alt="BugTriage AI analytics deep dive" width="100%">
-<img src="./public/team-workspace.png" alt="BugTriage AI team workspace" width="100%">
 
 ---
 
