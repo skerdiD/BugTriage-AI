@@ -14,7 +14,7 @@
     "republish": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx src/workers/ticket-analysis-republisher.ts",
     "backfill:embeddings": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx src/workers/ticket-embedding-backfill.ts",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "npm run test:unit",
     "test:unit": "vitest run --passWithNoTests",
     "test:db": "prisma migrate deploy && vitest run --config vitest.db.config.mts",
