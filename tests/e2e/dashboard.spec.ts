@@ -3,20 +3,22 @@ import { expect, test } from "@playwright/test";
 test("@smoke home page renders primary product CTAs", async ({ page }) => {
   await page.goto("/");
 
+  const main = page.getByRole("main");
+  const primaryHeading = main.getByRole("heading", { level: 1 });
+
+  await expect(primaryHeading).toBeVisible();
+  await expect(primaryHeading).toContainText(
+    /turn messy bug reports into engineering-ready tickets/i
+  );
   await expect(
-    page.getByRole("heading", {
-      name: /bug reports arrive half-finished\. that's fine/i,
-    })
+    main.getByRole("link", { name: /open live demo/i }).first()
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /explore demo/i }).first()
+    main.getByRole("link", { name: /see how it works/i }).first()
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /see report-to-ticket workflow/i }).first()
-  ).toBeVisible();
-  await expect(
-    page.getByRole("img", {
-      name: /engineering dashboard showing ticket health/i,
+    main.getByRole("img", {
+      name: /bugtriage ai engineering dashboard with ticket health/i,
     })
   ).toBeVisible();
 });
