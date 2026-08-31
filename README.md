@@ -4,7 +4,7 @@
 
 BugTriage AI turns incomplete bug reports, screenshots, logs, and user complaints into structured developer-ready tickets.
 It combines multi-tenant ticket management, asynchronous AI analysis, semantic duplicate detection, private file handling, analytics, and GitHub Issues export.
-[Live Demo](https://bug-triage-ai.vercel.app) · [Repository](https://github.com/skerdiD/BugTriage-AI)
+[Live Demo](https://bug-triage-ai.vercel.app) | [Repository](https://github.com/skerdiD/BugTriage-AI)
 
 ---
 
@@ -24,31 +24,33 @@ Its teammates, tickets, activity, attachments, and AI results are synthetic demo
 
 ## Product Preview
 
-Six screenshots cover the real product workflow; a landing-page screenshot is intentionally omitted.
+These screenshots show the current product experience from bug submission through triage and reporting.
 
 ### Engineering Dashboard
 
-![Engineering Dashboard](./docs/screenshots/dashboard.png)
-
-### Ticket Workspace
-
-![Ticket Workspace](./docs/screenshots/tickets.png)
+![Engineering dashboard showing ticket health, severity, and report trends](./public/engineering-dashboard.png)
 
 ### Bug Submission
 
-![Bug Submission](./docs/screenshots/submit-bug.png)
+![Bug submission form for reports, reproduction details, screenshots, and logs](./public/submit-bug-report.png)
 
-### Ticket Detail and AI Analysis
+### Ticket Management
 
-![Ticket Detail and AI Analysis](./docs/screenshots/ticket-detail.png)
+![Ticket management workspace with search, filters, status, and severity](./public/tickets-management.png)
 
-### Analytics
+### Analytics Dashboard
 
-![Analytics](./docs/screenshots/analytics.png)
+![Analytics dashboard with engineering metrics and issue trends](./public/analytics-dashboard.png)
 
-### Team Workspace
+### Analytics Deep Dive
 
-## ![Team Workspace](./docs/screenshots/team.png)
+![Detailed analytics for affected pages, recurring patterns, and weekly insights](./public/analytics-deep-dive.png)
+
+### AI Triage Workflow
+
+![AI triage workflow from original evidence to an engineering-ready ticket](./public/ai-workflow-overview.png)
+
+---
 
 ## Overview
 
@@ -58,7 +60,8 @@ The server authenticates the user, validates tenant access, stores the ticket, c
 A separate BullMQ worker reloads authoritative ticket data, performs structured AI triage, validates the result with Zod, persists analysis history, generates an embedding, and updates semantic search.
 The UI exposes the original report, processing state, AI result, similar issues, comments, activity, attachments, assignee information, analytics, and GitHub export state.
 The project focuses on reliability, tenant isolation, asynchronous processing, secure file access, observability, and maintainable server-side boundaries.
-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---
 
 ## What the App Solves
 
@@ -96,7 +99,7 @@ Submit bug
   -> pgvector similar-issue search
 ```
 
-## The user-facing request stays fast while expensive AI work happens asynchronously.
+The user-facing request stays fast while expensive AI work happens asynchronously.
 
 ## Key Features
 
@@ -183,7 +186,8 @@ Node.js Worker -> Gemini -> Zod -> pgvector
 The web app owns user-facing requests; PostgreSQL owns durable state.
 Redis/BullMQ coordinates asynchronous work and the worker owns long-running AI processing.
 pgvector provides semantic retrieval while tenant metadata stays enforced beside each vector.
----------------------------------------------------------------------------------------------
+
+---
 
 ## Reliable Background Processing
 
@@ -234,7 +238,8 @@ Manual re-analysis creates a new logical operation so intentional new work is no
 A ticket can exist before its AI analysis is ready.
 That is intentional: the ticket is returned quickly while AI moves through pending and processing states in the background.
 The UI represents those intermediate states instead of blocking the original request.
--------------------------------------------------------------------------------------
+
+---
 
 ## Data Model
 
@@ -253,10 +258,11 @@ Important Prisma models:
 * `TicketAttachment`
 * `TicketComment`
 * `TicketActivity`
-  Projects are scoped to workspaces.
-  Tickets reference project and workspace together.
-  Embeddings keep ticket, workspace, and project metadata together through composite relational constraints.
-  This adds database-level protection against accidental cross-tenant associations.
+
+Projects are scoped to workspaces.
+Tickets reference project and workspace together.
+Embeddings keep ticket, workspace, and project metadata together through composite relational constraints.
+This adds database-level protection against accidental cross-tenant associations.
 
 ---
 
@@ -288,7 +294,8 @@ Arcjet protects abuse-sensitive paths with request controls and rate limiting.
 
 Database credentials, service-role keys, Redis credentials, GitHub tokens, Gemini keys, Arcjet keys, and Sentry credentials remain server-side.
 Production secrets belong in deployment secret stores and never in source control.
-----------------------------------------------------------------------------------
+
+---
 
 ## Observability
 
@@ -296,7 +303,8 @@ Sentry provides production error monitoring.
 The worker emits structured operational logs around background processing.
 Useful telemetry includes ticket/operation ID, attempt number, processing status, duration, and failure category.
 Report contents and credentials should not be written into operational logs.
-----------------------------------------------------------------------------
+
+---
 
 ## Tech Stack
 
@@ -420,26 +428,27 @@ Run the worker in a second terminal:
 npm run worker:dev
 ```
 
-## Open `http://localhost:3000`.
+Open `http://localhost:3000`.
 
 ## Available Scripts
 
-`npm run dev` — Start Next.js development
-`npm run build` — Generate Prisma client and build
-`npm run start` — Start production web server
-`npm run worker` — Start production BullMQ worker
-`npm run worker:dev` — Start worker with file watching
-`npm run republish` — Retry recoverable outbox dispatches
-`npm run backfill:embeddings` — Refresh missing or stale embeddings
-`npm run lint` — Run ESLint
-`npm run typecheck` — Generate Next types and run TypeScript
-`npm run test` / `test:unit` — Run Vitest
-`npm run test:db` — Run database integrity tests
-`npm run test:e2e` — Run Playwright
-`npm run check` — Run lint, types, unit tests, and build
-`npm run seed:demo` — Create or reset demo data
-`npm run db:migrate` / `db:deploy` — Apply migrations
------------------------------------------------------
+* `npm run dev` - Start Next.js development
+* `npm run build` - Generate Prisma client and build
+* `npm run start` - Start production web server
+* `npm run worker` - Start production BullMQ worker
+* `npm run worker:dev` - Start worker with file watching
+* `npm run republish` - Retry recoverable outbox dispatches
+* `npm run backfill:embeddings` - Refresh missing or stale embeddings
+* `npm run lint` - Run ESLint
+* `npm run typecheck` - Generate Next types and run TypeScript
+* `npm run test` / `test:unit` - Run Vitest
+* `npm run test:db` - Run database integrity tests
+* `npm run test:e2e` - Run Playwright
+* `npm run check` - Run lint, types, unit tests, and build
+* `npm run seed:demo` - Create or reset demo data
+* `npm run db:migrate` / `db:deploy` - Apply migrations
+
+---
 
 ## Testing and CI
 
@@ -447,7 +456,8 @@ Vitest covers utilities, validators, and server-side logic.
 Database tests run against PostgreSQL with pgvector enabled.
 Playwright covers browser-level behavior.
 GitHub Actions runs lint, type checks, unit tests, database tests, a Playwright smoke test, and a production build.
--------------------------------------------------------------------------------------------------------------------
+
+---
 
 ## Trade-Offs
 
@@ -456,7 +466,8 @@ It also introduces eventual consistency because a ticket can exist before AI ana
 In return, the system gains faster requests, recoverable jobs, controlled concurrency, retry support, idempotent delivery handling, explicit failure states, and clearer web/worker separation.
 For a smaller product, synchronous processing would be simpler.
 Here, the additional architecture demonstrates reliability patterns needed when expensive external work becomes part of a real product workflow.
-------------------------------------------------------------------------------------------------------------------------------------------------
+
+---
 
 ## Engineering Highlights
 
@@ -479,8 +490,9 @@ This project goes beyond CRUD by combining:
 * Database integration testing
 * Playwright browser testing
 * GitHub Actions quality gates
-  The goal is not complexity for its own sake.
-  The goal is to show how a full-stack product can stay understandable while handling authentication, authorization, AI, queues, files, semantic search, integrations, failures, and deployment boundaries.
+
+The goal is not complexity for its own sake.
+The goal is to show how a full-stack product can stay understandable while handling authentication, authorization, AI, queues, files, semantic search, integrations, failures, and deployment boundaries.
 
 ---
 
