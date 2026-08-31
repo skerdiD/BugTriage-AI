@@ -3,7 +3,7 @@ import {
   TicketSeverity as DbTicketSeverity,
   TicketStatus as DbTicketStatus,
 } from "@prisma/client";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 import type {
   PriorityQueueItem,
@@ -18,6 +18,20 @@ import { presentTicketActivityCopy } from "@/lib/dashboard/activity-copy";
 import type { SimilarIssue } from "@/lib/data/similar-issues";
 import type { TicketDetail, TicketListItem } from "@/lib/data/tickets";
 import { getSafeGitHubIssueUrl } from "@/lib/security/urls";
+
+const utcDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "UTC",
+});
+
+function formatUtcDateTime(date: Date) {
+  return utcDateTimeFormatter.format(date);
+}
 
 function initialsFromName(name?: string | null) {
   if (!name) return "NA";
@@ -119,7 +133,7 @@ export function mapTicketDetailToUiTicket(
     confidence: run.confidenceScore ?? 0,
     priorityScore: run.priorityScore,
     feedback: run.feedback,
-    createdAt: format(run.createdAt, "MMM d, yyyy, HH:mm"),
+    createdAt: formatUtcDateTime(run.createdAt),
   }));
   const latestAiRun = aiHistory[0] ?? null;
 
@@ -157,7 +171,7 @@ export function mapTicketDetailToUiTicket(
     ),
     githubIssueNumber: ticket.githubIssueNumber,
     githubExportedAt: ticket.githubExportedAt
-      ? format(ticket.githubExportedAt, "MMM d, yyyy, HH:mm")
+      ? formatUtcDateTime(ticket.githubExportedAt)
       : null,
     githubExportError: ticket.githubExportError,
     attachments: ticket.attachments.map((attachment) => ({
@@ -180,8 +194,8 @@ export function mapTicketDetailToUiTicket(
     device: ticket.device ?? "Unknown",
     environment: ticket.environment ?? "Unknown",
     affectedPage: ticket.affectedPage ?? "Unknown",
-    createdDate: format(ticket.createdAt, "MMM d, yyyy, HH:mm"),
-    updatedDate: format(ticket.updatedAt, "MMM d, yyyy, HH:mm"),
+    createdDate: formatUtcDateTime(ticket.createdAt),
+    updatedDate: formatUtcDateTime(ticket.updatedAt),
     comments: ticket.comments.map((comment) => ({
       id: comment.id,
       author: comment.author?.name ?? "Unknown user",

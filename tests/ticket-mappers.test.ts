@@ -184,7 +184,9 @@ describe("ticket mappers", () => {
       githubExportStatus: "EXPORTED",
       githubIssueUrl: "https://github.com/acme/project/issues/42",
       githubIssueNumber: 42,
-      githubExportedAt: "May 8, 2026, 11:57",
+      githubExportedAt: "May 8, 2026, 09:57",
+      createdDate: "May 8, 2026, 09:00",
+      updatedDate: "May 8, 2026, 09:58",
     });
     expect(result.aiHistory).toEqual([
       {
@@ -193,7 +195,7 @@ describe("ticket mappers", () => {
         confidence: 88,
         priorityScore: 95,
         feedback: "HELPFUL",
-        createdAt: "May 8, 2026, 11:06",
+        createdAt: "May 8, 2026, 09:06",
       },
     ]);
     expect(result.reproductionSteps).toEqual([
