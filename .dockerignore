@@ -8,6 +8,7 @@ node_modules
 coverage
 playwright-report
 test-results
+.tmp-ui-audit
 tests
 npm-debug.log*
 *.tsbuildinfo

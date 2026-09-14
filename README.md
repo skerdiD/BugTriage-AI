@@ -1,5 +1,7 @@
 # BugTriage AI
 
+[![Tests](https://github.com/skerdiD/BugTriage-AI/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/skerdiD/BugTriage-AI/actions/workflows/tests.yml)
+
 > AI-powered issue triage for engineering teams, built as a production-minded full-stack SaaS project.
 
 BugTriage AI turns incomplete bug reports, screenshots, logs, and user complaints into structured developer-ready tickets.
@@ -345,7 +347,7 @@ Report contents and credentials should not be written into operational logs.
 * Sentry
 * Vitest
 * Playwright
-* PostgreSQL / pgvector integration tests
+* PostgreSQL / pgvector and Redis / BullMQ integration tests
 * ESLint + TypeScript
 * GitHub Actions
 * Vercel
@@ -358,7 +360,7 @@ Report contents and credentials should not be written into operational logs.
 ### 1. Requirements
 
 Use a supported Node.js version from `package.json`.
-You also need PostgreSQL, Supabase, a Gemini API key, and Redis.
+You also need PostgreSQL with pgvector, Supabase, a Gemini API key, and Redis.
 
 ### 2. Clone and Install
 
@@ -442,7 +444,7 @@ Open `http://localhost:3000`.
 * `npm run lint` - Run ESLint
 * `npm run typecheck` - Generate Next types and run TypeScript
 * `npm run test` / `test:unit` - Run Vitest
-* `npm run test:db` - Run database integrity tests
+* `npm run test:db` - Run PostgreSQL/Redis integration tests
 * `npm run test:e2e` - Run Playwright
 * `npm run check` - Run lint, types, unit tests, and build
 * `npm run seed:demo` - Create or reset demo data
@@ -453,9 +455,10 @@ Open `http://localhost:3000`.
 ## Testing and CI
 
 Vitest covers utilities, validators, and server-side logic.
-Database tests run against PostgreSQL with pgvector enabled.
+Integration tests run against PostgreSQL with pgvector and Redis, including the transactional outbox, BullMQ dispatcher, production worker processor, database state transitions, and duplicate-delivery idempotency. External Gemini calls are replaced with deterministic fakes in that test.
+`npm run test:db` fails safely unless `DATABASE_URL` and `DIRECT_URL` name dedicated `_test` databases and `REDIS_URL` points to local database 15 (for example, `redis://127.0.0.1:6379/15`).
 Playwright covers browser-level behavior.
-GitHub Actions runs lint, type checks, unit tests, database tests, a Playwright smoke test, and a production build.
+GitHub Actions runs lint, type checks, unit tests, PostgreSQL/Redis integration tests, a Playwright smoke test, and a production build.
 
 ---
 

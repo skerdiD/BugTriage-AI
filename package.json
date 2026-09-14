@@ -17,6 +17,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "npm run test:unit",
     "test:unit": "vitest run --passWithNoTests",
+    "pretest:db": "node --env-file-if-exists=.env --env-file-if-exists=.env.local tests/setup/assert-integration-env.mjs",
     "test:db": "prisma migrate deploy && vitest run --config vitest.db.config.mts",
     "test:e2e": "playwright test",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",

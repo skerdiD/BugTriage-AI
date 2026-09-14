@@ -25,9 +25,19 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/bugtriage_ai_test
       DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/bugtriage_ai_test
+      REDIS_URL: redis://127.0.0.1:6379/15
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
       NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET: bugtriage-private
