@@ -54,6 +54,7 @@ import { createBugAnalysisProcessor } from "@/lib/queue/bug-analysis-worker";
 import { dispatchTicketAnalysis } from "@/lib/queue/dispatch-ticket-analysis";
 import { createRedisConnection } from "@/lib/queue/redis";
 import { prisma } from "@/lib/prisma";
+import { bugReportFormSchema } from "@/lib/validation/bug-report";
 
 const databaseUrl = process.env.DATABASE_URL;
 const redisUrl = process.env.REDIS_URL;
@@ -107,12 +108,20 @@ async function waitFor<T>(input: {
   description: string;
   load: () => Promise<T>;
   accept: (value: T) => boolean;
+  getFailure?: (value: T) => string | undefined;
   timeoutMs?: number;
 }) {
   const deadline = Date.now() + (input.timeoutMs ?? 10_000);
   let lastValue = await input.load();
 
   while (!input.accept(lastValue)) {
+    const failure = input.getFailure?.(lastValue);
+    if (failure) {
+      throw new Error(
+        `Failed while waiting for ${input.description}: ${failure}`
+      );
+    }
+
     if (Date.now() >= deadline) {
       throw new Error(
         `Timed out waiting for ${input.description}. Last value: ${JSON.stringify(lastValue)}`
@@ -172,22 +181,26 @@ describe("ticket analysis PostgreSQL -> BullMQ -> worker pipeline", () => {
   });
 
   it("persists one analysis when a durable dispatch is delivered more than once", async () => {
-    const ticket = await createTicket({
-      workspaceId,
-      projectId,
-      reporterId: ownerId,
-      code: `PIPELINE-${suffix}`,
+    const { consoleLogs, ...report } = bugReportFormSchema.parse({
       title: "Payment form fails on Safari mobile",
       description:
         "The checkout submit button remains disabled after valid payment details are entered.",
       expectedBehavior: "The payment form should submit.",
       actualBehavior: "The submit button remains disabled.",
       stepsToReproduce: "Open checkout, enter payment details, and submit.",
-      browser: "Safari",
-      device: "iPhone",
+      browser: "safari",
+      device: "ios-mobile",
       environment: "production",
       affectedPage: "/checkout",
-      aiInputContext: { consoleLogs: "Payment state did not refresh." },
+      consoleLogs: "Payment state did not refresh.",
+    });
+    const ticket = await createTicket({
+      workspaceId,
+      projectId,
+      reporterId: ownerId,
+      code: `PIPELINE-${suffix}`,
+      ...report,
+      aiInputContext: { consoleLogs },
     });
 
     const created = await prisma.ticket.findUniqueOrThrow({
@@ -249,10 +262,14 @@ describe("ticket analysis PostgreSQL -> BullMQ -> worker pipeline", () => {
       load: () =>
         prisma.ticket.findUniqueOrThrow({
           where: { id: ticket.id },
-          select: { aiProcessingStatus: true },
+          select: { aiProcessingStatus: true, aiProcessingError: true },
         }),
       accept: (value) =>
         value.aiProcessingStatus === AiProcessingStatus.COMPLETED,
+      getFailure: (value) =>
+        value.aiProcessingStatus === AiProcessingStatus.FAILED
+          ? (value.aiProcessingError ?? "ticket analysis failed without an error")
+          : undefined,
     });
     expect(completed.aiProcessingStatus).toBe(AiProcessingStatus.COMPLETED);
 
