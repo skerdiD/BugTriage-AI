@@ -1,9 +1,11 @@
+# Compose interpolation reads .env by default. If using .env.local, also pass
+# --env-file .env.local to every Compose command (including build).
 x-runtime-environment: &runtime-environment
   NODE_ENV: production
   HOSTNAME: 0.0.0.0
   PORT: 3000
-  DATABASE_URL: postgresql://bugtriage:bugtriage@postgres:5432/bugtriage
-  DIRECT_URL: postgresql://bugtriage:bugtriage@postgres:5432/bugtriage
+  DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env or pass --env-file .env.local}
+  DIRECT_URL: ${DIRECT_URL:-${DATABASE_URL:?Set DATABASE_URL}}
   REDIS_URL: redis://redis:6379
   REDIS_ALLOW_INSECURE_CONNECTION: "true"
 
@@ -28,11 +30,13 @@ services:
         NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: ${NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE:-}
         NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE: ${NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE:-}
     image: bugtriage-ai:local
+    init: true
     restart: unless-stopped
+    stop_grace_period: 90s
     env_file: *runtime-env-files
     environment: *runtime-environment
     ports:
-      - "3000:3000"
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3000}:3000"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -44,7 +48,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "fetch('http://127.0.0.1:3000/').then((response) => { if (!response.ok) process.exit(1) }).catch(() => process.exit(1))",
+          "fetch('http://127.0.0.1:3000/api/health', { signal: AbortSignal.timeout(4000) }).then((response) => { if (!response.ok) process.exit(1) }).catch(() => process.exit(1))",
         ]
       interval: 10s
       timeout: 5s
@@ -53,8 +57,24 @@ services:
 
   worker:
     image: bugtriage-ai:local
+    init: true
     restart: unless-stopped
-    command: ["npm", "run", "worker"]
+    stop_grace_period: 90s
+    command: ["node", "--conditions=react-server", "--import", "tsx", "src/workers/bug-analysis.worker.ts"]
+    env_file: *runtime-env-files
+    environment: *runtime-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  republisher:
+    image: bugtriage-ai:local
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 90s
+    command: ["node", "--conditions=react-server", "--import", "tsx", "src/workers/ticket-analysis-republisher.ts", "--watch"]
     env_file: *runtime-env-files
     environment: *runtime-environment
     depends_on:
@@ -65,34 +85,15 @@ services:
 
   migrate:
     image: bugtriage-ai:local
+    init: true
     restart: "no"
-    command: ["npm", "run", "db:deploy"]
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
     env_file: *runtime-env-files
     environment: *runtime-environment
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  postgres:
-    image: pgvector/pgvector:0.8.6-pg17
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: bugtriage
-      POSTGRES_USER: bugtriage
-      POSTGRES_PASSWORD: bugtriage
-    volumes:
-      - bugtriage-postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
 
   redis:
     image: redis:7.4-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     command:
       - redis-server
       - --appendonly
@@ -108,5 +109,4 @@ services:
       retries: 10
 
 volumes:
-  bugtriage-postgres-data:
   bugtriage-redis-data:

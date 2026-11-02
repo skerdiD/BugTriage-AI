@@ -5,16 +5,19 @@ const {
   connection,
   createRedisConnectionMock,
   queueCloseMock,
+  queueAddMock,
   queueOnMock,
 } = vi.hoisted(() => ({
   captureMock: vi.fn(),
   connection: {
     status: "ready",
     quit: vi.fn().mockResolvedValue("OK"),
+    ping: vi.fn(),
     disconnect: vi.fn(),
   },
   createRedisConnectionMock: vi.fn(),
   queueCloseMock: vi.fn().mockResolvedValue(undefined),
+  queueAddMock: vi.fn().mockResolvedValue({ id: "analysis-job-1" }),
   queueOnMock: vi.fn(),
 }));
 
@@ -28,12 +31,14 @@ vi.mock("@/lib/queue/redis", () => ({
 vi.mock("bullmq", () => ({
   Queue: class QueueMock {
     close = queueCloseMock;
+    add = queueAddMock;
     on = queueOnMock;
   },
 }));
 
 import {
   closeBugAnalysisQueue,
+  enqueueBugAnalysis,
   getBugAnalysisQueue,
 } from "@/lib/queue/bug-analysis";
 
@@ -75,5 +80,30 @@ describe("bug analysis producer lifecycle", () => {
 
     await expect(closeBugAnalysisQueue()).rejects.toBeInstanceOf(AggregateError);
     expect(connection.disconnect).toHaveBeenCalledOnce();
+  });
+
+  it("fails publication promptly and disconnects before closing an offline queue", async () => {
+    connection.status = "reconnecting";
+    connection.ping.mockRejectedValueOnce(new Error("connection unavailable"));
+    createRedisConnectionMock.mockReturnValue(connection);
+    connection.disconnect.mockImplementationOnce(() => { connection.status = "end"; });
+
+    await expect(enqueueBugAnalysis({ ticketId: "ticket-1", jobId: "analysis-job-1" })).rejects.toThrow("Redis is not ready");
+    await closeBugAnalysisQueue();
+
+    expect(connection.disconnect).toHaveBeenCalledOnce();
+    expect(connection.quit).not.toHaveBeenCalled();
+    connection.status = "ready";
+  });
+
+  it("allows a healthy cold connection to publish in a one-shot process", async () => {
+    connection.status = "connecting";
+    connection.ping.mockImplementationOnce(async () => { connection.status = "ready"; return "PONG"; });
+    createRedisConnectionMock.mockReturnValue(connection);
+
+    await expect(enqueueBugAnalysis({ ticketId: "ticket-1", jobId: "analysis-job-1" })).resolves.toMatchObject({ jobId: "analysis-job-1" });
+    expect(connection.ping).toHaveBeenCalledOnce();
+    expect(queueAddMock).toHaveBeenCalledOnce();
+    await closeBugAnalysisQueue();
   });
 });

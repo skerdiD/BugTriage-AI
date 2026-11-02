@@ -4,18 +4,37 @@ import "@/sentry.server.config";
 
 import { closeBugAnalysisQueue } from "@/lib/queue/bug-analysis";
 import { republishPendingTicketAnalyses } from "@/lib/queue/republish-ticket-analysis";
+import { getRepublishInterval, runRepublisherLoop } from "@/lib/queue/republisher-loop";
 import { prisma } from "@/lib/prisma";
+
+const controller = new AbortController();
+const stop = () => controller.abort();
+process.once("SIGINT", stop);
+process.once("SIGTERM", stop);
+
+function reportRunError(error: unknown) {
+  Sentry.captureException(error, {
+    tags: { area: "ticket-analysis-republisher", action: "run" },
+  });
+  console.error("[ticket-analysis-republisher] run failed");
+}
 
 async function main() {
   try {
-    const result = await republishPendingTicketAnalyses();
-    console.info("[ticket-analysis-republisher] run completed", result);
+    if (process.argv.includes("--watch")) {
+      await runRepublisherLoop({
+        run: () => republishPendingTicketAnalyses(),
+        onError: reportRunError,
+        signal: controller.signal,
+        intervalMs: getRepublishInterval(),
+      });
+    } else {
+      const result = await republishPendingTicketAnalyses();
+      console.info("[ticket-analysis-republisher] run completed", result);
+    }
     process.exitCode = 0;
   } catch (error) {
-    Sentry.captureException(error, {
-      tags: { area: "ticket-analysis-republisher", action: "run" },
-    });
-    console.error("[ticket-analysis-republisher] run failed");
+    reportRunError(error);
     process.exitCode = 1;
   } finally {
     const cleanupResults = await Promise.allSettled([
@@ -39,6 +58,8 @@ async function main() {
     }
 
     await Sentry.close(2_000);
+    process.removeListener("SIGINT", stop);
+    process.removeListener("SIGTERM", stop);
   }
 }
 

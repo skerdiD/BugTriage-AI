@@ -117,6 +117,12 @@ export async function closeBugAnalysisQueue() {
 
   const errors: unknown[] = [];
 
+  // BullMQ initialization waits for Redis readiness indefinitely. Release that
+  // wait before closing when Redis is offline, including during CLI shutdown.
+  if (connection && !["ready", "end"].includes(connection.status)) {
+    connection.disconnect();
+  }
+
   if (queue) {
     try {
       await queue.close();
@@ -144,7 +150,19 @@ export async function enqueueBugAnalysis(input: {
   jobId: string;
 }) {
   const definition = buildBugAnalysisJob(input);
-  const job = await getBugAnalysisQueue().add(
+  const queue = getBugAnalysisQueue();
+  const connection = globalForQueue.bugAnalysisQueueConnection;
+  if (connection && connection.status !== "ready") {
+    // maxRetriesPerRequest does not bound BullMQ's initial wait for readiness.
+    // A command has a finite timeout and also allows a healthy cold connection
+    // to finish connecting, which is essential for one-shot republishers.
+    try {
+      await connection.ping();
+    } catch (error) {
+      throw new Error("Redis is not ready. Ticket analysis publication is deferred.", { cause: error });
+    }
+  }
+  const job = await queue.add(
     definition.name,
     definition.data,
     definition.options

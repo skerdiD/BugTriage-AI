@@ -17,7 +17,7 @@ export function getSupabaseUrl() {
 
 export function getSupabasePublishableKey() {
   const publishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   return getRequiredEnvValue(
@@ -34,5 +34,5 @@ export function getSupabaseServiceRoleKey() {
 }
 
 export function getSupabaseStorageBucket() {
-  return process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? DEFAULT_STORAGE_BUCKET;
+  return process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET?.trim() || DEFAULT_STORAGE_BUCKET;
 }

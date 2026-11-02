@@ -92,6 +92,7 @@ export function createRedisConnection(role: "producer" | "worker") {
     connectionName: `bugtriage-${role}`,
     connectTimeout: 5_000,
     maxRetriesPerRequest: role === "worker" ? null : 1,
+    ...(role === "producer" ? { commandTimeout: 5_000 } : {}),
   };
 
   return new Redis(redisUrl, options);

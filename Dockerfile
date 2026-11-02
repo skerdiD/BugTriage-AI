@@ -19,7 +19,7 @@ COPY prisma.config.ts ./
 ENV DATABASE_URL=postgresql://docker-build:docker-build@127.0.0.1:5432/docker-build
 ENV DIRECT_URL=postgresql://docker-build:docker-build@127.0.0.1:5432/docker-build
 
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 
 FROM base AS builder
@@ -28,6 +28,7 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL=postgresql://docker-build:docker-build@127.0.0.1:5432/docker-build
 ENV DIRECT_URL=postgresql://docker-build:docker-build@127.0.0.1:5432/docker-build
 
@@ -51,12 +52,15 @@ ENV NEXT_PUBLIC_SENTRY_LOGS_ENABLED=$NEXT_PUBLIC_SENTRY_LOGS_ENABLED
 ENV NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=$NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE
 ENV NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE=$NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE
 
-RUN npm run build
+RUN node -e "if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)) throw new Error('Set the public Supabase URL and anonymous or publishable key as build arguments')" \
+    && npm run build \
+    && rm -rf .next/cache
 
 
 FROM base AS runner
 
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
@@ -74,4 +78,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["node", "node_modules/next/dist/bin/next", "start", "--hostname", "0.0.0.0"]

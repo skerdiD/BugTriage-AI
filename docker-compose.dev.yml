@@ -1,0 +1,5 @@
+# Opt in only when the app and worker run on the host during development.
+services:
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"

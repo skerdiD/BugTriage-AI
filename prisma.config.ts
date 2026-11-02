@@ -18,7 +18,7 @@ for (const envFile of [".env", ".env.local"]) {
 }
 
 function getPrismaDatasourceUrl() {
-  const url = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+  const url = process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim();
 
   if (!url) {
     throw new Error(

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { UnrecoverableError, type Job, type Processor } from "bullmq";
+import { DelayedError, UnrecoverableError, type Job, type Processor } from "bullmq";
 
 import {
   BUG_ANALYSIS_JOB_NAME,
@@ -28,7 +28,7 @@ const defaultDependencies: BugAnalysisProcessorDependencies = {
 export function createBugAnalysisProcessor(
   dependencies: BugAnalysisProcessorDependencies = defaultDependencies
 ): Processor<BugAnalysisJobData> {
-  return async (job: Job<BugAnalysisJobData>) => {
+  return async (job: Job<BugAnalysisJobData>, token?: string) => {
     const startedAt = Date.now();
     let parsedJob: ReturnType<typeof parseBugAnalysisJob>;
 
@@ -61,6 +61,13 @@ export function createBugAnalysisProcessor(
         jobId,
       });
 
+      if (result.status === "processing") {
+        // A stalled delivery may return before the database's 60-second lease
+        // expires. Keep the job recoverable instead of acknowledging it as done.
+        await job.moveToDelayed(Date.now() + 60_000, token);
+        throw new DelayedError();
+      }
+
       console.info("[bug-analysis-worker] job completed", {
         jobId,
         ticketId: data.ticketId,
@@ -72,6 +79,8 @@ export function createBugAnalysisProcessor(
 
       return result;
     } catch (error) {
+      if (error instanceof DelayedError) throw error;
+
       const retryable = dependencies.isRetryable(error);
       const maxAttempts = job.opts.attempts ?? 1;
       const willRetry = retryable && attempt < maxAttempts;

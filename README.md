@@ -405,10 +405,11 @@ For Upstash over TLS, use the `rediss://` connection string rather than REST cre
 ### 4. Start Local Redis
 
 ```bash
-docker compose up -d redis
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d redis
 ```
 
 Set `REDIS_URL=redis://localhost:6379`.
+The development override publishes Redis only on `127.0.0.1`; the full Docker stack keeps Redis private.
 
 ### 5. Prepare the Database
 
@@ -431,6 +432,74 @@ npm run worker:dev
 ```
 
 Open `http://localhost:3000`.
+
+## Docker Deployment
+
+Use Docker Engine with BuildKit and Docker Compose v2.24 or newer. The stack runs
+Next.js, a BullMQ worker, one periodic outbox republisher, a one-shot migration
+service, and persistent Redis. It uses your **existing external PostgreSQL database
+with pgvector** and your Supabase Auth/Storage project. No local database is created.
+
+Configure `.env` from `.env.example`. Supply `DATABASE_URL`, optionally `DIRECT_URL`
+for migrations, the public Supabase URL and anonymous or publishable key, the
+Supabase service-role key, Gemini key, and Arcjet key. Configure the private storage
+bucket and Supabase redirect URLs for your deployment. `DIRECT_URL` falls back to
+`DATABASE_URL` when blank. The migration account must be able to apply the existing
+migrations, including enabling pgvector. Back up an existing deployment before
+applying migrations; startup never resets or seeds the database.
+
+```bash
+docker compose config --quiet
+docker compose build app
+docker compose up -d --wait app worker republisher
+docker compose ps -a
+docker compose logs --tail=100 migrate app worker republisher redis
+curl --fail http://127.0.0.1:3000/api/health
+docker compose exec redis redis-cli ping
+```
+
+If using `.env.local`, pass `--env-file .env.local` **before the subcommand on every
+Compose invocation**, for example `docker compose --env-file .env.local build app`.
+If both files contain interpolation values, use `--env-file .env --env-file .env.local`.
+Service `env_file` loads runtime variables but does not supply Docker build arguments.
+Public `NEXT_PUBLIC_*` values are compiled into browser bundles: rebuild the image
+after changing them. Private environment files are excluded from the image, and
+only public variables are accepted as build arguments. `config --quiet` avoids
+printing resolved credentials.
+
+Compose intentionally uses its private Redis at `redis://redis:6379` for all three
+processes, overriding a host/hosted `REDIS_URL`. Plaintext Redis is permitted only
+for that Compose network; Redis has no published port. The web port binds to
+`127.0.0.1:3000` by default. Set `APP_BIND_ADDRESS` and `APP_PORT` when intentionally
+publishing another interface/port, and terminate HTTPS at your reverse proxy.
+The existing HTTPS headers and Supabase allowed redirects still apply.
+
+Migrations must exit successfully and Redis must be healthy before the web, worker,
+and republisher start. `/api/health` checks PostgreSQL and returns 503 on failure;
+it intentionally allows Redis outages because dispatches remain durable in the
+database. Health status alone does not cause Docker to restart a running process.
+Long-lived services restart on process failure; shutdown forwards signals directly
+to Node and allows 90 seconds for in-flight work to finish.
+
+The dedicated republisher runs immediately, then waits 15 seconds after each batch.
+Set `TICKET_ANALYSIS_REPUBLISH_INTERVAL_MS` to change the interval (1000–300000 ms).
+Do not add another scheduler for this Compose deployment. `npm run republish`
+remains a one-shot command for Vercel/external schedulers; outside Compose you can
+also run `npm run republish -- --watch`. PostgreSQL claims and stable BullMQ IDs
+continue to protect against duplicate publication. Initial Redis connection waits
+are bounded; outages defer publication to the outbox while Redis reconnects.
+
+To check real job processing, submit a report in a dedicated test workspace and
+follow `docker compose logs -f worker republisher`. Confirm the ticket becomes
+completed and its AI history and embedding are stored. To check recovery, stop Redis
+with `docker compose stop redis`, submit another report, then run
+`docker compose start redis`. Confirm the republisher publishes the pending dispatch
+and the worker completes it. Finally run `docker compose restart worker republisher redis`
+and recheck health, logs, and a fresh report. These steps exercise real credentials
+and Gemini; unit tests do not establish container end-to-end success.
+
+See [the Docker audit and validation record](docs/docker-audit.md) for verified
+problems, local results, and commands for isolated integration tests.
 
 ## Available Scripts
 
