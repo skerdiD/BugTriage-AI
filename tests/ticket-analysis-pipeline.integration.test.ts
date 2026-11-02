@@ -7,7 +7,7 @@ import {
   TicketSeverity,
 } from "@prisma/client";
 import { Worker } from "bullmq";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { analyzeBugReportMock, getCurrentUserMock, generateEmbeddingMock } =
   vi.hoisted(() => ({
@@ -53,6 +53,7 @@ import {
 import { createBugAnalysisProcessor } from "@/lib/queue/bug-analysis-worker";
 import { dispatchTicketAnalysis } from "@/lib/queue/dispatch-ticket-analysis";
 import { createRedisConnection } from "@/lib/queue/redis";
+import { republishPendingTicketAnalyses } from "@/lib/queue/republish-ticket-analysis";
 import { prisma } from "@/lib/prisma";
 import { bugReportFormSchema } from "@/lib/validation/bug-report";
 
@@ -138,6 +139,54 @@ async function waitFor<T>(input: {
 describe("ticket analysis PostgreSQL -> BullMQ -> worker pipeline", () => {
   let worker: Worker<BugAnalysisJobData> | undefined;
   let workerConnection: ReturnType<typeof createRedisConnection> | undefined;
+
+  async function startWorker() {
+    if (worker) return;
+    workerConnection = createRedisConnection("worker");
+    worker = new Worker<BugAnalysisJobData>(
+      BUG_ANALYSIS_QUEUE_NAME,
+      createBugAnalysisProcessor(),
+      { connection: workerConnection, concurrency: 1 }
+    );
+    await worker.waitUntilReady();
+  }
+
+  async function createRecoveryTicket(label: string) {
+    return createTicket({
+      workspaceId,
+      projectId,
+      reporterId: ownerId,
+      code: `RECOVERY-${label}-${suffix}`,
+      title: "Checkout submission fails on Safari mobile",
+      description: "The checkout submit button remains disabled after valid payment details are entered.",
+      expectedBehavior: "The payment form should submit successfully.",
+      actualBehavior: "The submit button remains disabled.",
+      stepsToReproduce: "Open checkout, enter payment details, and submit.",
+      browser: "safari",
+      device: "ios-mobile",
+      environment: "production",
+      affectedPage: "/checkout",
+    });
+  }
+
+  async function waitForJob(ticketId: string, state: "completed" | "failed") {
+    const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } });
+    const result = await waitFor({
+      description: `the ${state} job for ${ticketId}`,
+      load: async () => {
+        const job = await getBugAnalysisQueue().getJob(ticket.aiProcessingJobId!);
+        return { job, state: job ? await job.getState() : "missing" };
+      },
+      accept: (value) => value.state === state,
+      timeoutMs: 20_000,
+    });
+    return result.job!;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    analyzeBugReportMock.mockResolvedValue(aiOutput);
+  });
 
   beforeAll(async () => {
     getCurrentUserMock.mockResolvedValue({ id: ownerId });
@@ -249,13 +298,7 @@ describe("ticket analysis PostgreSQL -> BullMQ -> worker pipeline", () => {
       delayed: 0,
     });
 
-    workerConnection = createRedisConnection("worker");
-    worker = new Worker<BugAnalysisJobData>(
-      BUG_ANALYSIS_QUEUE_NAME,
-      createBugAnalysisProcessor(),
-      { connection: workerConnection, concurrency: 1 }
-    );
-    await worker.waitUntilReady();
+    await startWorker();
 
     const completed = await waitFor({
       description: "the ticket analysis to complete",
@@ -355,5 +398,64 @@ describe("ticket analysis PostgreSQL -> BullMQ -> worker pipeline", () => {
         where: { ticketId: ticket.id, type: TicketActivityType.AI_ANALYZED },
       })
     ).toBe(1);
+  });
+
+  it("retries transient provider failures through BullMQ before persisting one result", async () => {
+    await startWorker();
+    analyzeBugReportMock
+      .mockRejectedValueOnce(new Error("provider temporarily unavailable"))
+      .mockRejectedValueOnce(new Error("provider temporarily unavailable"));
+    const ticket = await createRecoveryTicket("retry");
+    await dispatchTicketAnalysis({ ticketId: ticket.id, requestedById: ownerId });
+
+    const job = await waitForJob(ticket.id, "completed");
+    expect(job.attemptsMade).toBe(3);
+    expect(analyzeBugReportMock).toHaveBeenCalledTimes(3);
+    expect(await prisma.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toMatchObject({
+      aiProcessingStatus: AiProcessingStatus.COMPLETED,
+      aiProcessingError: null,
+    });
+    expect(await prisma.ticketAiAnalysisRun.count({ where: { ticketId: ticket.id } })).toBe(1);
+  });
+
+  it("exhausts retries and records a terminal failure without losing the report", async () => {
+    await startWorker();
+    analyzeBugReportMock
+      .mockRejectedValueOnce(new Error("provider temporarily unavailable"))
+      .mockRejectedValueOnce(new Error("provider temporarily unavailable"))
+      .mockRejectedValueOnce(new Error("provider temporarily unavailable"));
+    const ticket = await createRecoveryTicket("exhausted");
+    await dispatchTicketAnalysis({ ticketId: ticket.id, requestedById: ownerId });
+
+    const job = await waitForJob(ticket.id, "failed");
+    expect(job.attemptsMade).toBe(3);
+    expect(analyzeBugReportMock).toHaveBeenCalledTimes(3);
+    expect(await prisma.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toMatchObject({
+      aiProcessingStatus: AiProcessingStatus.FAILED,
+      description: "The checkout submit button remains disabled after valid payment details are entered.",
+      aiProcessingError: expect.stringContaining("provider temporarily unavailable"),
+    });
+    expect(await prisma.ticketAiAnalysisRun.count({ where: { ticketId: ticket.id } })).toBe(0);
+  });
+
+  it("republishes an abandoned dispatch lease and processes its stable job once", async () => {
+    await startWorker();
+    const ticket = await createRecoveryTicket("republish");
+    await prisma.ticketAnalysisDispatch.updateMany({
+      where: { ticketId: ticket.id },
+      data: {
+        status: TicketAnalysisDispatchStatus.DISPATCHING,
+        lockedAt: new Date(Date.now() - 61_000),
+        claimToken: "abandoned-test-claim",
+        attempts: 1,
+      },
+    });
+
+    expect(await republishPendingTicketAnalyses()).toMatchObject({ queued: 1 });
+    await waitForJob(ticket.id, "completed");
+    const dispatch = await prisma.ticketAnalysisDispatch.findFirstOrThrow({ where: { ticketId: ticket.id } });
+    expect(dispatch).toMatchObject({ status: TicketAnalysisDispatchStatus.DISPATCHED, attempts: 2, claimToken: null });
+    expect(await republishPendingTicketAnalyses()).toMatchObject({ queued: 0 });
+    expect(await prisma.ticketAiAnalysisRun.count({ where: { ticketId: ticket.id } })).toBe(1);
   });
 });

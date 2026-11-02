@@ -40,10 +40,11 @@ Audited on 2026-11-02 before changing application or infrastructure files.
 | `README.md`, `.env.example` | No complete Docker workflow or explanation of build/runtime environment precedence. | Document startup, migrations, private networking, republisher ownership, recovery checks, and explicit env-file selection. |
 
 The Prisma schema/migrations, application UI, Supabase architecture, and Vercel
-deployment configuration are retained. No production writes, migrations, seeding,
-database resets, volume removal, or queue cleanup were performed during this audit.
+deployment configuration are retained. No writes, migrations, seeding, database
+resets, or queue cleanup targeted the configured deployment database. Follow-up
+mutation tests used isolated databases only. No Docker volumes were removed.
 
-## Validation record
+## Initial validation record (before Docker installation)
 
 - Portable Docker Compose v5.6.1: `config --quiet` passed for the base configuration
   and the development override. Programmatic checks confirmed no PostgreSQL service,
@@ -75,7 +76,99 @@ database resets, volume removal, or queue cleanup were performed during this aud
   and signal delivery require Docker and usable external services; they remain
   unverified. Mocked tests are not a substitute for those checks.
 
-## Commands to finish container validation
+## Runtime verification follow-up — 2026-11-02
+
+The initial runtime blockers are resolved for the Docker deployment. This follow-up
+started from commit `be57988` with a clean working tree and retained the existing
+Dockerfile and Compose configuration.
+
+### Environment and isolation
+
+- `docker info` passed: Docker Engine 29.9.2, Linux containers under Docker Desktop,
+  with Compose v5.6.1 and BuildKit. The image uses Node 22.21.0. Host checks used the
+  temporary supported Node 22.21.0 installation rather than system Node 22.14.
+- Both configured external PostgreSQL URLs now resolve and accept read-only
+  connections. `SELECT 1`, pgvector presence, and outbox-table presence passed.
+  A one-shot container using the actual deployment environment also connected to
+  external PostgreSQL, and Supabase Auth health returned HTTP 200. No credential
+  changes were needed; the earlier PostgreSQL/DNS failures did not recur.
+- The hosted `REDIS_URL` still returns `ENOTFOUND`. It is not used by Compose:
+  app, worker, and republisher all use `redis://redis:6379` as configured. Native
+  deployments using that hosted URL still need a valid/resolvable endpoint.
+- Runtime mutation tests ran in Compose project `bugtriage-verification`, with a
+  temporary override and a separate pgvector PostgreSQL container. Its database was
+  `bugtriage_docker_test`; Redis used the project's own volume. This is validation
+  infrastructure only; production Compose still uses externally hosted PostgreSQL.
+- Automated integration tests used a second database, `bugtriage_integration_test`,
+  and Redis database 15, so the running republisher could not claim test-suite work.
+  All 11 migrations applied successfully to isolated databases. Production
+  database URLs and working `.env` secrets were neither overwritten nor mutated.
+- Session-only overrides, selected runtime credentials, and the fixture probe live
+  under `$env:TEMP/bugtriage-docker-audit-tools/`; no secrets were committed. The
+  runtime probe rejects any database other than `test-postgres/bugtriage_docker_test`.
+
+### Verified failure and fix
+
+Stopping an idle worker with Redis unavailable reproduced a shutdown hang. The
+worker's `maxRetriesPerRequest: null` left commands pending while `worker.close()`
+waited for its main loop. Docker eventually killed the process: exit code **137**.
+The republisher exited normally.
+
+`src/workers/bug-analysis.worker.ts` now disconnects an already-offline owned Redis
+connection before draining BullMQ and avoids queuing `QUIT` on a disconnected
+connection. Healthy shutdown still waits for active jobs. After rebuilding and
+recreating containers, the same offline shutdown completed within the 15-second
+test limit; **both worker and republisher exited 0**. Two new unit cases cover
+connected and reconnecting Redis shutdown order.
+
+The integration suite gained three cases for actual BullMQ retry success, retry
+exhaustion, and abandoned outbox-lease recovery. An initial new test assertion was
+corrected to account for the existing ticket mapper omitting description; no
+application behavior was changed for that assertion. A new shutdown test's signal
+argument was also corrected after TypeScript caught it. Final checks below passed.
+
+### Final validation results
+
+| Check | Result and evidence |
+| --- | --- |
+| Compose configuration | Base, development override, and isolated runtime override validated successfully. |
+| Image and production build | `docker compose build app` passed from a clean Linux dependency install and again after the shutdown fix. Prisma generation, Next compilation, TypeScript, and prerendering passed inside Docker. All application roles use this shared image. |
+| Container startup | Migration service exited 0. App and Redis reached healthy status; worker logged `ready`; republisher repeatedly scanned the outbox. Worker/republisher have no Docker health check: their running state and actual job execution were checked. |
+| HTTP and database readiness | Container-served `/`, `/login`, and `/api/health` returned 200. Health returned `{ "status": "ok" }` with `Cache-Control: no-store`. PostgreSQL `SELECT 1` and Redis `PONG` passed. Redis reported `noeviction`. |
+| Image hygiene | Runtime UID was 1000. Neither `.env` nor `.env.local` existed in the image, and the image did not inherit a build-stage `DATABASE_URL`. |
+| Live analysis | Application dispatch code inside the app container published a synthetic test report. The unmodified worker called real Gemini, completed the BullMQ job, and stored exactly one analysis plus a 768-dimensional embedding. |
+| Scheduled republishing | A fixture created without direct publication was picked up by the separate periodic republisher and completed by the real worker with one analysis and embedding. |
+| Redis outage and recovery | With Redis stopped, web/database readiness stayed 200 and direct publication returned pending. PostgreSQL retained the dispatch (`PENDING`, two attempts observed). After Redis returned, the republisher delivered it on dispatch attempt three and analysis completed. |
+| Processing failures | Real-container invalid-report processing failed permanently after one attempt and retained the report. Integration tests exercised two transient failures followed by success on attempt three, and terminal failure after all three attempts. |
+| Graceful active-job shutdown | A SIGTERM during a live Gemini job logged shutdown start, job completion, then graceful shutdown completion before the worker restarted. No analysis was duplicated. |
+| Offline shutdown | After the fix, worker and republisher exited 0 while Redis was stopped; no forced kill was needed. |
+| Abrupt process failure | Killing the worker's Node process inside the isolated container incremented Docker's restart count to one. BullMQ recovered the interrupted job after its stalled-job checks; it completed with one analysis and embedding. |
+| Restart persistence | App, worker, republisher, and Redis were restarted together. The original completed job and database results remained present; a fresh report completed through the republisher afterward. |
+| Regression checks | ESLint and `npm run typecheck` passed. **238 unit tests in 46 files**, **9 integration tests in 2 files**, and **11 Chromium smoke tests against the Docker app** passed. |
+
+The browser smoke suite checked public/auth pages and unauthenticated redirects.
+Backend job fixtures used application dispatch code and real container processes;
+an authenticated HTTP report submission was not automated. Integration retry tests
+use deterministic provider responses but real PostgreSQL, pgvector, Redis, BullMQ,
+and the production processor. Live container completion checks used actual Gemini.
+
+### Remaining follow-up
+
+- No Docker runtime or backend job-processing check remains blocked.
+- The unused hosted Redis endpoint still needs DNS/configuration repair for any
+  non-Compose deployment that relies on it. Its secret value was left unchanged.
+- The existing dependency lockfile has security advisories. The clean image install
+  reported 39 total advisories including development dependencies; a production-only
+  `npm audit --omit=dev --json` reported 20 (2 critical, 7 high, 7 moderate, 4 low).
+  The critical entries include `next` and `@sentry/nextjs`. Dependency remediation
+  requires a separate compatibility review; no dependency versions were changed
+  during this runtime verification. Runtime success does not resolve those advisories.
+- The isolated validation services and volumes are retained for inspection. The
+  verification app is on `http://127.0.0.1:3100`; the standard deployment remains
+  configured for loopback port 3000. No production stack was started to process
+  existing deployment outbox rows.
+
+## Commands for repeating validation
 
 Install/start Docker Engine (Linux containers), supply usable external PostgreSQL,
 Supabase, and Gemini configuration, then run the Docker commands in the README.
@@ -119,4 +212,6 @@ to later deployment commands. Wait for `pg_isready` and Redis `PONG` before runn
 the tests. The integration suite substitutes deterministic Gemini responses but
 uses real PostgreSQL, pgvector, Redis, BullMQ, and the production processor.
 
-Final verdict is **NO** until the blocked container and job-processing checks pass.
+Final verdict: **YES — the Docker runtime and backend end-to-end checks passed**
+using the existing image/Compose architecture and isolated mutation targets.
+The hosted Redis DNS issue and dependency advisories above remain separate follow-up.

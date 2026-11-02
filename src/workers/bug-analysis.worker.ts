@@ -49,6 +49,10 @@ async function shutdown(signal: "SIGINT" | "SIGTERM") {
 
   const shutdownErrors: unknown[] = [];
 
+  // The worker's commands retry indefinitely while Redis is offline. Release
+  // those pending commands before waiting for BullMQ's main loop to drain.
+  if (!["ready", "end"].includes(redis.status)) redis.disconnect();
+
   try {
     await worker.close();
   } catch (error) {
@@ -60,7 +64,7 @@ async function shutdown(signal: "SIGINT" | "SIGTERM") {
   }
 
   const cleanupResults = await Promise.allSettled([
-    redis.status === "end" ? Promise.resolve() : redis.quit(),
+    redis.status === "ready" ? redis.quit() : Promise.resolve(redis.disconnect()),
     prisma.$disconnect(),
   ]);
 
